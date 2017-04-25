@@ -74,6 +74,6 @@ PAYPAL_EMAIL = 'paypal-sandbox-merchant@portonvictor.org'
 PAYPAL_ID = 'CDA2QQH9TQ44C' #PayPal account ID
 # https://developer.paypal.com/developer/applications
 PAYPAL_CLIENT_ID = 'AVV1uyNk5YCJfDaDgUI9QwsYCtyEP8aFyMV7pCaiUn7Icuo8TYwaaXDM2nTV25wEGKHMl2CAeT4XD9BR'
-PAYPAL_SECRET = 'EGIp5GUxqdDpK3zHulDL8NdD12uJzrKxbr78GnpAGYBQ9GfqiA2URabY0jrZzAI26n-S9z8EO2KwlZrN'
+PAYPAL_SECRET = 'EJdKbFJCVLKxC4Q80R601WWwlgzbNqp-Esc8dIeDmuUn02xuuEqwlYO4LuPEKkNA8TwXLsz7z51ByqR7'
 PAYPAL_DEBUG = True
 PAYMENTS_REALM = 'testapp4'
