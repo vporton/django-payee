@@ -85,7 +85,10 @@ class PayPalIPN(PaymentCallback, View):
         except KeyError as e:
             logger.warning("PayPal IPN var %s is missing" % e)
         except AttributeError as e:  # if for example item.subscriptionitem for non-subscription item
-            logger.warning(e)
+            # FIXME
+            import traceback
+            traceback.print_exc()
+            # logger.warning(e)
         return HttpResponse('', content_type="text/plain")
 
     def do_post(self, request):
