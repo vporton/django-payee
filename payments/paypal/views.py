@@ -209,9 +209,6 @@ class PayPalIPN(PaymentCallback, View):
 
     @transaction.atomic
     def do_create_subscription(self, transaction, subscriptionitem, ref, email):
-        print("active_subscription:", subscriptionitem.active_subscription,
-              "subscription_reference:", subscriptionitem.active_subscription.subscription_reference if subscriptionitem.active_subscription else "none",
-              "ref:", ref)
         if subscriptionitem.active_subscription and \
                         subscriptionitem.active_subscription.subscription_reference == ref:
             return subscriptionitem.active_subscription

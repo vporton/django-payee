@@ -3,6 +3,7 @@ from html import escape
 from django.db import models
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
+from payments.payments_base.models import logger
 
 
 # This is a quick hack. For serious work use https://github.com/paypal/PayPal-Python-SDK instead.
@@ -30,6 +31,7 @@ class PayPalAPI(models.Model):
         note = _("Upgrading billing plan") if is_upgrade else _("Canceling a service")
         # https://developer.paypal.com/docs/api/#agreement_cancel
         # https://developer.paypal.com/docs/api/payments.billing-agreements#agreement_cancel
+        logger.debug("PayPal: now canceling agreement %s" % escape(agreement_id))
         r = self.session.post(self.server + ('/v1/payments/billing-agreements/%s/cancel' % escape(agreement_id)),
                               data='{"note": "%s"}' % note,
                               headers={'content-type': 'application/json'})
