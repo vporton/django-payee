@@ -85,7 +85,6 @@ class PayPalIPN(PaymentCallback, View):
         except KeyError as e:
             logger.warning("PayPal IPN var %s is missing" % e)
         except AttributeError as e:  # if for example item.subscriptionitem for non-subscription item
-            # FIXME
             import traceback
             traceback.print_exc()
             # logger.warning(e)
@@ -214,6 +213,7 @@ class PayPalIPN(PaymentCallback, View):
         print("active_subscription:", subscriptionitem.active_subscription,
               "subscription_reference:", subscriptionitem.active_subscription.subscription_reference if subscriptionitem.active_subscription else "none",
               "ref:", ref)
+        # FIXME: If the old subscription is yet present (during upgrade), the new one is not assigned
         if subscriptionitem.active_subscription and \
                         subscriptionitem.active_subscription.subscription_reference == ref:
             return subscriptionitem.active_subscription
@@ -234,7 +234,8 @@ class PayPalIPN(PaymentCallback, View):
             subscription_reference = POST['subscr_id']
             subscription = self.do_create_subscription(transaction, item.subscriptionitem, subscription_reference, POST['payer_email'])
             payment = AutomaticPayment.objects.create(transaction=transaction,
-                                                      email=POST['payer_email'])
+                                                      email=POST['payer_email'],
+                                                      subscription=subscription)
             self.do_subscription_or_recurring_payment(transaction, POST)
             self.on_payment(payment)
         else:
