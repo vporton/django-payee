@@ -6,7 +6,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-SECRET_KEY = 'la5izaeKgei9YoGh'
+SECRET_KEY = XXX
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -64,16 +64,16 @@ USE_TZ = True
 
 ## Payments settings
 
-PAYMENTS_HOST = 'http://portonvictor.org:9091'
-IPN_HOST = 'http://portonvictor.org:9091'
-FROM_EMAIL = 'admins@arcamens.com'
+PAYMENTS_HOST = XXX
+IPN_HOST = XXX
+FROM_EMAIL = XXX
 PROLONG_PAYMENT_VIEW = 'transaction-prolong-payment'
 PAYMENTS_DAYS_BEFORE_DUE_REMIND = 10
 PAYMENTS_DAYS_BEFORE_TRIAL_END_REMIND = 10
-PAYPAL_EMAIL = 'paypal-sandbox-merchant@portonvictor.org'
-PAYPAL_ID = 'CDA2QQH9TQ44C' #PayPal account ID
+PAYPAL_EMAIL = XXX
+PAYPAL_ID = XXX #PayPal account ID
 # https://developer.paypal.com/developer/applications
-PAYPAL_CLIENT_ID = 'AVV1uyNk5YCJfDaDgUI9QwsYCtyEP8aFyMV7pCaiUn7Icuo8TYwaaXDM2nTV25wEGKHMl2CAeT4XD9BR'
-PAYPAL_SECRET = 'EJdKbFJCVLKxC4Q80R601WWwlgzbNqp-Esc8dIeDmuUn02xuuEqwlYO4LuPEKkNA8TwXLsz7z51ByqR7'
+PAYPAL_CLIENT_ID = XXX
+PAYPAL_SECRET = XXX
 PAYPAL_DEBUG = True
-PAYMENTS_REALM = 'testapp4'
+PAYMENTS_REALM = 'testapp1'
