@@ -142,7 +142,6 @@ def unsubscribe_organization_view(request, organization_pk):
     organization_pk = int(organization_pk)  # in real code should use user login information
     organization = Organization.objects.get(pk=organization_pk)
     subscription = organization.purchase.item.active_subscription
-    logger.warning("Do unsubscribe_organization_view() for %s" % subscription.subscription_reference)
     subscription.force_cancel()
     return HttpResponseRedirect(reverse('organization-prolong-payment', args=[organization.pk]))
 
