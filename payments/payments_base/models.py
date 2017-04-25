@@ -143,7 +143,7 @@ class Item(models.Model):
 
     # code = models.CharField(max_length=255) # TODO
     gratis = models.BooleanField(default=False)  # provide a product or service for free
-    recurring = models.BooleanField(default=False)
+    # recurring = models.BooleanField(default=False)
 
     # 0 - no reminder sent
     # 1 - before due payment sent

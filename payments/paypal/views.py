@@ -153,7 +153,7 @@ class PayPalIPN(PaymentCallback, View):
         try:
             transaction = Transaction.objects.get(pk=transaction_id)
             item = transaction.item
-            if not item.recurring and \
+            if not hasattr(item, 'subscriptionitem') and \
                             Decimal(POST['mc_gross']) == item.price and \
                             Decimal(POST['shipping']) == item.shipping and \
                             POST['mc_currency'] == item.currency:

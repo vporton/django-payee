@@ -114,7 +114,6 @@ def purchase_view(request):
         new_item = SubscriptionItem(product=item.product,
                                     currency=plan.currency,
                                     price=plan.price,
-                                    recurring=True,
                                     trial=item.trial,
                                     payment_period_unit=Period.UNIT_MONTHS,
                                     payment_period_count=1,
