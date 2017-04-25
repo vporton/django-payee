@@ -1,0 +1,13 @@
+{% load i18n %}
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>{% trans "Service subscription canceled" %}</title>
+    </head>
+    <body>
+        <p>Your subscription to the service <q>{{ product|escape }}</q> was canceled.</p>
+        <p>It remains {{ days_before }} days until the due payment date.</p>
+        <p>Please pay on time, as otherwise the service may be suspended or terminated.</p>
+        <p><a href="{{ url|escape }}">Click this link</a> to pay.</p>
+    </body>
+</html>

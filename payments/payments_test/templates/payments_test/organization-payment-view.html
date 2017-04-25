@@ -1,0 +1,91 @@
+{% load i18n %}
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>Organization payment page</title>
+    </head>
+    <body>
+        <p><strong>WARNING: Information at this page updates not immediately but after a delay.</strong></p>
+        <p><a href="{% url 'list-organizations' %}">List organizations</a></p>
+        <dl>
+            <dt>{% trans "Organization" %}</dt><dd>{{ organization|escape }}</dd>
+            <dt>{% trans "Item ID" %}</dt><dd>{{ item_id }}</dd>
+            <dt>{% trans "Email" %}</dt><dd>{{ email|escape }}</dd>
+            <dt>{% trans "Service provided for free" %}</dt><dd>{{ gratis|escape }}</dd>
+            <dt>{% trans "Service is active" %}</dt><dd>{{ active|escape }}</dd>
+            <dt>{% trans "Blocked for misbehavior" %}</dt><dd>{{ blocked|escape }}</dd>
+            <dt>{% trans "Automatic (automatically recurring) payments" %}</dt><dd>{{ manual_mode|yesno:"False,True" }}</dd>
+            {% if not manual_mode %}
+            <dt>{% trans "Payments proccessor" %}</dt><dd>{{ processor_name|escape }}</dd>
+            {% endif %}
+            <dt>{% trans "Pricing plan" %}</dt><dd>{{ plan|escape }}</dd>
+            <dt>{% trans "In trial period" %}</dt><dd>{{ trial|escape }}</dd>
+            {% if trial %}
+            <dt>{% trans "Trial period length" %}</dt><dd>{{ trial_period|escape }}</dd>
+            {% endif %}
+            <dt>{% trans "Due payment date" %}</dt><dd>{{ due_date|escape }}</dd>
+            <dt>{% trans "Payment deadline" %}</dt><dd>{{ deadline|escape }}</dd>
+            <dt>{% trans "Price" %}</dt><dd>{{ price|escape }}</dd>
+            <dt>{% trans "Currency" %}</dt><dd>{{ currency|escape }}</dd>
+            <dt>{% trans "Recurring payment period" %}</dt><dd>{{ payment_period|escape }}</dd>
+            {% if not manual_mode %}
+            <dt>Subscription ID</dt><dd>{{ subscription_reference|escape }}</dd>
+            {% endif %}
+            <dt>{% trans "Subinvoice" %}</dt><dd>{{ subinvoice }}</dd>
+        </dl>
+        <h2>Switch plan</h2>
+        <form method="post" action="{% url 'do-purchase' %}">
+            {% csrf_token %}
+            <input type="hidden" name="arcamens_processor" value="PayPal" />
+            <input type="hidden" name="arcamens_op" value="upgrade" />
+            <input type="hidden" name="organization" value="{{ organization_id }}" />
+            {{ plan_form }}
+            <input type="submit" value="{% trans "Switch" %}" />
+            {% if manual_mode %}
+            (You may be prompted to pay the difference in the price for your entire subscription period.)
+            {% endif %}
+        </form>
+        {% if manual_mode %}
+        <h2>Switch to recurring mode (recommended)</h2>
+            {% if can_switch_to_recurring %}
+        <form method="post" action="{% url 'do-purchase' %}">
+            {% csrf_token %}
+            <input type="hidden" name="arcamens_processor" value="PayPal" />
+            <input type="hidden" name="arcamens_op" value="subscribe" />
+            <input type="hidden" name="organization" value="{{ organization_id }}" />
+            <input type="submit" value="{% trans "Subscribe with PayPal" %}" />
+        </form>
+            {% else %}
+        <p>Cannot switch to recurring mode before {{ subscription_allowed_date }}</p>
+            {% endif %}
+        <h2>Pay manually</h2>
+        <form method="post" action="{% url 'do-purchase' %}">
+            {% csrf_token %}
+            <input type="hidden" name="arcamens_processor" value="PayPal" />
+            <input type="hidden" name="arcamens_op" value="manual" />
+            <input type="hidden" name="organization" value="{{ organization_id }}" />
+            {% trans "Pay for yet" %}
+            <select name="periods">
+                <option value="1">1 month</option>
+                <option value="2">2 months</option>
+                <option value="3">3 months</option>
+                <option value="4">4 months</option>
+                <option value="6">6 months</option>
+                <option value="8">8 months</option>
+                <option value="10">10 months</option>
+                <option value="12">12 months</option>
+                <option value="18">18 months</option>
+                <option value="24">24 months</option>
+            </select>
+            <input type="submit" value="{% trans "Pay with PayPal" %}" />
+        </form>
+        {% else %}
+        <h2>Terminate subscription (not recommended)</h2>
+        <form method="post" action="{% url 'unsubscribe-organization' organization_id %}">
+            {% csrf_token %}
+            <input type="hidden" name="arcamens_processor" value="PayPal" />
+            <input type="submit" value="Terminate {{ processor_name|escape }} subscription" />
+        </form>
+        {% endif %}
+    </body>
+</html>

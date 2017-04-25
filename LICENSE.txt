@@ -1,0 +1,37 @@
+A Python Django library for accepting payments in Internet.
+Copyright (C) 2017 Victor Porton, Arcamens
+
+This software is dual licensed:
+- GNU Affero General Public License
+- a proprietary license
+
+By submitting a pull request to our repository holding this
+software you implicitly agree to give us unrestricted rights
+to use your modification in our free or proprietary software.
+
+Also your modification is licensed as AGPL and may be available
+to third-parties.
+
+== GNU Affero General Public License
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+== Proprietary license
+
+The proprietary license is applicable only to a person or organization
+who purchased a license from us.
+
+You are allowed to use this software unrestricted inside your
+organization, with explicit prohibition to distribute this software
+or its derivative works outside of your organization.

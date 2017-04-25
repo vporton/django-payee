@@ -1,0 +1,52 @@
+[
+  {
+    "model": "payments_base.paymentprocessor",
+    "pk": 1,
+    "fields": {
+      "name": "Avangate",
+      "url": "http://www.avangate.com/",
+      "api_app_label": "",
+      "api_model": ""
+    }
+  },
+  {
+    "model": "payments_base.paymentprocessor",
+    "pk": 2,
+    "fields": {
+      "name": "PayPal",
+      "url": "http://www.paypal.com/",
+      "api_app_label": "paypal",
+      "api_model": "PayPalAPI"
+    }
+  },
+  {
+    "model": "payments_base.paymentprocessor",
+    "pk": 3,
+    "fields": {
+      "name": "BrainTree",
+      "url": "https://www.braintreepayments_base.com/",
+      "api_app_label": "",
+      "api_model": ""
+    }
+  },
+  {
+    "model": "payments_base.paymentprocessor",
+    "pk": 4,
+    "fields": {
+      "name": "DalPay",
+      "url": "https://www.dalpay.com/",
+      "api_app_label": "",
+      "api_model": ""
+    }
+  },
+  {
+    "model": "payments_base.paymentprocessor",
+    "pk": 5,
+    "fields": {
+      "name": "Recurly",
+      "url": "https://recurly.com/",
+      "api_app_label": "",
+      "api_model": ""
+    }
+  }
+]

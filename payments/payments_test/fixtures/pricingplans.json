@@ -1,0 +1,38 @@
+[
+  {
+    "model": "payments_test.pricingplan",
+    "pk": 1,
+    "fields": {
+      "product": 1,
+      "name": "Plan 1",
+      "price": 10.00,
+      "currency": "USD",
+      "period_unit": 1,
+      "period_count": 1
+    }
+  },
+  {
+    "model": "payments_test.pricingplan",
+    "pk": 2,
+    "fields": {
+      "product": 1,
+      "name": "Plan 2",
+      "price": 20.00,
+      "currency": "USD",
+      "period_unit": 1,
+      "period_count": 1
+    }
+  },
+  {
+    "model": "payments_test.pricingplan",
+    "pk": 3,
+    "fields": {
+      "product": 1,
+      "name": "Plan 3",
+      "price": 30.00,
+      "currency": "USD",
+      "period_unit": 1,
+      "period_count": 1
+    }
+  }
+]

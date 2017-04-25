@@ -1,0 +1,12 @@
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>Payment reminder</title>
+    </head>
+    <body>
+        <p>You are subscribed to <q>{{ product|escape }}</q> product.</p>
+        <p>Today is the due payment date.</p>
+        <p>Please pay. If you don't pay on-time, your subscription may be suspended or terminated!</p>
+        <p><a href="{{ url|escape }}">Click this link</a> to pay.</p>
+    </body>
+</html>
