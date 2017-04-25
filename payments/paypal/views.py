@@ -195,8 +195,7 @@ class PayPalIPN(PaymentCallback, View):
             subscription_reference = POST['recurring_payment_id']
             subscription = self.do_create_subscription(transaction, item.subscriptionitem, subscription_reference, POST['payer_email'])
             payment = AutomaticPayment.objects.create(transaction=transaction,
-                                                      email=POST['payer_email'],
-                                                      subscription=subscription)
+                                                      email=POST['payer_email'])
             self.do_subscription_or_recurring_payment(transaction, POST)
             self.on_payment(payment)
         else:
@@ -234,8 +233,7 @@ class PayPalIPN(PaymentCallback, View):
             subscription_reference = POST['subscr_id']
             subscription = self.do_create_subscription(transaction, item.subscriptionitem, subscription_reference, POST['payer_email'])
             payment = AutomaticPayment.objects.create(transaction=transaction,
-                                                      email=POST['payer_email'],
-                                                      subscription=subscription)
+                                                      email=POST['payer_email'])
             self.do_subscription_or_recurring_payment(transaction, POST)
             self.on_payment(payment)
         else:
