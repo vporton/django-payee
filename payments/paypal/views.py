@@ -212,7 +212,6 @@ class PayPalIPN(PaymentCallback, View):
         print("active_subscription:", subscriptionitem.active_subscription,
               "subscription_reference:", subscriptionitem.active_subscription.subscription_reference if subscriptionitem.active_subscription else "none",
               "ref:", ref)
-        # FIXME: If the old subscription is yet present (during upgrade), the new one is not assigned
         if subscriptionitem.active_subscription and \
                         subscriptionitem.active_subscription.subscription_reference == ref:
             return subscriptionitem.active_subscription
