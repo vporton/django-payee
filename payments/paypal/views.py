@@ -85,7 +85,6 @@ class PayPalIPN(PaymentCallback, View):
         except KeyError as e:
             logger.warning("PayPal IPN var %s is missing" % e)
         except AttributeError as e:  # if for example item.subscriptionitem for non-subscription item
-            # FIXME
             import traceback
             traceback.print_exc()
             # logger.warning(e)
@@ -154,7 +153,7 @@ class PayPalIPN(PaymentCallback, View):
         try:
             transaction = Transaction.objects.get(pk=transaction_id)
             item = transaction.item
-            if not item.recurring and \
+            if not hasattr(item, 'subscriptionitem') and \
                             Decimal(POST['mc_gross']) == item.price and \
                             Decimal(POST['shipping']) == item.shipping and \
                             POST['mc_currency'] == item.currency:
@@ -196,8 +195,7 @@ class PayPalIPN(PaymentCallback, View):
             subscription_reference = POST['recurring_payment_id']
             subscription = self.do_create_subscription(transaction, item.subscriptionitem, subscription_reference, POST['payer_email'])
             payment = AutomaticPayment.objects.create(transaction=transaction,
-                                                      email=POST['payer_email'],
-                                                      subscription=subscription)
+                                                      email=POST['payer_email'])
             self.do_subscription_or_recurring_payment(transaction, POST)
             self.on_payment(payment)
         else:
