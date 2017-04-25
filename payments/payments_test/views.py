@@ -83,6 +83,7 @@ def purchase_view(request):
     purchase = organization.purchase
     item = purchase.item
     if op == 'subscribe':
+        print("!!subscribe!!")  # FIXME
         transaction = Transaction.objects.create(processor=processor, item=item)
         return form.make_purchase_from_form(hash, transaction)
     elif op == 'manual':
@@ -140,6 +141,7 @@ def purchase_view(request):
 
 
 def unsubscribe_organization_view(request, organization_pk):
+    print("!!cancel!!")  # FIXME
     organization_pk = int(organization_pk)  # in real code should use user login information
     organization = Organization.objects.get(pk=organization_pk)
     subscription = organization.purchase.item.active_subscription
