@@ -41,12 +41,7 @@ class BasePaymentProcessor(object, metaclass=abc.ABCMeta):
             subscriptionitem.trial = subscriptionitem.trial_period.count != 0
             subscriptionitem.adjust_dates()
             subscriptionitem.save()
-            if subscriptionitem.trial:
-                return self.show_trial_period_start(hash, transaction)
-            else:
-                return self.real_make_purchase(hash, transaction)
-        else:
-            return self.real_make_purchase(hash, transaction)
+        return self.real_make_purchase(hash, transaction)
 
     def make_purchase_from_form(self, hash, transaction):
         hash = dict(hash)
@@ -63,10 +58,6 @@ class BasePaymentProcessor(object, metaclass=abc.ABCMeta):
 
     def redirect_to_processor(self, hash):
         return HttpResponse(BasePaymentProcessor.html(hash))
-
-    @abc.abstractmethod
-    def show_trial_period_start(self, hash, transaction):
-        pass
 
     # Internal
     # Use this instead of a redirect because we prefer POST over GET
