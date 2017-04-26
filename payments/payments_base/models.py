@@ -4,6 +4,7 @@ from dateutil.relativedelta import relativedelta
 import logging
 from django.apps import apps
 from django.urls import reverse
+import django.db
 from django.db import models
 from django.db.models import F
 from django.core.exceptions import ObjectDoesNotExist
@@ -372,7 +373,8 @@ class Subscription(models.Model):
     # duplicates email in Payment
     email = models.EmailField(null=True)  # DalPay requires to notify the customer 10 days before every payment
 
-    @transaction.atomic
+    # `transaction` identifier is overridden above
+    @django.db.transaction.atomic
     def force_cancel(self):
         if self.subscription_reference:
             klass = model_from_ref(self.transaction.processor.api)
