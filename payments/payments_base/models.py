@@ -372,11 +372,13 @@ class Subscription(models.Model):
     # duplicates email in Payment
     email = models.EmailField(null=True)  # DalPay requires to notify the customer 10 days before every payment
 
+    @transaction.atomic
     def force_cancel(self):
-        klass = model_from_ref(self.transaction.processor.api)
-        api = klass()
-        api.cancel_agreement(self.subscription_reference)
-        # transaction.cancel_subscription()  # runs in the callback
+        if self.subscription_reference:
+            klass = model_from_ref(self.transaction.processor.api)
+            api = klass()
+            api.cancel_agreement(self.subscription_reference)
+            # transaction.cancel_subscription()  # runs in the callback
 
 
 class Payment(models.Model):
