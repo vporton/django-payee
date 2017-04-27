@@ -3,6 +3,7 @@
     <head>
         <meta charset="utf-8" />
         <title>Organization payment page</title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
     </head>
     <body>
         <p><strong>WARNING: Information at this page updates not immediately but after a delay.</strong></p>
@@ -82,7 +83,7 @@
         {% else %}
         <h2>Terminate subscription (not recommended)</h2>
         <form method="post" action="{% url 'unsubscribe-organization' organization_id %}"
-              onsubmit="$.post(this.action, function(msg){if(msg) alert(msg) else location.href=location.href}); return false">
+              onsubmit="$.post(this.action, data:$(this).serialize(), function(msg){if(msg) alert(msg) else location.href=location.href}); return false">
             {% csrf_token %}
             <input type="hidden" name="arcamens_processor" value="PayPal" />
             <input type="submit" value="Terminate {{ processor_name|escape }} subscription" />
