@@ -1,8 +1,8 @@
 import abc
 import datetime
 from django.urls import reverse
-from payments.payments_base.processors import BasePaymentProcessor
-from payments.payments_base.models import Transaction, Period
+from payee.payee_base.processors import BasePaymentProcessor
+from payee.payee_base.models import Transaction, Period
 from django.conf import settings
 
 

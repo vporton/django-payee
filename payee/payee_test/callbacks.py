@@ -1,4 +1,4 @@
-from payments.paypal.views import PayPalIPN
+from payee.paypal.views import PayPalIPN
 
 
 class MyPayPalIPN(PayPalIPN):

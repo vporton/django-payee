@@ -18,8 +18,8 @@ setup(
 
     version='0.0.1',
 
-    description='Accepting payments',
-    long_description='Accepting payments (currently supports PayPal)',
+    description='Accepting payee',
+    long_description='Accepting payee (currently supports PayPal)',
 
     # The project's main homepage.
     url='FIXME',

@@ -1,10 +1,10 @@
-import payments.payments_base
-from payments.payments_base.models import SubscriptionItem
+import payee.payee_base
+from payee.payee_base.models import SubscriptionItem
 import abc
 import datetime
 from django.http import HttpResponse
 from html import escape
-import payments.payments_base
+import payee.payee_base
 
 
 # Internal
@@ -51,7 +51,7 @@ class BasePaymentProcessor(object, metaclass=abc.ABCMeta):
 
     def change_subscription_from_form(self, hash):
         hash = dict(hash)
-        transaction = payments.payments_base.models.Item.objects.get(hash['arcamens_purchaseid'])
+        transaction = payee.payee_base.models.Item.objects.get(hash['arcamens_purchaseid'])
         del hash['arcamens_purchaseid']
         hash = self.amend_hash_change_subscription(transaction, hash)
         return self.change_subscription(transaction, hash)

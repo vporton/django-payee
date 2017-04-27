@@ -2,7 +2,7 @@
 # import hmac
 # from urllib.parse import unquote
 # from django.http import HttpResponse
-import payments.payments_base
+import payee.payee_base
 from django.conf import settings
 
 # User settings.AVANGATE_SECRET
@@ -41,12 +41,12 @@ def ipn_view(request):
     if POST['ORDERSTATUS'] == 'COMPLETE':  # FIXME
         bundle_id = int(POST['REFNOEXT']) # FIXME
         try:
-            bundle = payments.payments_base.Transaction.objects.get(pk=bundle_id)
+            bundle = payee.payee_base.Transaction.objects.get(pk=bundle_id)
             i = 0
             for purchase in bundle.purchase_set.order_by('id'):
                 ipn_process_product(request, i, purchase)
                 i += 1
-        except payments.payments_base.Transaction.DoesNotExist:
+        except payee.payee_base.Transaction.DoesNotExist:
             pass
 
     # FIXME
@@ -57,7 +57,7 @@ def lcn_view(request):
     POST = request.POST
 
     try:
-        purchase = payments.payments_base.Purchase.objects.get(subscription_reference=POST['LICENSE_CODE'])  # FIXME
+        purchase = payee.payee_base.Purchase.objects.get(subscription_reference=POST['LICENSE_CODE'])  # FIXME
 
         purchase.email = POST['EMAIL']  # FIXME
         purchase.first_payment = parse_date(POST['DATE_UPDATED'])  # FIXME
@@ -65,7 +65,7 @@ def lcn_view(request):
         purchase.active = FIXME
 
         purchase.save()
-    except payments.payments_base.Purchase.DoesNotExist:
+    except payee.payee_base.Purchase.DoesNotExist:
         pass  # TODO: Alert of hackers
 
     # FIXME

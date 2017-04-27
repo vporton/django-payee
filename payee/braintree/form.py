@@ -23,7 +23,7 @@ class BrainTreeForm:
             'payment_method_token': client_token,
             "options": {
                 'submit_for_settlement': True,
-                'store_in_vault_on_success': True  # required for recurring payments
+                'store_in_vault_on_success': True  # required for recurring payee
             }
         })
         # https://developers.braintreepayments.com/guides/recurring-billing/overview

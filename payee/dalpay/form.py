@@ -1,5 +1,5 @@
 from django.utils.translation import ugettext_lazy as _
-from payments.payments_base.processors import BasePaymentProcessor
+from payee.payee_base.processors import BasePaymentProcessor
 from django.conf import settings
 
 

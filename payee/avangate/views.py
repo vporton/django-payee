@@ -4,9 +4,9 @@ from urllib.parse import unquote
 from django.db import transaction
 from django.http import HttpResponse
 from django.views import View
-import payments.payments_base
-from payments.payments_base.processors import PaymentCallback
-from payments.payments_base.models import Purchase
+import payee.payee_base
+from payee.payee_base.processors import PaymentCallback
+from payee.payee_base.models import Purchase
 from django.conf import settings
 
 # User settings.AVANGATE_SECRET
@@ -59,13 +59,13 @@ class AvangateIPN(PaymentCallback, View):
         if POST['ORDERSTATUS'] == 'COMPLETE':
             bundle_id = int(POST['REFNOEXT'])
             try:
-                bundle = payments.payments_base.Transaction.objects.get(pk=bundle_id)
+                bundle = payee.payee_base.Transaction.objects.get(pk=bundle_id)
                 if float(POST['IPN_SHIPPING']) == bundle.shipping__sum:  # TODO: Alert of hackers
                     i = 0
                     for purchase_id in bundle.purchase_set.order_by('id').values_list('id', flat=True):
                         self.ipn_process_product(request, i, purchase_id)
                         i += 1
-            except payments.payments_base.Transaction.DoesNotExist:
+            except payee.payee_base.Transaction.DoesNotExist:
                 pass
 
         date_for_hash = datetime.datetime().strftime('%Y%m%d%H%M%S')
@@ -120,7 +120,7 @@ class AvangateLCN(PaymentCallback, View):
             # It is not a problem if it happens before the first IPN request, because the first IPN request activates the purchase anyway
             # Transaction to be sure we are really first. I am paranoic to store correct first_payment.
             with transaction.atomic():
-                purchase = payments.payments_base.Purchase.objects.get(subscription_reference=POST['LICENSE_CODE'])  # FIXME: correct?
+                purchase = payee.payee_base.Purchase.objects.get(subscription_reference=POST['LICENSE_CODE'])  # FIXME: correct?
                 if not purchase.first_payment.timestamp():
                     purchase.first_payment = parse_date(POST['DATE_UPDATED'])
                 purchase.last_payment = parse_date(POST['DATE_UPDATED'])
@@ -134,7 +134,7 @@ class AvangateLCN(PaymentCallback, View):
             else:
                 self.on_subscription_stop(purchase)
             # POST['TEST']  # TODO
-        except payments.payments_base.Purchase.DoesNotExist:
+        except payee.payee_base.Purchase.DoesNotExist:
             pass  # TODO: Alert of hackers
 
         date_for_hash = datetime.datetime().strftime('%Y%m%d%H%M%S')
