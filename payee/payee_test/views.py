@@ -147,6 +147,8 @@ def unsubscribe_organization_view(request, organization_pk):
     item = organization.purchase.item
     subscription = item.active_subscription
     try:
+        if not subscription:
+            raise CannotCancelSubscription(_("Subscription was already canceled"))
         subscription.force_cancel()
     except CannotCancelSubscription as e:
         item.active_subscription = None  # without this it may remain in falsely subscribed state without a way to exit
