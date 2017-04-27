@@ -6,7 +6,7 @@ from django.db import transaction
 from django.http import HttpResponse
 from django.views import View
 from payee.payee_base.processors import PaymentCallback
-from payee.payee_base.models import Transaction, Period, Payment, AutomaticPayment, Subscription, SubscriptionItem, logger, period_to_delta, model_from_ref
+from payee.payee_base.models import Transaction, Period, Payment, AutomaticPayment, Subscription, SubscriptionItem, logger, period_to_delta, CannotCancelSubscription
 from django.conf import settings
 
 
@@ -316,9 +316,10 @@ class PayPalIPN(PaymentCallback, View):
     @transaction.atomic
     def upgrade_subscription(self, transaction, item):
         if item.old_subscription:
-            klass = model_from_ref(item.old_subscription.transaction.processor.api)
-            api = klass()
-            api.cancel_agreement(item.old_subscription.subscription_reference, is_upgrade=True)
+            try:
+                item.old_subscription.force_cancel(is_upgrade=True)
+            except CannotCancelSubscription:
+                pass
             # self.on_upgrade_subscription(transaction, item.old_subscription)  # TODO: Needed?
             item.old_subscription = None
             item.save()

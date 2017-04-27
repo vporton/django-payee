@@ -1,12 +1,12 @@
 from decimal import Decimal
 import datetime
-from django.http import HttpResponseRedirect
+from django.http import HttpResponse
 from django.shortcuts import render, reverse
 from django.utils.translation import ugettext_lazy as _
 from .models import Organization, Purchase, PricingPlan
 from .forms import CreateOrganizationForm, SwitchPricingPlanForm
 from .business import create_organization
-from payee.payee_base.models import Transaction, Period, ProlongItem, SubscriptionItem, period_to_string, logger
+from payee.payee_base.models import Transaction, Period, ProlongItem, SubscriptionItem, period_to_string, logger, CannotCancelSubscription
 import payee
 from .processors import MyPayPalForm
 
@@ -103,8 +103,8 @@ def purchase_view(request):
             raise RuntimeError(_("Only one month payment period supported."))
 
         k = plan.price / item.price  # price multiplies
-        if item.subscriptionitem.due_payment_date:
-            period = (item.subscriptionitem.due_payment_date - datetime.date.today()).days
+        if item.due_payment_date:
+            period = (item.due_payment_date - datetime.date.today()).days
         else:
             period = 0
         new_period = round(period / k) if k > 1 else period  # don't increase paid period when downgrading
@@ -124,9 +124,12 @@ def purchase_view(request):
         new_item.adjust_dates()
         new_item.save()
 
-        if k <= 1 or not item.subscriptionitem.active_subscription:
+        if k <= 1 or not item.active_subscription:
             if item.active_subscription:
-                item.active_subscription.force_cancel()
+                try:
+                    item.active_subscription.force_cancel()
+                except CannotCancelSubscription:
+                    pass
                 item.active_subscription = None
                 item.save()
             organization.purchase = Purchase.objects.create(plan=plan, item=new_item)
@@ -141,9 +144,17 @@ def purchase_view(request):
 def unsubscribe_organization_view(request, organization_pk):
     organization_pk = int(organization_pk)  # in real code should use user login information
     organization = Organization.objects.get(pk=organization_pk)
-    subscription = organization.purchase.item.active_subscription
-    subscription.force_cancel()
-    return HttpResponseRedirect(reverse('organization-prolong-payment', args=[organization.pk]))
+    item = organization.purchase.item
+    subscription = item.active_subscription
+    try:
+        subscription.force_cancel()
+    except CannotCancelSubscription as e:
+        item.active_subscription = None  # without this it may remain in falsely subscribed state without a way to exit
+        item.save()
+        return HttpResponse(e)
+    else:
+        return HttpResponse('')  # empty string means sucess
+    # return HttpResponseRedirect(reverse('organization-prolong-payment', args=[organization.pk]))
 
 
 def list_organizations_view(request):

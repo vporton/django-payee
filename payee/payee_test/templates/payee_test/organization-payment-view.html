@@ -81,7 +81,8 @@
         </form>
         {% else %}
         <h2>Terminate subscription (not recommended)</h2>
-        <form method="post" action="{% url 'unsubscribe-organization' organization_id %}">
+        <form method="post" action="{% url 'unsubscribe-organization' organization_id %}"
+              onsubmit="$.post(this.action, function(msg){if(msg) alert(msg) else location.href=location.href}); return false">
             {% csrf_token %}
             <input type="hidden" name="arcamens_processor" value="PayPal" />
             <input type="submit" value="Terminate {{ processor_name|escape }} subscription" />

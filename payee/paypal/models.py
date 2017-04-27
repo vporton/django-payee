@@ -3,7 +3,7 @@ from html import escape
 from django.db import models
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
-from payee.payee_base.models import logger
+from payee.payee_base.models import logger, CannotCancelSubscription
 
 
 # This is a quick hack. For serious work use https://github.com/paypal/PayPal-Python-SDK instead.
@@ -36,11 +36,9 @@ class PayPalAPI(models.Model):
         r = self.session.post(self.server + ('/v1/payments/billing-agreements/%s/cancel' % escape(agreement_id)),
                               data='{"note": "%s"}' % note,
                               headers={'content-type': 'application/json'})
-        # We should not raise an exception, because canceling an agreement already manually canceled by a customer
-        # should not break our IPN.
         if r.status_code < 200 or r.status_code >= 300:  # PayPal returns 204, to be sure
             # Don't include secret information into the message
-            print(_("Cannot cancel billing agreement %s at PayPal. Please contact support:\n" % escape(agreement_id) + r.json()["message"]))
+            raise CannotCancelSubscription(r.json()["message"])
             # raise RuntimeError(_("Cannot cancel a billing agreement at PayPal. Please contact support:\n" + r.json()["message"]))
 
     # It does not work with PayPal subscriptions: https://www.paypal-knowledge.com/infocenter/index?page=content&id=FAQ1987&actp=LIST

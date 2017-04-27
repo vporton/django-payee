@@ -372,11 +372,11 @@ class Subscription(models.Model):
     # duplicates email in Payment
     email = models.EmailField(null=True)  # DalPay requires to notify the customer 10 days before every payment
 
-    def force_cancel(self):
+    def force_cancel(self, is_upgrade=False):
         if self.subscription_reference:
             klass = model_from_ref(self.transaction.processor.api)
             api = klass()
-            api.cancel_agreement(self.subscription_reference)
+            api.cancel_agreement(self.subscription_reference, is_upgrade=is_upgrade)  # may raise an exception
             # transaction.cancel_subscription()  # runs in the callback
 
 
@@ -406,3 +406,7 @@ class AutomaticPayment(Payment):
 
     # A transaction should have a code that identifies it.
     # code = models.CharField(max_length=255)
+
+
+class CannotCancelSubscription(Exception):
+    pass
