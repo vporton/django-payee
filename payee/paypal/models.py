@@ -42,3 +42,9 @@ class PayPalAPI(models.Model):
             # Don't include secret information into the message
             print(_("Cannot cancel billing agreement %s at PayPal. Please contact support:\n" % escape(agreement_id) + r.json()["message"]))
             # raise RuntimeError(_("Cannot cancel a billing agreement at PayPal. Please contact support:\n" + r.json()["message"]))
+
+    # It does not work with PayPal subscriptions: https://www.paypal-knowledge.com/infocenter/index?page=content&id=FAQ1987&actp=LIST
+    # def agreement_is_active(self, agreement_id):
+    #     r = self.session.get(self.server + ('/v1/payments/billing-agreements/%s' % escape(agreement_id)),
+    #                          headers={'content-type': 'application/json'})
+    #     # ...
