@@ -34,7 +34,16 @@ who purchased a license from us.
 
 You are allowed to use this software unrestricted inside your
 organization, with explicit prohibition to distribute this software
-or its derivative works outside of your organization.
+or its derivative works outside of your organization (except that
+you are allowed to submit us your modified software under AGPL license).
+
+One purchase of the license allows you to use accordingly this license
+(for what we mean to install it at a publicly accessible server)
+ONLY ONE VERSION of this software. If you use a version of this software
+and then uninistall it, it does not give you the right to use another
+version of the software under this license. If you need to use another
+version of the software which you have already used under this license,
+you must pay us again.
 
 Disclaimer of Warranty.
 
