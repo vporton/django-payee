@@ -29,18 +29,16 @@ class PayPalAPI(models.Model):
         self.session = s
 
     def cancel_agreement(self, agreement_id, is_upgrade=False):
-        print("@agreement_id:", agreement_id)  # FIXME
         note = _("Upgrading billing plan") if is_upgrade else _("Canceling a service")
         # https://developer.paypal.com/docs/api/#agreement_cancel
         # https://developer.paypal.com/docs/api/payments.billing-agreements#agreement_cancel
         logger.debug("PayPal: now canceling agreement %s" % escape(agreement_id))
-        r = self.session.post(self.server + ('/v1/payee/billing-agreements/%s/cancel' % escape(agreement_id)),
+        r = self.session.post(self.server + ('/v1/payments/billing-agreements/%s/cancel' % escape(agreement_id)),
                               data='{"note": "%s"}' % note,
                               headers={'content-type': 'application/json'})
         # We should not raise an exception, because canceling an agreement already manually canceled by a customer
         # should not break our IPN.
         if r.status_code < 200 or r.status_code >= 300:  # PayPal returns 204, to be sure
             # Don't include secret information into the message
-            print("[["+str(r.status_code) + ':' + r.text+"]]")  # FIXME
             print(_("Cannot cancel billing agreement %s at PayPal. Please contact support:\n" % escape(agreement_id) + r.json()["message"]))
             # raise RuntimeError(_("Cannot cancel a billing agreement at PayPal. Please contact support:\n" + r.json()["message"]))
