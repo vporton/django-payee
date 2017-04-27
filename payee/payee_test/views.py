@@ -1,6 +1,6 @@
 from decimal import Decimal
 import datetime
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, reverse
 from django.utils.translation import ugettext_lazy as _
 from .models import Organization, Purchase, PricingPlan
