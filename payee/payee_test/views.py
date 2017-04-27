@@ -155,7 +155,7 @@ def unsubscribe_organization_view(request, organization_pk):
         item.save()
         return HttpResponse(e)
     else:
-        return HttpResponse('')  # empty string means sucess
+        return HttpResponse('1')  # means success
     # return HttpResponseRedirect(reverse('organization-prolong-payment', args=[organization.pk]))
 
 
