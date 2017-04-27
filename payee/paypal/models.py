@@ -28,6 +28,7 @@ class PayPalAPI(models.Model):
         self.session = s
 
     def cancel_agreement(self, agreement_id, is_upgrade=False):
+        print("@agreement_id:", agreement_id)
         note = _("Upgrading billing plan") if is_upgrade else _("Canceling a service")
         # https://developer.paypal.com/docs/api/#agreement_cancel
         # https://developer.paypal.com/docs/api/payments.billing-agreements#agreement_cancel
