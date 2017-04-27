@@ -1,5 +1,6 @@
 from decimal import Decimal
 import datetime
+from django.db.models import F
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, reverse
 from django.utils.translation import ugettext_lazy as _
@@ -151,8 +152,11 @@ def unsubscribe_organization_view(request, organization_pk):
             raise CannotCancelSubscription(_("Subscription was already canceled"))
         subscription.force_cancel()
     except CannotCancelSubscription as e:
-        item.active_subscription = None  # without this it may remain in falsely subscribed state without a way to exit
-        item.save()
+        # Without active_subscription=None it may remain in falsely subscribed state without a way to exit
+        SubscriptionItem.objects.filter(pk=item.pk).update(active_subscription=None,
+                                                           subinvoice=F('subinvoice') + 1)
+        # item.active_subscription = None
+        # item.save()
         return HttpResponse(e)
     else:
         return HttpResponse('')  # empty string means success
