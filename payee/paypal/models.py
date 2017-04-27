@@ -24,6 +24,7 @@ class PayPalAPI(models.Model):
                    headers={'content-type': 'application/x-www-form-urlencoded'},
                    auth=(settings.PAYPAL_CLIENT_ID, settings.PAYPAL_SECRET))
         token = r.json()["access_token"]
+        print("@token:", token)  # FIXME
         s.headers.update({'Authorization': 'Bearer '+token})
         self.session = s
 
