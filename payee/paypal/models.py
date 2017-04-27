@@ -40,6 +40,6 @@ class PayPalAPI(models.Model):
         # should not break our IPN.
         if r.status_code < 200 or r.status_code >= 300:  # PayPal returns 204, to be sure
             # Don't include secret information into the message
-            print("[["+r+"]]")
+            print("[["+r.text+"]]")
             print(_("Cannot cancel billing agreement %s at PayPal. Please contact support:\n" % escape(agreement_id) + r.json()["message"]))
             # raise RuntimeError(_("Cannot cancel a billing agreement at PayPal. Please contact support:\n" + r.json()["message"]))
