@@ -151,7 +151,7 @@ class SubscriptionTransaction(BaseTransaction):
     item = models.ForeignKey('SubscriptionItem', related_name='transactions', null=False)
 
     def subinvoice(self):
-        return self.invoiced_item().subscriptionitem.subinvoice
+        return self.invoiced_item().subinvoice
 
     def invoice_id(self):
         if self.item.old_subscription:  # https://bitbucket.org/arcamens/django-payments/wiki/Invoice%20IDs
