@@ -66,7 +66,7 @@ class BasePaymentProcessor(object, metaclass=abc.ABCMeta):
 
     def calculate_remaining_days(self, transaction):
         date = datetime.date.today()
-        item = transaction.item.subscriptionitem
+        item = transaction.item
         remaining_days = (item.due_payment_date - date).days
         if remaining_days > 0:
             date = item.due_payment_date
