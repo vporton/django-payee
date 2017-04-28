@@ -1,5 +1,5 @@
 A Python Django library for accepting payments in Internet.
-Copyright (C) 2017 Victor Porton, Arcamens
+Copyright (C) 2017 Victor Porton
 
 This software is dual licensed:
 - GNU Affero General Public License
