@@ -25,8 +25,10 @@ class BasePaymentProcessor(object, metaclass=abc.ABCMeta):
 
     def real_make_purchase(self, hash, transaction):
         base_transaction = transaction
-        if hasattr(base_transaction, 'prolongtransaction'):
+        try:
             base_transaction = base_transaction.prolongtransaction.parent
+        except AttributeError:
+            pass
         hash = self.amend_hash_new_purchase(transaction, hash)
         return self.redirect_to_processor(hash)
 
