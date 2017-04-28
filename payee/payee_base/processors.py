@@ -24,11 +24,6 @@ class BasePaymentProcessor(object, metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     def real_make_purchase(self, hash, transaction):
-        base_transaction = transaction
-        try:
-            base_transaction = base_transaction.prolongtransaction.parent
-        except AttributeError:
-            pass
         hash = self.amend_hash_new_purchase(transaction, hash)
         return self.redirect_to_processor(hash)
 
