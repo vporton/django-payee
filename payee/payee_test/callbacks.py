@@ -12,7 +12,7 @@ class MyPayPalIPN(PayPalIPN):
         organization.save()
 
     def on_payment(self, payment):
-        subscriptionitem = payment.simpletransaction.item
+        subscriptionitem = payment.subscriptiontransaction.item
         organization = subscriptionitem.purchase.for_organization
         if organization is None:
             return
