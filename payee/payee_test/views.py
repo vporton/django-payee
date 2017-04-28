@@ -7,12 +7,12 @@ from django.utils.translation import ugettext_lazy as _
 from .models import Organization, Purchase, PricingPlan
 from .forms import CreateOrganizationForm, SwitchPricingPlanForm
 from .business import create_organization
-from payee.payee_base.models import BaseTransaction, Period, ProlongItem, SubscriptionItem, period_to_string, logger, CannotCancelSubscription
+from payee.payee_base.models import SimpleTransaction, SubscriptionTransaction, Period, ProlongItem, SubscriptionItem, period_to_string, logger, CannotCancelSubscription
 import payee
 from .processors import MyPayPalForm
 
 def transaction_payment_view(request, transaction_id):
-    transaction = BaseTransaction.objects.get(pk=int(transaction_id))
+    transaction = SubscriptionTransaction.objects.get(pk=int(transaction_id))
     purchase = transaction.purchase
     organization = purchase.organization
     return do_organization_payment_view(request, transaction, organization, purchase)
@@ -84,7 +84,7 @@ def purchase_view(request):
     purchase = organization.purchase
     item = purchase.item
     if op == 'subscribe':
-        transaction = BaseTransaction.objects.create(processor=processor, item=item)
+        transaction = SubscriptionTransaction.objects.create(processor=processor, item=item)
         return form.make_purchase_from_form(hash, transaction)
     elif op == 'manual':
         periods = int(request.POST['periods'])
@@ -94,7 +94,7 @@ def purchase_view(request):
                                              parent=item,
                                              prolong_unit=Period.UNIT_MONTHS,
                                              prolong_count=periods)
-        subtransaction = BaseTransaction.objects.create(processor=processor, item=subitem.item)
+        subtransaction = SimpleTransaction.objects.create(processor=processor, item=subitem.item)
         return form.make_purchase_from_form(hash, subtransaction)
     elif op == 'upgrade':
         plan = PricingPlan.objects.get(pk=int(request.POST['pricing_plan']))
@@ -137,7 +137,7 @@ def purchase_view(request):
             organization.save()
             return HttpResponseRedirect(reverse('organization-prolong-payment', args=[organization.pk]))
         else:
-            upgrade_transaction = BaseTransaction.objects.create(processor=processor, item=new_item)
+            upgrade_transaction = SubscriptionTransaction.objects.create(processor=processor, item=new_item)
             Purchase.objects.create(plan=plan, item=new_item, for_organization=organization)
             return form.make_purchase_from_form(hash, upgrade_transaction)
 
