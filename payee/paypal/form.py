@@ -29,7 +29,7 @@ class PayPalForm(BasePaymentProcessor):
         url = 'https://www.sandbox.paypal.com' if debug else 'https://www.paypal.com'
         is_subscription = hasattr(transaction.item, 'subscriptionitem')
         subscription_item = transaction.item.subscriptionitem if is_subscription else None
-        invoiced_item = subscription_item and subscription_item.old_subscription.transaction.item \
+        invoiced_item = subscription_item.old_subscription.transaction.item \
             if subscription_item and subscription_item.old_subscription \
             else transaction.item
         subinvoice = invoiced_item.subscriptionitem.subinvoice if hasattr(invoiced_item, 'subscriptionitem') else 1
