@@ -37,7 +37,7 @@ def do_organization_payment_view(request, item, organization, purchase):
                    'active': item.is_active(),
                    'blocked': item.blocked,
                    'manual_mode': not item.active_subscription,
-                   'processor_name': item.active_subscription.transaction.processor.name if item.active_subscription else None,  # only for automatic recurring payee
+                   'processor_name': item.active_subscription.basetransaction.processor.name if item.active_subscription else None,  # only for automatic recurring payee
                    'plan': purchase.plan.name,
                    'trial': item.trial,
                    'trial_period': period_to_string(item.trial_period),

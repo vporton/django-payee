@@ -130,7 +130,7 @@ class BaseTransaction(models.Model):
         pass
 
     def invoiced_item(self):
-        return self.item.old_subscription.transaction.item \
+        return self.item.old_subscription.basetransaction.item \
             if self.item and self.item.old_subscription \
             else self.item
 
@@ -419,7 +419,7 @@ class Subscription(models.Model):
 
     def force_cancel(self, is_upgrade=False):
         if self.subscription_reference:
-            klass = model_from_ref(self.transaction.processor.api)
+            klass = model_from_ref(self.subscriptiontransaction.processor.api)
             api = klass()
             api.cancel_agreement(self.subscription_reference, is_upgrade=is_upgrade)  # may raise an exception
             # transaction.cancel_subscription()  # runs in the callback
