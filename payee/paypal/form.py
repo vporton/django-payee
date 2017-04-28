@@ -2,7 +2,7 @@ import abc
 import datetime
 from django.urls import reverse
 from payee.payee_base.processors import BasePaymentProcessor
-from payee.payee_base.models import Transaction, Period
+from payee.payee_base.models import BaseTransaction, Period
 from django.conf import settings
 
 
@@ -27,25 +27,14 @@ class PayPalForm(BasePaymentProcessor):
 
         debug = settings.PAYPAL_DEBUG
         url = 'https://www.sandbox.paypal.com' if debug else 'https://www.paypal.com'
-        is_subscription = hasattr(transaction.item, 'subscriptionitem')
-        subscription_item = transaction.item.subscriptionitem if is_subscription else None
-        invoiced_item = subscription_item.old_subscription.transaction.item \
-            if subscription_item and subscription_item.old_subscription \
-            else transaction.item
-        subinvoice = invoiced_item.subscriptionitem.subinvoice if hasattr(invoiced_item, 'subscriptionitem') else 1
-        if subscription_item:
-            if subscription_item.old_subscription:  # https://bitbucket.org/arcamens/django-payments/wiki/Invoice%20IDs
-                invoice_id = settings.PAYMENTS_REALM + ' %d-%d-u' % (subscription_item.pk, subinvoice)
-            else:
-                invoice_id = settings.PAYMENTS_REALM + ' %d-%d' % (subscription_item.pk, subinvoice)
-        else:
-            invoice_id = settings.PAYMENTS_REALM + ' p-%d' % (transaction.item.pk,)
+
+        invoice_id = transaction.invoice_id()
 
         items = {'business': settings.PAYPAL_ID,
                  'arcamens_action': url + "/cgi-bin/webscr",
                  'cmd': "_xclick-subscriptions" if is_subscription else "_xclick",
                  'notify_url': self.ipn_url(),
-                 'custom': Transaction.custom_from_pk(transaction.pk),
+                 'custom': BaseTransaction.custom_from_pk(transaction.pk),
                  'invoice': invoice_id}
 
         item = transaction.item

@@ -32,12 +32,8 @@ class BasePaymentProcessor(object, metaclass=abc.ABCMeta):
         return self.redirect_to_processor(hash)
 
     def make_purchase(self, hash, transaction):
-        item = transaction.item
-        if hasattr(item, 'subscriptionitem'):
-            subscriptionitem = item.subscriptionitem
-            subscriptionitem.trial = subscriptionitem.trial_period.count != 0
-            subscriptionitem.adjust_dates()
-            subscriptionitem.save()
+        item = transaction.item  # FIXME: ensure item is SubscriptionItem when needed
+        item.adjust()
         return self.real_make_purchase(hash, transaction)
 
     def make_purchase_from_form(self, hash, transaction):

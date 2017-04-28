@@ -1,3 +1,4 @@
+import abc
 import hmac
 import datetime
 from dateutil.relativedelta import relativedelta
@@ -86,24 +87,26 @@ def period_to_string(period):
     return "%d %s" % (period.count, hash[period.unit])
 
 
-class Transaction(models.Model):
+class BaseTransaction(models.Model):
     """
     ONE redirect to the payment processor
     """
+
+    # class Meta:
+    #     abstract = True
+
     processor = models.ForeignKey(PaymentProcessor)
     creation_date = models.DateField(auto_now_add=True)
-
-    item = models.ForeignKey('Item', related_name='transactions', null=False)
 
     # A transaction should have a code that identifies it. # TODO
     # code = models.CharField(max_length=255)
 
     def __repr__(self):
-        return "<Transaction: %s>" % (("pk=%d" % self.pk) if self.pk else "no pk")
+        return "<BaseTransaction: %s>" % (("pk=%d" % self.pk) if self.pk else "no pk")
 
     @staticmethod
     def custom_from_pk(pk):
-        # Secret can be known only to one who created a Transaction.
+        # Secret can be known only to one who created a BaseTransaction.
         # This prevents third parties to make fake IPNs from a payment processor.
         secret = hmac.new(settings.SECRET_KEY.encode(), ('payid ' + str(pk)).encode()).hexdigest()
         return settings.PAYMENTS_REALM + ' ' + str(pk) + ' ' + secret
@@ -112,15 +115,49 @@ class Transaction(models.Model):
     def pk_from_custom(custom):
         r = custom.split(' ', 2)
         if len(r) != 3 or r[0] != settings.PAYMENTS_REALM:
-            raise Transaction.DoesNotExist
+            raise BaseTransaction.DoesNotExist
         try:
             pk = int(r[1])
             secret = hmac.new(settings.SECRET_KEY.encode(), ('payid ' + str(pk)).encode()).hexdigest()
             if r[2] != secret:
-                raise Transaction.DoesNotExist
+                raise BaseTransaction.DoesNotExist
             return pk
         except ValueError:
-            raise Transaction.DoesNotExist
+            raise BaseTransaction.DoesNotExist
+
+    @abc.abstractmethod
+    def invoice_id(self):
+        pass
+
+    def invoiced_item(self):
+        return self.item.old_subscription.transaction.item \
+            if self.item and self.item.old_subscription \
+            else self.item
+
+    @abc.abstractmethod
+    def subinvoice(self):
+        pass
+
+class SimpleTransaction(BaseTransaction):
+    item = models.ForeignKey('SimpleItem', related_name='transactions', null=False)
+
+    def subinvoice(self):
+        return 1
+
+    def invoice_id(self):
+        return settings.PAYMENTS_REALM + ' p-%d' % (self.item.pk,)
+
+class SubscriptionTransaction(BaseTransaction):
+    item = models.ForeignKey('SubscriptionItem', related_name='transactions', null=False)
+
+    def subinvoice(self):
+        return self.invoiced_item().subscriptionitem.subinvoice
+
+    def invoice_id(self):
+        if self.item.old_subscription:  # https://bitbucket.org/arcamens/django-payments/wiki/Invoice%20IDs
+            return settings.PAYMENTS_REALM + ' %d-%d-u' % (self.item.pk, self.subinvoice())
+        else:
+            return settings.PAYMENTS_REALM + ' %d-%d' % (self.item.pk, self.subinvoice())
 
 
 class Item(models.Model):
@@ -160,6 +197,9 @@ class Item(models.Model):
 
     def __str__(self):
         return self.product.name
+
+    def adjust(self):
+        pass
 
     def send_rendered_email(self, template_name, subject, data):
         try:
@@ -310,6 +350,11 @@ class SubscriptionItem(Item):
                 (period.unit == Period.UNIT_YEARS and \
                              date.month == 2 and date.day == 29)
 
+    def adjust(self):
+        self.trial = self.trial_period.count != 0
+        self.adjust_dates()
+        self.save()
+
     # If one bills at 29, 30, or 31, he should be given additional about 1-3 days free
     def adjust_dates(self):
         # We may have a trouble with non-monthly trials - the only solution is to make trial period ourselves
@@ -363,7 +408,7 @@ class Subscription(models.Model):
     When the user subscribes for automatic payment.
     """
 
-    transaction = models.OneToOneField('Transaction')
+    transaction = models.OneToOneField('BaseTransaction')
 
     # Avangate has it for every product, but PayPal for transaction as a whole.
     # So have it both in AutomaticPayment and Subscription
@@ -383,7 +428,7 @@ class Subscription(models.Model):
 class Payment(models.Model):
     # The transaction which corresponds to the starting
     # process of purchase.
-    transaction = models.OneToOneField('Transaction')
+    transaction = models.OneToOneField('BaseTransaction')
     email = models.EmailField(null=True)  # DalPay requires to notify the customer 10 days before every payment
 
     def refund_payment(self):
