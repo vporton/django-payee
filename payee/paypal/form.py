@@ -68,7 +68,7 @@ class PayPalForm(BasePaymentProcessor):
             items['t3'] = unit_map[item.subscriptionitem.payment_period.unit]
         else:
             if cart:
-                items['item_name_1'] = item.name
+                items['item_name_1'] = item.product.name
                 items['amount_1'] = item.price
                 items['shipping_1'] = item.shipping
                 items['quantity_1'] = item.product_qty
