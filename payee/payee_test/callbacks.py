@@ -11,6 +11,7 @@ class MyPayPalIPN(PayPalIPN):
         organization.purchase = subscriptionitem.purchase
         organization.save()
 
+    # FIXME: Make it called only in subscription payments
     def on_payment(self, payment):
         subscriptionitem = payment.subscriptiontransaction.item
         organization = subscriptionitem.purchase.for_organization
