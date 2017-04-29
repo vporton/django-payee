@@ -141,7 +141,7 @@ class PayPalIPN(PaymentCallback, View):
                 transaction.payment.refund_payment()
             else:
                 logger.warning("Wrong refund currency.")
-        except BaseTransaction.DoesNotExist:
+        except BaseTransaction.DoesNotExist:  # FIXME: Here and in other places: is BaseTransaction.DoesNotExist a base of SubscriptionTransaction?
             logger.warning("BaseTransaction %d does not exist" % transaction_id)
 
     def accept_regular_payment(self, POST, transaction_id):
