@@ -91,11 +91,9 @@ class PayPalIPN(PaymentCallback, View):
         return HttpResponse('', content_type="text/plain")
 
     def do_post(self, request):
-        POST = request.POST
-
         # 'payment_date', 'time_created' unused
-        if POST['receiver_email'] == settings.PAYPAL_EMAIL:
-            self.do_do_post(POST, request)
+        if request.POST['receiver_email'] == settings.PAYPAL_EMAIL:
+            self.do_do_post(request.POST, request)
         else:
             logger.warning("Wrong PayPal email")
 
@@ -132,7 +130,7 @@ class PayPalIPN(PaymentCallback, View):
             'subscr_signup': self.accept_subscription_signup,
             'recurring_payment_profile_cancel': self.accept_recurring_canceled,
             'recurring_payment_suspended': self.accept_recurring_canceled,
-            'subscr_cancel': self.accept_subscription_canceled
+            'subscr_cancel': self.accept_recurring_canceled
         }
         if 'payment_status' in POST and POST['payment_status'] == 'Refunded':
             self.accept_refund(POST, transaction_id)
@@ -141,13 +139,16 @@ class PayPalIPN(PaymentCallback, View):
 
     def accept_refund(self, POST, transaction_id):
         try:
-            transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
-            if POST['mc_currency'] == transaction.item.currency:
-                transaction.payment.refund_payment()
-            else:
-                logger.warning("Wrong refund currency.")
+            self.do_appect_refund(POST, transaction_id)
         except BaseTransaction.DoesNotExist:
             logger.warning("BaseTransaction %d does not exist" % transaction_id)
+
+    def do_appect_refund(self, POST, transaction_id):
+        transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
+        if POST['mc_currency'] == transaction.item.currency:
+            transaction.payment.refund_payment()
+        else:
+            logger.warning("Wrong refund currency.")
 
     def accept_regular_payment(self, POST, transaction_id):
         if POST['payment_status'] == 'Completed':
@@ -162,10 +163,10 @@ class PayPalIPN(PaymentCallback, View):
 
     def do_do_accept_regular_payment(self, POST, transaction_id):
         transaction = SimpleTransaction.objects.get(pk=transaction_id)
-        if Decimal(POST['mc_gross']) == item.price and \
-                        Decimal(POST['shipping']) == item.shipping and \
-                        POST['mc_currency'] == item.currency:
-            self.do_do_do_accept_regular_payment(POST, transaction, item)
+        if Decimal(POST['mc_gross']) == transaction.item.price and \
+                        Decimal(POST['shipping']) == transaction.item.shipping and \
+                        POST['mc_currency'] == transaction.item.currency:
+            self.do_do_do_accept_regular_payment(POST, transaction, transaction.item)
         else:
             logger.warning("Wrong amount or currency")
 
@@ -173,7 +174,7 @@ class PayPalIPN(PaymentCallback, View):
         payment = Payment.objects.create(transaction=transaction, email=POST['payer_email'])
         item.paid = True
         item.last_payment = datetime.date.today()
-        self.upgrade_subscription(transaction, item)
+        self.upgrade_subscription(item)
         item.save()
         try:
             self.advance_parent(item.prolongitem)
@@ -201,10 +202,9 @@ class PayPalIPN(PaymentCallback, View):
     def do_accept_recurring_payment(self, POST, transaction_id):
         # transaction = BaseTransaction.objects.select_for_update().get(pk=transaction_id)  # only inside transaction
         transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
-        item = transaction.item
-        if Decimal(POST['amount_per_cycle']) == item.price + item.shipping and \
-                        POST['payment_cycle'] in self.pp_payment_cycles(item):
-            self.do_do_accept_subscription_or_recurring_payment(transaction, item, POST, POST['recurring_payment_id'])
+        if Decimal(POST['amount_per_cycle']) == transaction.item.price + transaction.item.shipping and \
+                        POST['payment_cycle'] in self.pp_payment_cycles(transaction.item):
+            self.do_do_accept_subscription_or_recurring_payment(transaction, transaction.item, POST, POST['recurring_payment_id'])
         else:
             logger.warning("Wrong recurring payment data")
 
@@ -221,17 +221,20 @@ class PayPalIPN(PaymentCallback, View):
         if item.active_subscription and item.active_subscription.subscription_reference == ref:
             return item.active_subscription
         else:
-            item.active_subscription = Subscription.objects.create(transaction=transaction,
-                                                                   subscription_reference=ref,
-                                                                   email=email)
-            item.save()
-            return item.active_subscription
+            return  self.do_do_create_subscription(item)
+
+    def do_do_create_subscription(self, item):
+        item.active_subscription = Subscription.objects.create(transaction=transaction,
+                                                               subscription_reference=ref,
+                                                               email=email)
+        item.save()
+        return item.active_subscription
 
     def do_do_accept_subscription_or_recurring_payment(self, transaction, item, POST, subscription_reference):
         self.do_create_subscription(transaction, item, subscription_reference, POST['payer_email'])
         payment = AutomaticPayment.objects.create(transaction=transaction,
                                                   email=POST['payer_email'])
-        self.do_subscription_or_recurring_payment(transaction, POST)
+        self.do_subscription_or_recurring_payment(item)
         self.on_payment(payment)
 
     def do_accept_subscription_payment(self, POST, transaction_id):
@@ -244,9 +247,8 @@ class PayPalIPN(PaymentCallback, View):
         else:
             logger.warning("Wrong subscription payment data")
 
-    def do_subscription_or_recurring_payment(self, transaction, POST):
+    def do_subscription_or_recurring_payment(self, item):
         # transaction.processor = PaymentProcessor.objects.get(pk=PAYMENT_PROCESSOR_PAYPAL)
-        item = transaction.item
         item.trial = False
         date = item.due_payment_date
         while date <= datetime.date.today():
@@ -264,7 +266,7 @@ class PayPalIPN(PaymentCallback, View):
         # transaction.processor = PaymentProcessor.objects.get(pk=PAYMENT_PROCESSOR_PAYPAL)
         transaction.item.trial = False
         transaction.item.save()
-        self.upgrade_subscription(transaction, transaction.item)
+        self.upgrade_subscription(transaction.item)
         self.on_subscription_created(POST, subscription)
 
     def accept_subscription_signup(self, POST, transaction_id):
@@ -292,10 +294,9 @@ class PayPalIPN(PaymentCallback, View):
     def accept_recurring_signup(self, POST, transaction_id):
         try:
             transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
-            item = transaction.item
             if 'period1' not in POST and 'period2' not in POST and \
-                            Decimal(POST['mc_amount3']) == item.price + item.shipping and \
-                            POST['mc_currency'] == item.currency and \
+                            Decimal(POST['mc_amount3']) == transaction.item.price + transaction.item.shipping and \
+                            POST['mc_currency'] == transaction.item.currency and \
                             POST['period3'] in self.pp_payment_cycles(transaction):
                 self.do_subscription_or_recurring_created(transaction, POST, POST['recurring_payment_id'])
             else:
@@ -305,31 +306,29 @@ class PayPalIPN(PaymentCallback, View):
 
     def accept_recurring_canceled(self, POST, transaction_id):
         try:
-            transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
-            transaction.item.cancel_subscription()
-            self.on_subscription_canceled(POST, transaction.item)
+            self.do_accept_recurring_canceled(POST, transaction_id)
         except BaseTransaction.DoesNotExist:
             pass
 
-    def accept_subscription_canceled(self, POST, transaction_id):
-        try:
-            transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
-            transaction.item.cancel_subscription()
-            self.on_subscription_canceled(POST, transaction.item)
-        except BaseTransaction.DoesNotExist:
-            pass
+    def do_accept_recurring_canceled(self, POST, transaction_id):
+        transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
+        transaction.item.cancel_subscription()
+        self.on_subscription_canceled(POST, transaction.item)
 
     # Can be called from both subscription IPN and payment IPN
     @transaction.atomic
-    def upgrade_subscription(self, transaction, item):
+    def upgrade_subscription(self, item):
         if item.old_subscription:
-            try:
-                item.old_subscription.force_cancel(is_upgrade=True)
-            except CannotCancelSubscription:
-                pass
-            # self.on_upgrade_subscription(transaction, item.old_subscription)  # TODO: Needed?
-            item.old_subscription = None
-            item.save()
+            self.do_upgrade_subscription(item)
+
+    def do_upgrade_subscription(self, item):
+        try:
+            item.old_subscription.force_cancel(is_upgrade=True)
+        except CannotCancelSubscription:
+            pass
+        # self.on_upgrade_subscription(transaction, item.old_subscription)  # TODO: Needed?
+        item.old_subscription = None
+        item.save()
 
     # Ugh, PayPal
     def pp_payment_cycles(self, item):
