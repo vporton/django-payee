@@ -68,10 +68,8 @@ def create_organization_view(request):
 
 def purchase_view(request):
     hash = request.POST.dict()
-    organization_pk = int(hash['organization'])  # in real code should use user login information
-    del hash['organization']
-    op = hash['arcamens_op']
-    del hash['arcamens_op']
+    organization_pk = int(hash.pop('organization'))  # in real code should use user login information
+    op = hash.pop('arcamens_op')
     if hash['arcamens_processor'] == 'PayPal':
         del hash['arcamens_processor']
         form = MyPayPalForm(request)
