@@ -23,30 +23,30 @@ class PayPalForm(BasePaymentProcessor):
 
         cart = hash.pop('arcamens_cart', False)
 
-        debug = settings.PAYPAL_DEBUG
-        url = 'https://www.sandbox.paypal.com' if debug else 'https://www.paypal.com'
-
-        invoice_id = transaction.invoice_id()
-
-        item = transaction.item
-
-        items = {'business': settings.PAYPAL_ID,
-                 'arcamens_action': url + "/cgi-bin/webscr",
-                 'cmd': "_xclick-subscriptions" if item.is_subscription() else "_xclick",
-                 'notify_url': self.ipn_url(),
-                 'custom': BaseTransaction.custom_from_pk(transaction.pk),
-                 'invoice': invoice_id}
-
-        if item.is_subscription():
-            self.make_subscription(items, transaction, item)
+        items = self.init_items(transaction)
+        if transaction.item.is_subscription():
+            self.make_subscription(items, transaction, transaction.item)
         else:
-            self.make_regular(items, item, cart)
+            self.make_regular(items, transaction, transaction.item, cart)
 
         items.update(hash)
         return items
 
-    def make_subscription(self, items, transaction):
-        items['item_name'] = transaction.item.product.name
+    def init_items(self, transaction):
+        debug = settings.PAYPAL_DEBUG
+        url = 'https://www.sandbox.paypal.com' if debug else 'https://www.paypal.com'
+        return {'business': settings.PAYPAL_ID,
+                'arcamens_action': url + "/cgi-bin/webscr",
+                'cmd': "_xclick-subscriptions" if transaction.item.is_subscription() else "_xclick",
+                'notify_url': self.ipn_url(),
+                'custom': BaseTransaction.custom_from_pk(transaction.pk),
+                'invoice': transaction.invoice_id()}
+
+    def make_subscription(self, items, transaction, item):
+        """
+        Internal 
+        """
+        items['item_name'] = item.product.name
         items['src'] = 1
 
         unit_map = {Period.UNIT_DAYS: 'D',
@@ -58,11 +58,14 @@ class PayPalForm(BasePaymentProcessor):
             items['a1'] = 0
             items['p1'] = remaining_days
             items['t1'] = 'D'
-        items['a3'] = transaction.item.price + transaction.item.shipping
-        items['p3'] = transaction.item.payment_period.count
-        items['t3'] = unit_map[transaction.item.payment_period.unit]
+        items['a3'] = item.price + item.shipping
+        items['p3'] = item.payment_period.count
+        items['t3'] = unit_map[item.payment_period.unit]
 
-    def make_regular(self, items, item, cart):
+    def make_regular(self, items, transaction, item, cart):
+        """
+        Internal 
+        """
         if cart:
             items['item_name_1'] = item.product.name
             items['amount_1'] = item.price
