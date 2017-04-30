@@ -7,6 +7,7 @@ from django.apps import apps
 from django.urls import reverse
 from django.db import models
 from django.db.models import F
+from django.db import transaction
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
@@ -157,6 +158,27 @@ class SubscriptionTransaction(BaseTransaction):
         else:
             return settings.PAYMENTS_REALM + ' %d-%d' % (self.item.pk, self.subinvoice())
 
+    def on_accept_regular_payment(self, email):
+        payment = Payment.objects.create(transaction=self, email=email)
+        self.item.paid = True
+        self.item.last_payment = datetime.date.today()
+        self.upgrade_subscription(self.item)
+        self.item.save()
+        try:
+            self.advance_parent(self.item.prolongitem)
+        except AttributeError:
+            pass
+        else:  # TODO: Remove this else?
+            self.on_payment(payment)
+
+    @transaction.atomic
+    def advance_parent(self, prolongitem):
+        parent_item = SubscriptionItem.objects.select_for_update().get(pk=prolongitem.parent_id)  # must be inside transaction
+        # parent.email = transaction.email
+        base_date = max(datetime.date.today(), parent_item.due_payment_date)
+        parent_item.set_payment_date(base_date + period_to_delta(prolongitem.prolong))
+        parent_item.save()
+
 
 class Item(models.Model):
     """
@@ -202,6 +224,21 @@ class Item(models.Model):
     @abc.abstractmethod
     def is_subscription(self):
         pass
+
+    # Can be called from both subscription IPN and payment IPN, so prepare to handle it two times
+    @transaction.atomic
+    def upgrade_subscription(self):
+        if self.old_subscription:
+            self.do_upgrade_subscription()
+
+    def do_upgrade_subscription(self):
+        try:
+            self.old_subscription.force_cancel(is_upgrade=True)
+        except CannotCancelSubscription:
+            pass
+        # self.on_upgrade_subscription(transaction, item.old_subscription)  # TODO: Needed?
+        self.old_subscription = None
+        self.save()
 
     def send_rendered_email(self, template_name, subject, data):
         try:
@@ -320,6 +357,26 @@ class SubscriptionItem(Item):
     def send_reminders():
         SubscriptionItem.send_regular_reminders()
         SubscriptionItem.send_trial_reminders()
+
+    def create_active_subscription(self, ref, email):
+        """
+        Internal
+        """
+        self.active_subscription = Subscription.objects.create(transaction=transaction,
+                                                               subscription_reference=ref,
+                                                               email=email)
+        self.save()
+        return self.active_subscription
+
+    @transaction.atomic
+    def obtain_active_subscription(self, ref, email):
+        """
+        Internal
+        """
+        if self.active_subscription and self.active_subscription.subscription_reference == ref:
+            return self.active_subscription
+        else:
+            return self.create_active_subscription(self, ref, email)
 
     @staticmethod
     def send_regular_reminders():

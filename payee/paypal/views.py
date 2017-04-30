@@ -166,30 +166,9 @@ class PayPalIPN(PaymentCallback, View):
         if Decimal(POST['mc_gross']) == transaction.item.price and \
                         Decimal(POST['shipping']) == transaction.item.shipping and \
                         POST['mc_currency'] == transaction.item.currency:
-            self.do_do_do_accept_regular_payment(POST, transaction, transaction.item)
+            transaction.on_accept_regular_payment(POST['payer_email'])
         else:
             logger.warning("Wrong amount or currency")
-
-    def do_do_do_accept_regular_payment(self, POST, transaction, item):
-        payment = Payment.objects.create(transaction=transaction, email=POST['payer_email'])
-        item.paid = True
-        item.last_payment = datetime.date.today()
-        self.upgrade_subscription(item)
-        item.save()
-        try:
-            self.advance_parent(item.prolongitem)
-        except AttributeError:
-            pass
-        else:  # TODO: Remove this else?
-            self.on_payment(payment)
-
-    @transaction.atomic
-    def advance_parent(self, prolongitem):
-        parent_item = SubscriptionItem.objects.select_for_update().get(pk=prolongitem.parent_id)  # must be inside transaction
-        # parent.email = transaction.email
-        base_date = max(datetime.date.today(), parent_item.due_payment_date)
-        parent_item.set_payment_date(base_date + period_to_delta(prolongitem.prolong))
-        parent_item.save()
 
     def accept_recurring_payment(self, POST, transaction_id):
         if POST['payment_status'] != 'Completed':
@@ -216,22 +195,8 @@ class PayPalIPN(PaymentCallback, View):
         except BaseTransaction.DoesNotExist:
             logger.warning("SubscriptionTransaction %d does not exist" % transaction_id)
 
-    @transaction.atomic
-    def do_create_subscription(self, transaction, item, ref, email):
-        if item.active_subscription and item.active_subscription.subscription_reference == ref:
-            return item.active_subscription
-        else:
-            return  self.do_do_create_subscription(item)
-
-    def do_do_create_subscription(self, item):
-        item.active_subscription = Subscription.objects.create(transaction=transaction,
-                                                               subscription_reference=ref,
-                                                               email=email)
-        item.save()
-        return item.active_subscription
-
     def do_do_accept_subscription_or_recurring_payment(self, transaction, item, POST, subscription_reference):
-        self.do_create_subscription(transaction, item, subscription_reference, POST['payer_email'])
+        self.obtain_active_subscription(item, subscription_reference, POST['payer_email'])
         payment = AutomaticPayment.objects.create(transaction=transaction,
                                                   email=POST['payer_email'])
         self.do_subscription_or_recurring_payment(item)
@@ -262,11 +227,11 @@ class PayPalIPN(PaymentCallback, View):
         item.reminders_sent = 0
 
     def do_subscription_or_recurring_created(self, transaction, POST, ref):
-        subscription = self.do_create_subscription(transaction, transaction.item, ref, POST['payer_email'])
+        subscription = self.obtain_active_subscription(transaction.item, ref, POST['payer_email'])
         # transaction.processor = PaymentProcessor.objects.get(pk=PAYMENT_PROCESSOR_PAYPAL)
         transaction.item.trial = False
         transaction.item.save()
-        self.upgrade_subscription(transaction.item)
+        transaction.item.upgrade_subscription()
         self.on_subscription_created(POST, subscription)
 
     def accept_subscription_signup(self, POST, transaction_id):
@@ -314,21 +279,6 @@ class PayPalIPN(PaymentCallback, View):
         transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
         transaction.item.cancel_subscription()
         self.on_subscription_canceled(POST, transaction.item)
-
-    # Can be called from both subscription IPN and payment IPN
-    @transaction.atomic
-    def upgrade_subscription(self, item):
-        if item.old_subscription:
-            self.do_upgrade_subscription(item)
-
-    def do_upgrade_subscription(self, item):
-        try:
-            item.old_subscription.force_cancel(is_upgrade=True)
-        except CannotCancelSubscription:
-            pass
-        # self.on_upgrade_subscription(transaction, item.old_subscription)  # TODO: Needed?
-        item.old_subscription = None
-        item.save()
 
     # Ugh, PayPal
     def pp_payment_cycles(self, item):
