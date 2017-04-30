@@ -211,6 +211,7 @@ class Item(models.Model):
         # FIXME: second argument should be plain text
         send_mail(subject, text, settings.FROM_EMAIL, [self.email], html_message=text)
 
+    # FIXME: Move this and below into SubscriptionItem
     @staticmethod
     def send_reminders():
         Item.send_regular_reminders()
@@ -219,7 +220,12 @@ class Item(models.Model):
     @staticmethod
     def send_regular_reminders():
         # start with the last
+        Item.send_regular_before_due_reminders()
+        Item.send_regular_due_reminders()
+        Item.send_regular_deadline_reminders()
 
+    @staticmethod
+    def send_regular_before_due_reminders():
         days_before = settings.PAYMENTS_DAYS_BEFORE_DUE_REMIND
         reminder_date = datetime.date.today() + datetime.timedelta(days=days_before)
         q = SubscriptionItem.objects.filter(reminders_sent__lt=3, due_payment_date__lte=reminder_date, trial=False)
@@ -234,6 +240,8 @@ class Item(models.Model):
                                              'url': url,
                                              'days_before': days_before})
 
+    @staticmethod
+    def send_regular_due_reminders():
         reminder_date = datetime.date.today()
         q = SubscriptionItem.objects.filter(reminders_sent__lt=2, due_payment_date__lte=reminder_date, trial=False)
         for transaction in q:
@@ -246,6 +254,8 @@ class Item(models.Model):
                                              'product': transaction.product.name,
                                              'url': url})
 
+    @staticmethod
+    def send_regular_deadline_reminders():
         reminder_date = datetime.date.today()
         q = SubscriptionItem.objects.filter(reminders_sent__lt=1, payment_deadline__lte=reminder_date, trial=False)
         for transaction in q:
@@ -261,7 +271,12 @@ class Item(models.Model):
     @staticmethod
     def send_trial_reminders():
         # start with the last
+        Item.send_trial_before_due_reminders()
+        Item.send_trial_due_reminders()
+        Item.send_trial_deadline_reminders()
 
+    @staticmethod
+    def send_trial_before_due_reminders():
         days_before = settings.PAYMENTS_DAYS_BEFORE_TRIAL_END_REMIND
         reminder_date = datetime.date.today() + datetime.timedelta(days=days_before)
         q = SubscriptionItem.objects.filter(reminders_sent__lt=3, due_payment_date__lte=reminder_date, trial=True)
@@ -276,6 +291,8 @@ class Item(models.Model):
                                              'url': url,
                                              'days_before': days_before})
 
+    @staticmethod
+    def send_trial_due_reminders():
         reminder_date = datetime.date.today()
         q = SubscriptionItem.objects.filter(reminders_sent__lt=2, due_payment_date__lte=reminder_date, trial=True)
         for transaction in q:
@@ -288,6 +305,8 @@ class Item(models.Model):
                                              'product': transaction.product.name,
                                              'url': url})
 
+    @staticmethod
+    def send_trial_deadline_reminders():
         reminder_date = datetime.date.today()
         q = SubscriptionItem.objects.filter(reminders_sent__lt=1, payment_deadline__lte=reminder_date, trial=True)
         for transaction in q:
@@ -299,7 +318,6 @@ class Item(models.Model):
                                             {'transaction': transaction,
                                              'product': transaction.product.name,
                                              'url': url})
-
 
 class SimpleItem(Item):
     """
