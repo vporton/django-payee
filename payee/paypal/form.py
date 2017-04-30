@@ -21,9 +21,7 @@ class PayPalForm(BasePaymentProcessor):
     def amend_hash_new_purchase(self, transaction, hash):
         # https://developer.paypal.com/docs/classic/paypal-payments-standard/integration-guide/Appx_websitestandard_htmlvariables/
 
-        cart = hash.get('arcamens_cart', False)
-        if cart:
-            del hash['arcamens_cart']
+        cart = hash.pop('arcamens_cart', False)
 
         debug = settings.PAYPAL_DEBUG
         url = 'https://www.sandbox.paypal.com' if debug else 'https://www.paypal.com'
