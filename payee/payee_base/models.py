@@ -199,6 +199,10 @@ class Item(models.Model):
     def adjust(self):
         pass
 
+    @abc.abstractmethod
+    def is_subscription(self):
+        pass
+
     def send_rendered_email(self, template_name, subject, data):
         try:
             self.email = self.subscription.email
@@ -217,6 +221,9 @@ class SimpleItem(Item):
     """
 
     paid = models.BooleanField(default=False)
+
+    def is_subscription(self):
+        return False
 
     def is_paid(self):
         return (self.paid or self.gratis) and not self.blocked
@@ -239,6 +246,9 @@ class SubscriptionItem(Item):
 
     # https://bitbucket.org/arcamens/django-payments/wiki/Invoice%20IDs
     subinvoice = models.PositiveIntegerField(default=1)  # no need for index, as it is used only at PayPal side
+
+    def is_subscription(self):
+        return True
 
     # Usually you should use quick_is_active() instead because that is faster
     def is_active(self):

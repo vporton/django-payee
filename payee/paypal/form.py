@@ -39,7 +39,7 @@ class PayPalForm(BasePaymentProcessor):
 
         item = transaction.item
 
-        if is_subscription:
+        if item.is_subscription():
             items['item_name'] = transaction.item.product.name
             items['src'] = 1
 
