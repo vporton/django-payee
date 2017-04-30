@@ -71,9 +71,13 @@ class BasePaymentProcessor(object, metaclass=abc.ABCMeta):
         if remaining_days > 0:
             date = item.due_payment_date
         if SubscriptionItem.day_needs_adjustment(item.payment_period, date):
-            while date.day != 1:
-                date += datetime.timedelta(days=1)
-                remaining_days += 1
+            remaining_days = self.do_days_adjustment(date, remaining_days)
+        return remaining_days
+
+    def do_days_adjustment(self, date, remaining_days):
+        while date.day != 1:
+            date += datetime.timedelta(days=1)
+            remaining_days += 1
         return remaining_days
 
     # Makes sense only in manual recurring mode
