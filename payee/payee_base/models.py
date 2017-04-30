@@ -333,8 +333,9 @@ class SubscriptionItem(Item):
         self.payment_deadline = self.due_payment_date + period_to_delta(self.grace_period)
 
     def start_trial(self):
-        self.trial = True
-        self.set_payment_date(datetime.date.today() + period_to_delta(self.trial_period))
+        if self.trial_period.count != 0:
+            self.trial = True
+            self.set_payment_date(datetime.date.today() + period_to_delta(self.trial_period))
 
     def cancel_subscription(self):
         # atomic operation
