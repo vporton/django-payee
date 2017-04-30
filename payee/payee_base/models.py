@@ -379,12 +379,15 @@ class SubscriptionItem(Item):
         if self.due_payment_date:
             period_end = max(period_end, self.due_payment_date)
         if SubscriptionItem.day_needs_adjustment(self.trial_period, period_end):
-            period = period_end - datetime.date.today()
-            while period_end.day != 1:
-                period_end += datetime.timedelta(days=1)
-                period += datetime.timedelta(days=1)
-            # self.trial_period.both = (Period.UNIT_DAYS, period.days)  # setting it to due payment date would be wrong
-            self.set_payment_date(period_end)
+            self.do_adjust_dates(period_end)
+
+    def do_adjust_dates(self, period_end):
+        period = period_end - datetime.date.today()
+        while period_end.day != 1:
+            period_end += datetime.timedelta(days=1)
+            period += datetime.timedelta(days=1)
+        # self.trial_period.both = (Period.UNIT_DAYS, period.days)  # setting it to due payment date would be wrong
+        self.set_payment_date(period_end)
 
     def set_payment_date(self, date):
         self.due_payment_date = date
@@ -399,14 +402,17 @@ class SubscriptionItem(Item):
         SubscriptionItem.objects.filter(pk=self.pk).update(active_subscription=None,
                                                            subinvoice=F('subinvoice') + 1)
         if not self.old_subscription:  # don't send this email on plan upgrade
-            url = settings.PAYMENTS_HOST + reverse(settings.PROLONG_PAYMENT_VIEW, args=[self.pk])
-            days_before = (self.due_payment_date - datetime.date.today()).days
-            self.send_rendered_email('payee/email/subscription-canceled.html',
-                                     _("Service subscription canceled"),
-                                     {'self': self,
-                                      'product': self.product.name,
-                                      'url': url,
-                                      'days_before': days_before})
+            self.cancel_subscription_email()
+
+    def cancel_subscription_email(self):
+        url = settings.PAYMENTS_HOST + reverse(settings.PROLONG_PAYMENT_VIEW, args=[self.pk])
+        days_before = (self.due_payment_date - datetime.date.today()).days
+        self.send_rendered_email('payee/email/subscription-canceled.html',
+                                 _("Service subscription canceled"),
+                                 {'self': self,
+                                  'product': self.product.name,
+                                  'url': url,
+                                  'days_before': days_before})
 
 
 class ProlongItem(Item):
