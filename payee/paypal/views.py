@@ -94,45 +94,50 @@ class PayPalIPN(PaymentCallback, View):
         POST = request.POST
 
         # 'payment_date', 'time_created' unused
-
         if POST['receiver_email'] == settings.PAYPAL_EMAIL:
-            debug = settings.PAYPAL_DEBUG
-            url = 'https://www.sandbox.paypal.com' if debug else 'https://www.paypal.com'
-            r = requests.post(url + '/cgi-bin/webscr',
-                              'cmd=_notify-validate&' + request.body.decode(POST.get('charset') or request.content_params['charset']),
-                              headers={'content-type': request.content_type})  # message must use the same encoding as the original
-            if r.text == 'VERIFIED':
-                try:
-                    transaction_id = BaseTransaction.pk_from_custom(POST['custom'])
-                    self.on_transaction_complete(POST, transaction_id)
-                except BaseTransaction.DoesNotExist:
-                    logger.warning("Wrong 'custom' field for a transaction")
-            else:
-                logger.warning("PayPal verification not passed")
+            self.do_do_post(POST, request)
         else:
             logger.warning("Wrong PayPal email")
+
+    def do_do_post(self, POST, request):
+        debug = settings.PAYPAL_DEBUG
+        url = 'https://www.sandbox.paypal.com' if debug else 'https://www.paypal.com'
+        r = requests.post(url + '/cgi-bin/webscr',
+                          'cmd=_notify-validate&' + request.body.decode(
+                              POST.get('charset') or request.content_params['charset']),
+                          headers={
+                              'content-type': request.content_type})  # message must use the same encoding as the original
+        if r.text == 'VERIFIED':
+            self.verified_post(POST, request)
+        else:
+            logger.warning("PayPal verification not passed")
+
+    def verified_post(self, POST, request):
+        try:
+            transaction_id = BaseTransaction.pk_from_custom(POST['custom'])
+            self.on_transaction_complete(POST, transaction_id)
+        except BaseTransaction.DoesNotExist:
+            logger.warning("Wrong 'custom' field for a transaction")
 
     def on_transaction_complete(self, POST, transaction_id):
         # Crazy: Recurring payee and subscription payee are not the same.
         # 'recurring_payment_id' and 'subscr_id' are equivalent: https://thereforei.am/2012/07/03/cancelling-subscriptions-created-with-paypal-standard-via-the-express-checkout-api/
+        type_dispatch = {
+            'web_accept': self.accept_regular_payment,
+            'cart': self.accept_regular_payment,
+            'express_checkout': self.accept_regular_payment,
+            'recurring_payment': self.accept_recurring_payment,
+            'subscr_payment': self.accept_subscription_payment,
+            'recurring_payment_profile_created': self.accept_recurring_signup,
+            'subscr_signup': self.accept_subscription_signup,
+            'recurring_payment_profile_cancel': self.accept_recurring_canceled,
+            'recurring_payment_suspended': self.accept_recurring_canceled,
+            'subscr_cancel': self.accept_subscription_canceled
+        }
         if 'payment_status' in POST and POST['payment_status'] == 'Refunded':
             self.accept_refund(POST, transaction_id)
-        elif POST['txn_type'] in ('web_accept', 'cart', 'express_checkout'):
-            self.accept_regular_payment(POST, transaction_id)
-        elif POST['txn_type'] == 'recurring_payment' and \
-                        POST['payment_status'] == 'Completed':
-            self.accept_recurring_payment(POST, transaction_id)
-        elif POST['txn_type'] == 'subscr_payment' and \
-                        POST['payment_status'] == 'Completed':
-            self.accept_subscription_payment(POST, transaction_id)
-        elif POST['txn_type'] == 'recurring_payment_profile_created':
-            self.accept_recurring_signup(POST, transaction_id)
-        elif POST['txn_type'] == 'subscr_signup':
-            self.accept_subscription_signup(POST, transaction_id)
-        elif POST['txn_type'] in ('recurring_payment_profile_cancel', 'recurring_payment_suspended'):
-            self.accept_recurring_canceled(POST, transaction_id)
-        elif POST['txn_type'] == 'subscr_cancel':
-            self.accept_subscription_canceled(POST, transaction_id)
+        else:
+            type_dispatch[POST['txn_type']](POST, transaction_id)
 
     def accept_refund(self, POST, transaction_id):
         try:
@@ -181,6 +186,8 @@ class PayPalIPN(PaymentCallback, View):
         parent_item.save()
 
     def accept_recurring_payment(self, POST, transaction_id):
+        if POST['payment_status'] != 'Completed':
+            return
         try:
             self.do_accept_recurring_payment(POST, transaction_id)
         except BaseTransaction.DoesNotExist:
@@ -202,6 +209,8 @@ class PayPalIPN(PaymentCallback, View):
             logger.warning("Wrong recurring payment data")
 
     def accept_subscription_payment(self, POST, transaction_id):
+        if POST['payment_status'] != 'Completed':
+            return
         try:
             self.do_accept_subscription_payment(POST, transaction_id)
         except BaseTransaction.DoesNotExist:
