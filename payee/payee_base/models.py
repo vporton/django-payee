@@ -15,7 +15,7 @@ from composite_field import CompositeField
 from django.conf import settings
 
 
-logger = logging.getLogger('hacker.payment.paypal')
+logger = logging.getLogger('debits')
 
 
 class ModelRef(CompositeField):
