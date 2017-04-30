@@ -30,46 +30,52 @@ class PayPalForm(BasePaymentProcessor):
 
         invoice_id = transaction.invoice_id()
 
+        item = transaction.item
+
         items = {'business': settings.PAYPAL_ID,
                  'arcamens_action': url + "/cgi-bin/webscr",
-                 'cmd': "_xclick-subscriptions" if is_subscription else "_xclick",
+                 'cmd': "_xclick-subscriptions" if item.is_subscription() else "_xclick",
                  'notify_url': self.ipn_url(),
                  'custom': BaseTransaction.custom_from_pk(transaction.pk),
                  'invoice': invoice_id}
 
-        item = transaction.item
-
         if item.is_subscription():
-            items['item_name'] = transaction.item.product.name
-            items['src'] = 1
-
-            unit_map = {Period.UNIT_DAYS: 'D',
-                        Period.UNIT_WEEKS: 'W',
-                        Period.UNIT_MONTHS: 'M',
-                        Period.UNIT_YEARS: 'Y'}
-            remaining_days = self.calculate_remaining_days(transaction)
-            if remaining_days > 0:
-                items['a1'] = 0
-                items['p1'] = remaining_days
-                items['t1'] = 'D'
-            items['a3'] = item.price + item.shipping
-            items['p3'] = item.payment_period.count
-            items['t3'] = unit_map[item.payment_period.unit]
+            self.make_subscription(items, transaction, item)
         else:
-            if cart:
-                items['item_name_1'] = item.product.name
-                items['amount_1'] = item.price
-                items['shipping_1'] = item.shipping
-                items['quantity_1'] = item.product_qty
-                items['upload'] = 1
-            else:
-                items['item_name'] = item.product.name
-                items['amount'] = item.price
-                items['shipping'] = item.shipping
-                items['quantity'] = item.product_qty
+            self.make_regular(items, item, cart)
 
         items.update(hash)
         return items
+
+    def make_subscription(self, items, transaction):
+        items['item_name'] = transaction.item.product.name
+        items['src'] = 1
+
+        unit_map = {Period.UNIT_DAYS: 'D',
+                    Period.UNIT_WEEKS: 'W',
+                    Period.UNIT_MONTHS: 'M',
+                    Period.UNIT_YEARS: 'Y'}
+        remaining_days = self.calculate_remaining_days(transaction)
+        if remaining_days > 0:
+            items['a1'] = 0
+            items['p1'] = remaining_days
+            items['t1'] = 'D'
+        items['a3'] = transaction.item.price + transaction.item.shipping
+        items['p3'] = transaction.item.payment_period.count
+        items['t3'] = unit_map[transaction.item.payment_period.unit]
+
+    def make_regular(self, items, item, cart):
+        if cart:
+            items['item_name_1'] = item.product.name
+            items['amount_1'] = item.price
+            items['shipping_1'] = item.shipping
+            items['quantity_1'] = item.product_qty
+            items['upload'] = 1
+        else:
+            items['item_name'] = item.product.name
+            items['amount'] = item.price
+            items['shipping'] = item.shipping
+            items['quantity'] = item.product_qty
 
     def subscription_allowed_date(self, item):
         return max(datetime.date.today(),
