@@ -122,6 +122,7 @@ class BaseTransaction(models.Model):
         except ValueError:
             raise BaseTransaction.DoesNotExist
 
+    # https://bitbucket.org/arcamens/django-payments/wiki/Invoice%20IDs
     @abc.abstractmethod
     def invoice_id(self):
         pass
@@ -151,7 +152,7 @@ class SubscriptionTransaction(BaseTransaction):
         return self.invoiced_item().subinvoice
 
     def invoice_id(self):
-        if self.item.old_subscription:  # https://bitbucket.org/arcamens/django-payments/wiki/Invoice%20IDs
+        if self.item.old_subscription:
             return settings.PAYMENTS_REALM + ' %d-%d-u' % (self.item.pk, self.subinvoice())
         else:
             return settings.PAYMENTS_REALM + ' %d-%d' % (self.item.pk, self.subinvoice())
