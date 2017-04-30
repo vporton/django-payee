@@ -98,9 +98,6 @@ class BaseTransaction(models.Model):
     processor = models.ForeignKey(PaymentProcessor)
     creation_date = models.DateField(auto_now_add=True)
 
-    # A transaction should have a code that identifies it. # TODO
-    # code = models.CharField(max_length=255)
-
     def __repr__(self):
         return "<BaseTransaction: %s>" % (("pk=%d" % self.pk) if self.pk else "no pk")
 
