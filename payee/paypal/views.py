@@ -222,9 +222,11 @@ class PayPalIPN(PaymentCallback, View):
             self.advance_item_date(date, item)
         item.save()
 
-    # FIXME: item.payment_period == 0 causes infinite loop
+    # FIXME: item.payment_period == 0 causes infinite loop (also check other places in the code)
     def advance_item_date(self, date, item):
+        print('DATE before:', date)
         date += period_to_delta(item.payment_period)
+        print('DATE after: ', date)
         item.set_payment_date(date)
         item.last_payment = datetime.date.today()
         item.reminders_sent = 0
