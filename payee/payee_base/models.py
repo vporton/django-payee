@@ -151,7 +151,7 @@ class SimpleTransaction(BaseTransaction):
         payment = Payment.objects.create(transaction=self, email=email)
         self.item.paid = True
         self.item.last_payment = datetime.date.today()
-        self.upgrade_subscription(self.item)
+        self.item.upgrade_subscription()
         self.item.save()
         try:
             self.advance_parent(self.item.prolongitem)
