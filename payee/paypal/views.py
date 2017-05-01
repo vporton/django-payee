@@ -218,6 +218,7 @@ class PayPalIPN(PaymentCallback, View):
         item.trial = False
         date = item.due_payment_date
         while date <= datetime.date.today():
+            print('DATE1:', date)
             self.advance_item_date(date, item)
         item.save()
 
