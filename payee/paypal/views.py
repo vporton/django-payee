@@ -217,19 +217,17 @@ class PayPalIPN(PaymentCallback, View):
         # transaction.processor = PaymentProcessor.objects.get(pk=PAYMENT_PROCESSOR_PAYPAL)
         item.trial = False
         date = item.due_payment_date
-        while date <= datetime.date.today():
-            print('DATE1:', date)
-            self.advance_item_date(date, item)
+        if item.payment_period:  # hack to eliminate infinite loop
+            while date <= datetime.date.today():
+                date = self.advance_item_date(date, item)
         item.save()
 
-    # FIXME: item.payment_period == 0 causes infinite loop (also check other places in the code)
     def advance_item_date(self, date, item):
-        print('DATE before:', date)
         date += period_to_delta(item.payment_period)
-        print('DATE after: ', date)
         item.set_payment_date(date)
         item.last_payment = datetime.date.today()
         item.reminders_sent = 0
+        return date
 
     def do_subscription_or_recurring_created(self, transaction, POST, ref):
         print("2:", ref)  # FIXME
