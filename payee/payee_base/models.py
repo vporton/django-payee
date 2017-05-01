@@ -363,7 +363,7 @@ class SubscriptionItem(Item):
         """
         Internal
         """
-        self.active_subscription = Subscription.objects.create(transaction=transaction,
+        self.active_subscription = Subscription.objects.create(transaction=self.subscriptiontransaction,
                                                                subscription_reference=ref,
                                                                email=email)
         self.save()
@@ -497,7 +497,7 @@ class Subscription(models.Model):
     When the user subscribes for automatic payment.
     """
 
-    transaction = models.OneToOneField('BaseTransaction')
+    transaction = models.OneToOneField('SubscriptionTransaction')
 
     # Avangate has it for every product, but PayPal for transaction as a whole.
     # So have it both in AutomaticPayment and Subscription
