@@ -217,9 +217,9 @@ class PayPalIPN(PaymentCallback, View):
         # transaction.processor = PaymentProcessor.objects.get(pk=PAYMENT_PROCESSOR_PAYPAL)
         item.trial = False
         date = item.due_payment_date
-        if item.payment_period:  # hack to eliminate infinite loop
+        if item.payment_period.count > 0:  # hack to eliminate infinite loop
             while date <= datetime.date.today():
-                date = self.advance_item_date(date, item)  # FIXME: Hangs on negative item.payment_period
+                date = self.advance_item_date(date, item)
         item.save()
 
     def advance_item_date(self, date, item):
