@@ -147,6 +147,30 @@ class SimpleTransaction(BaseTransaction):
     def invoice_id(self):
         return settings.PAYMENTS_REALM + ' p-%d' % (self.item.pk,)
 
+    def on_accept_regular_payment(self, email):
+        payment = Payment.objects.create(transaction=self, email=email)
+        self.item.paid = True
+        self.item.last_payment = datetime.date.today()
+        self.upgrade_subscription(self.item)
+        self.item.save()
+        try:
+            self.advance_parent(self.item.prolongitem)
+        except AttributeError:
+            pass
+        else:  # TODO: Remove this else?
+            self.on_payment(payment)
+
+
+    @transaction.atomic
+    def advance_parent(self, prolongitem):
+        parent_item = SubscriptionItem.objects.select_for_update().get(
+            pk=prolongitem.parent_id)  # must be inside transaction
+        # parent.email = transaction.email
+        base_date = max(datetime.date.today(), parent_item.due_payment_date)
+        parent_item.set_payment_date(base_date + period_to_delta(prolongitem.prolong))
+        parent_item.save()
+
+
 class SubscriptionTransaction(BaseTransaction):
     item = models.ForeignKey('SubscriptionItem', related_name='transactions', null=False)
 
@@ -180,27 +204,6 @@ class SubscriptionTransaction(BaseTransaction):
             return self.item.active_subscription
         else:
             return self.create_active_subscription(ref, email)
-
-    def on_accept_regular_payment(self, email):
-        payment = Payment.objects.create(transaction=self, email=email)
-        self.item.paid = True
-        self.item.last_payment = datetime.date.today()
-        self.upgrade_subscription(self.item)
-        self.item.save()
-        try:
-            self.advance_parent(self.item.prolongitem)
-        except AttributeError:
-            pass
-        else:  # TODO: Remove this else?
-            self.on_payment(payment)
-
-    @transaction.atomic
-    def advance_parent(self, prolongitem):
-        parent_item = SubscriptionItem.objects.select_for_update().get(pk=prolongitem.parent_id)  # must be inside transaction
-        # parent.email = transaction.email
-        base_date = max(datetime.date.today(), parent_item.due_payment_date)
-        parent_item.set_payment_date(base_date + period_to_delta(prolongitem.prolong))
-        parent_item.save()
 
 
 class Item(models.Model):
