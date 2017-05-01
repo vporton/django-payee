@@ -377,7 +377,7 @@ class SubscriptionItem(Item):
         if self.active_subscription and self.active_subscription.subscription_reference == ref:
             return self.active_subscription
         else:
-            return self.create_active_subscription(self, ref, email)
+            return self.create_active_subscription(ref, email)
 
     @staticmethod
     def send_regular_reminders():
