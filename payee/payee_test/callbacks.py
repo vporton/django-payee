@@ -10,7 +10,7 @@ class MyPayPalIPN(PayPalIPN):
 
     def on_payment(self, payment):
         if isinstance(payment, AutomaticPayment):
-            item = payment.subscriptiontransaction.item
+            item = payment.transaction.item
             self.do_purchase(item)
 
     def do_purchase(self, item):
