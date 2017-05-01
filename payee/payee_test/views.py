@@ -191,7 +191,7 @@ def unsubscribe_organization_view(request, organization_pk):
     organization = Organization.objects.get(pk=organization_pk)
     item = organization.purchase.item
     subscription = item.active_subscription
-    do_unsubscribe(subscription, item)
+    return do_unsubscribe(subscription, item)
     # return HttpResponseRedirect(reverse('organization-prolong-payment', args=[organization.pk]))
 
 
