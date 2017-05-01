@@ -518,25 +518,27 @@ class Subscription(models.Model):
 
 
 class Payment(models.Model):
-    # The transaction which corresponds to the starting
-    # process of purchase.
-    transaction = models.OneToOneField('BaseTransaction')
     email = models.EmailField(null=True)  # DalPay requires to notify the customer 10 days before every payment
 
     def refund_payment(self):
         try:
-            self.manualsubscriptionpayment.refund_payment()
+            self.transaction.item.prolongitem.refund_payment()
         except ObjectDoesNotExist:
             pass
 
 
-# FIXME: Store it in DB as a separate (non-proxy) model?
+class SimplePayment(Payment):
+    transaction = models.OneToOneField('SimpleTransaction')
+
+
 class AutomaticPayment(Payment):
     """
     This class models automatic payment.
     """
 
-    pass
+    # The transaction which corresponds to the starting
+    # process of purchase.
+    transaction = models.ForeignKey('SubscriptionTransaction')
 
     # subscription = models.ForeignKey('Subscription')
 
