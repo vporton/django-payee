@@ -163,7 +163,7 @@ class SubscriptionTransaction(BaseTransaction):
         """
         Internal
         """
-        print("transaction:", self)
+        print("transaction:", repr(self))  # FIXME
         self.item.active_subscription = Subscription.objects.create(transaction=self,
                                                                     subscription_reference=ref,
                                                                     email=email)
