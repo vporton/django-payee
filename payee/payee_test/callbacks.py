@@ -5,7 +5,7 @@ from payee.paypal.views import PayPalIPN
 class MyPayPalIPN(PayPalIPN):
     # Two subscription IPNs may call both below methods. It is not a problem (if not to count a tiny performance lag).
     def on_subscription_created(self, POST, subscription):
-        item = subscription.subscriptiontransaction.item
+        item = subscription.transaction.item
         self.do_purchase(item)
 
     def on_payment(self, payment):
