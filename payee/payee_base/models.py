@@ -157,8 +157,7 @@ class SimpleTransaction(BaseTransaction):
             self.advance_parent(self.item.prolongitem)
         except AttributeError:
             pass
-        else:  # TODO: Remove this else?
-            self.on_payment(payment)
+        return payment
 
 
     @transaction.atomic

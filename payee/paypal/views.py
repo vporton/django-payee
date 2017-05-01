@@ -166,7 +166,8 @@ class PayPalIPN(PaymentCallback, View):
         if Decimal(POST['mc_gross']) == transaction.item.price and \
                         Decimal(POST['shipping']) == transaction.item.shipping and \
                         POST['mc_currency'] == transaction.item.currency:
-            transaction.on_accept_regular_payment(POST['payer_email'])
+            payment = transaction.on_accept_regular_payment(POST['payer_email'])
+            self.on_payment(payment)
         else:
             logger.warning("Wrong amount or currency")
 
