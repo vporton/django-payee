@@ -163,11 +163,11 @@ class SubscriptionTransaction(BaseTransaction):
         """
         Internal
         """
-        transaction.item.active_subscription = Subscription.objects.create(transaction=self,
-                                                                           subscription_reference=ref,
-                                                                           email=email)
-        transaction.item.save()
-        return transaction.item.active_subscription
+        self.item.active_subscription = Subscription.objects.create(transaction=self,
+                                                                    subscription_reference=ref,
+                                                                    email=email)
+        self.item.save()
+        return self.item.active_subscription
 
     @django.db.transaction.atomic
     def obtain_active_subscription(self, ref, email):
