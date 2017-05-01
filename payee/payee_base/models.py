@@ -130,7 +130,7 @@ class BaseTransaction(models.Model):
         pass
 
     def invoiced_item(self):
-        return self.item.old_subscription.basetransaction.item \
+        return self.item.old_subscription.transaction.item \
             if self.item and self.item.old_subscription \
             else self.item
 
