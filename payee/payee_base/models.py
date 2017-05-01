@@ -485,7 +485,7 @@ class SubscriptionItem(Item):
                                              'url': url})
 
 
-class ProlongItem(Item):
+class ProlongItem(SimpleItem):
     item = models.OneToOneField(Item, related_name='prolongitem', parent_link=True)
     parent = models.ForeignKey('SubscriptionItem', related_name='child', parent_link=False)
     prolong = Period(unit=Period.UNIT_MONTHS, count=0)  # TODO: rename
