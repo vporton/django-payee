@@ -148,7 +148,7 @@ class SimpleTransaction(BaseTransaction):
         return settings.PAYMENTS_REALM + ' p-%d' % (self.item.pk,)
 
     def on_accept_regular_payment(self, email):
-        payment = Payment.objects.create(transaction=self, email=email)
+        payment = SimplePayment.objects.create(transaction=self, email=email)
         self.item.paid = True
         self.item.last_payment = datetime.date.today()
         self.item.upgrade_subscription()
