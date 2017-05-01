@@ -7,6 +7,7 @@ from django.apps import apps
 from django.urls import reverse
 from django.db import models
 from django.db.models import F
+import django.db
 from django.db import transaction
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail
@@ -157,6 +158,26 @@ class SubscriptionTransaction(BaseTransaction):
             return settings.PAYMENTS_REALM + ' %d-%d-u' % (self.item.pk, self.subinvoice())
         else:
             return settings.PAYMENTS_REALM + ' %d-%d' % (self.item.pk, self.subinvoice())
+
+    def create_active_subscription(self, ref, email):
+        """
+        Internal
+        """
+        transaction.item.active_subscription = Subscription.objects.create(transaction=self,
+                                                                           subscription_reference=ref,
+                                                                           email=email)
+        transaction.item.save()
+        return transaction.item.active_subscription
+
+    @django.db.transaction.atomic
+    def obtain_active_subscription(self, ref, email):
+        """
+        Internal
+        """
+        if self.item.active_subscription and self.item.active_subscription.subscription_reference == ref:
+            return self.item.active_subscription
+        else:
+            return self.create_active_subscription(ref, email)
 
     def on_accept_regular_payment(self, email):
         payment = Payment.objects.create(transaction=self, email=email)
@@ -358,26 +379,6 @@ class SubscriptionItem(Item):
     def send_reminders():
         SubscriptionItem.send_regular_reminders()
         SubscriptionItem.send_trial_reminders()
-
-    def create_active_subscription(self, ref, email):
-        """
-        Internal
-        """
-        self.active_subscription = Subscription.objects.create(transaction=self.subscriptiontransaction,
-                                                               subscription_reference=ref,
-                                                               email=email)
-        self.save()
-        return self.active_subscription
-
-    @transaction.atomic
-    def obtain_active_subscription(self, ref, email):
-        """
-        Internal
-        """
-        if self.active_subscription and self.active_subscription.subscription_reference == ref:
-            return self.active_subscription
-        else:
-            return self.create_active_subscription(ref, email)
 
     @staticmethod
     def send_regular_reminders():

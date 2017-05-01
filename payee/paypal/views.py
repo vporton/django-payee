@@ -196,7 +196,7 @@ class PayPalIPN(PaymentCallback, View):
             logger.warning("SubscriptionTransaction %d does not exist" % transaction_id)
 
     def do_do_accept_subscription_or_recurring_payment(self, transaction, item, POST, subscription_reference):
-        item.obtain_active_subscription(subscription_reference, POST['payer_email'])
+        transaction.obtain_active_subscription(subscription_reference, POST['payer_email'])
         payment = AutomaticPayment.objects.create(transaction=transaction,
                                                   email=POST['payer_email'])
         self.do_subscription_or_recurring_payment(item)
@@ -227,7 +227,7 @@ class PayPalIPN(PaymentCallback, View):
         item.reminders_sent = 0
 
     def do_subscription_or_recurring_created(self, transaction, POST, ref):
-        subscription = transaction.item.obtain_active_subscription(ref, POST['payer_email'])
+        subscription = transaction.obtain_active_subscription(ref, POST['payer_email'])
         # transaction.processor = PaymentProcessor.objects.get(pk=PAYMENT_PROCESSOR_PAYPAL)
         transaction.item.trial = False
         transaction.item.save()
