@@ -12,9 +12,9 @@ INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
-    'payee.payee_base',
-    'payee.paypal',
-    'payee.payee_test',
+    'debits.debits_base',
+    'debits.paypal',
+    'debits.debits_test',
 ]
 
 MIDDLEWARE = [
@@ -47,7 +47,7 @@ DATABASES = {
     }
 }
 
-ROOT_URLCONF = 'payee.payee_test.urls'
+ROOT_URLCONF = 'debits.debits_test.urls'
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.10/topics/i18n/

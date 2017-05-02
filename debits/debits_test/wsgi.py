@@ -1,5 +1,5 @@
 """
-WSGI config for django-payee project.
+WSGI config for django-debits project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 
@@ -11,6 +11,6 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "payee.payee_test.test_settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "debits.debits_test.test_settings")
 
 application = get_wsgi_application()

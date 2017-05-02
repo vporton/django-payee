@@ -1,5 +1,5 @@
 from django.db import models
-from payee.payee_base.models import Period, Product, BaseTransaction, SubscriptionItem, SimpleItem
+from debits.debits_base.models import Period, Product, BaseTransaction, SubscriptionItem, SimpleItem
 
 
 class PricingPlan(models.Model):

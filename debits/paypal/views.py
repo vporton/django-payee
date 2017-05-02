@@ -5,8 +5,8 @@ from django.utils import timezone
 from django.db import transaction
 from django.http import HttpResponse
 from django.views import View
-from payee.payee_base.processors import PaymentCallback
-from payee.payee_base.models import BaseTransaction, SimpleTransaction, SubscriptionTransaction, Period, Payment, AutomaticPayment, Subscription, SubscriptionItem, logger, period_to_delta, CannotCancelSubscription
+from debits.debits_base.processors import PaymentCallback
+from debits.debits_base.models import BaseTransaction, SimpleTransaction, SubscriptionTransaction, Period, Payment, AutomaticPayment, Subscription, SubscriptionItem, logger, period_to_delta, CannotCancelSubscription
 from django.conf import settings
 
 
@@ -15,7 +15,7 @@ from django.conf import settings
 # https://developer.paypal.com/docs/classic/ipn/integration-guide/IPNIntro/
 # https://developer.paypal.com/docs/classic/ipn/integration-guide/IPNandPDTVariables/
 
-# Examples of IPN for recurring payee:
+# Examples of IPN for recurring payments:
 # https://www.angelleye.com/paypal-recurring-payments-ipn-samples/
 # https://gist.github.com/thenbrent/3037967
 
@@ -23,15 +23,15 @@ from django.conf import settings
 # https://developer.paypal.com/docs/classic/ipn/integration-guide/IPNTesting/
 
 # https://developer.paypal.com/docs/classic/products/recurring-payments/
-# says that recirring payee are available for PayPal Payments Standard
+# says that recurring payments are available for PayPal Payments Standard
 
 # https://developer.paypal.com/docs/classic/express-checkout/integration-guide/ECRecurringPayments/
-# for a general introduction into recurring payee in PayPal
+# for a general introduction into recurring payments in PayPal
 
 # This is a trouble: https://developer.paypal.com/docs/classic/express-checkout/integration-guide/ECRecurringPayments/
-# "For recurring payee with the Express Checkout API, PayPal does not allow certain updates, such as billing amount, within 3 days of the scheduled billing date."
+# "For recurring payments with the Express Checkout API, PayPal does not allow certain updates, such as billing amount, within 3 days of the scheduled billing date."
 
-# Recurring payee cannot be created for buyers in Germany or China. In this case, you can use reference transactions as an alternate solution:
+# Recurring payments cannot be created for buyers in Germany or China. In this case, you can use reference transactions as an alternate solution:
 # https://developer.paypal.com/docs/classic/express-checkout/integration-guide/ECReferenceTxns/
 
 
@@ -78,7 +78,7 @@ def parse_date(value):
 
 class PayPalIPN(PaymentCallback, View):
     # See https://developer.paypal.com/docs/classic/express-checkout/integration-guide/ECRecurringPayments/
-    # for all kinds of IPN for recurring payee.
+    # for all kinds of IPN for recurring payments.
     def post(self, request):
         try:
             self.do_post(request)
@@ -118,7 +118,7 @@ class PayPalIPN(PaymentCallback, View):
             logger.warning("Wrong 'custom' field for a transaction")
 
     def on_transaction_complete(self, POST, transaction_id):
-        # Crazy: Recurring payee and subscription payee are not the same.
+        # Crazy: Recurring payment and subscription debits are not the same.
         # 'recurring_payment_id' and 'subscr_id' are equivalent: https://thereforei.am/2012/07/03/cancelling-subscriptions-created-with-paypal-standard-via-the-express-checkout-api/
         type_dispatch = {
             'web_accept': self.accept_regular_payment,

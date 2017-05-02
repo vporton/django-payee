@@ -218,7 +218,7 @@ class Item(models.Model):
     blocked = models.BooleanField(default=False)  # hacker or misbehavior detected
 
     currency = models.CharField(max_length=3, default='USD')
-    price = models.DecimalField(max_digits=10, decimal_places=2)  # for recurring payee the amount of one payment
+    price = models.DecimalField(max_digits=10, decimal_places=2)  # for recurring payment the amount of one payment
     shipping = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     # code = models.CharField(max_length=255) # TODO
@@ -370,7 +370,7 @@ class SubscriptionItem(Item):
     def cancel_subscription_email(self):
         url = settings.PAYMENTS_HOST + reverse(settings.PROLONG_PAYMENT_VIEW, args=[self.pk])
         days_before = (self.due_payment_date - datetime.date.today()).days
-        self.send_rendered_email('payee/email/subscription-canceled.html',
+        self.send_rendered_email('debits/email/subscription-canceled.html',
                                  _("Service subscription canceled"),
                                  {'self': self,
                                   'product': self.product.name,
@@ -398,7 +398,7 @@ class SubscriptionItem(Item):
             transaction.reminders_set = 3
             transaction.save()
             url = reverse(settings.PROLONG_PAYMENT_VIEW, args=[transaction.pk])
-            transaction.send_rendered_email('payee/email/before-due-remind.html',
+            transaction.send_rendered_email('debits/email/before-due-remind.html',
                                             _("You need to pay for %s") % transaction.product.name,
                                             {'transaction': transaction,
                                              'product': transaction.product.name,
@@ -413,7 +413,7 @@ class SubscriptionItem(Item):
             transaction.reminders_set = 2
             transaction.save()
             url = reverse(settings.PROLONG_PAYMENT_VIEW, args=[transaction.pk])
-            transaction.send_rendered_email('payee/email/due-remind.html',
+            transaction.send_rendered_email('debits/email/due-remind.html',
                                             _("You need to pay for %s") % transaction.product.name,
                                             {'transaction': transaction,
                                              'product': transaction.product.name,
@@ -427,7 +427,7 @@ class SubscriptionItem(Item):
             transaction.reminders_set = 1
             transaction.save()
             url = reverse(settings.PROLONG_PAYMENT_VIEW, args=[transaction.pk])
-            transaction.send_rendered_email('payee/email/deadline-remind.html',
+            transaction.send_rendered_email('debits/email/deadline-remind.html',
                                             _("You need to pay for %s") % transaction.product.name,
                                             {'transaction': transaction,
                                              'product': transaction.product.name,
@@ -449,7 +449,7 @@ class SubscriptionItem(Item):
             transaction.reminders_set = 3
             transaction.save()
             url = reverse(settings.PROLONG_PAYMENT_VIEW, args=[transaction.pk])
-            transaction.send_rendered_email('payee/email/before-due-remind.html',
+            transaction.send_rendered_email('debits/email/before-due-remind.html',
                                             _("You need to pay for %s") % transaction.product.name,
                                             {'transaction': transaction,
                                              'product': transaction.product.name,
@@ -464,7 +464,7 @@ class SubscriptionItem(Item):
             transaction.reminders_set = 2
             transaction.save()
             url = reverse(settings.PROLONG_PAYMENT_VIEW, args=[transaction.pk])
-            transaction.send_rendered_email('payee/email/due-remind.html',
+            transaction.send_rendered_email('debits/email/due-remind.html',
                                             _("You need to pay for %s") % transaction.product.name,
                                             {'transaction': transaction,
                                              'product': transaction.product.name,
@@ -478,7 +478,7 @@ class SubscriptionItem(Item):
             transaction.reminders_set = 1
             transaction.save()
             url = reverse(settings.PROLONG_PAYMENT_VIEW, args=[transaction.pk])
-            transaction.send_rendered_email('payee/email/deadline-remind.html',
+            transaction.send_rendered_email('debits/email/deadline-remind.html',
                                             _("You need to pay for %s") % transaction.product.name,
                                             {'transaction': transaction,
                                              'product': transaction.product.name,

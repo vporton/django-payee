@@ -1,5 +1,5 @@
-from payee.payee_base.models import AutomaticPayment
-from payee.paypal.views import PayPalIPN
+from debits.debits_base.models import AutomaticPayment
+from debits.paypal.views import PayPalIPN
 
 
 class MyPayPalIPN(PayPalIPN):

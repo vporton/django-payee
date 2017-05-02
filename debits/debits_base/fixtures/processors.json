@@ -1,6 +1,6 @@
 [
   {
-    "model": "payee_base.paymentprocessor",
+    "model": "debits_base.paymentprocessor",
     "pk": 1,
     "fields": {
       "name": "Avangate",
@@ -10,7 +10,7 @@
     }
   },
   {
-    "model": "payee_base.paymentprocessor",
+    "model": "debits_base.paymentprocessor",
     "pk": 2,
     "fields": {
       "name": "PayPal",
@@ -20,17 +20,17 @@
     }
   },
   {
-    "model": "payee_base.paymentprocessor",
+    "model": "debits_base.paymentprocessor",
     "pk": 3,
     "fields": {
       "name": "BrainTree",
-      "url": "https://www.braintreepayee_base.com/",
+      "url": "https://www.braintreedebits_base.com/",
       "api_app_label": "",
       "api_model": ""
     }
   },
   {
-    "model": "payee_base.paymentprocessor",
+    "model": "debits_base.paymentprocessor",
     "pk": 4,
     "fields": {
       "name": "DalPay",
@@ -40,7 +40,7 @@
     }
   },
   {
-    "model": "payee_base.paymentprocessor",
+    "model": "debits_base.paymentprocessor",
     "pk": 5,
     "fields": {
       "name": "Recurly",
