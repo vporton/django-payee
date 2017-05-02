@@ -18,8 +18,8 @@ setup(
 
     version='0.0.1',
 
-    description='Accepting payements',
-    long_description='Accepting payements (currently supports PayPal)',
+    description='Accepting payments',
+    long_description='Accepting payments (currently supports PayPal)',
 
     # The project's main homepage.
     url='http://freesoft.portonvictor.org/django-debits.xml',
