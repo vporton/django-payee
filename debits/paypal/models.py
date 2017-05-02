@@ -3,7 +3,7 @@ from html import escape
 from django.db import models
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
-from payee.payee_base.models import logger, CannotCancelSubscription
+from debits.debits_base.models import logger, CannotCancelSubscription
 
 
 # This is a quick hack. For serious work use https://github.com/paypal/PayPal-Python-SDK instead.

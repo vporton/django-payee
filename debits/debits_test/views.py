@@ -7,8 +7,8 @@ from django.utils.translation import ugettext_lazy as _
 from .models import Organization, Purchase, PricingPlan
 from .forms import CreateOrganizationForm, SwitchPricingPlanForm
 from .business import create_organization
-from payee.payee_base.models import SimpleTransaction, SubscriptionTransaction, Period, ProlongItem, SubscriptionItem, period_to_string, logger, CannotCancelSubscription
-import payee
+from debits.debits_base.models import SimpleTransaction, SubscriptionTransaction, Period, ProlongItem, SubscriptionItem, period_to_string, logger, CannotCancelSubscription
+import debits
 from .processors import MyPayPalForm
 
 def transaction_payment_view(request, transaction_id):
@@ -28,7 +28,7 @@ def organization_payment_view(request, organization_id):
 def do_organization_payment_view(request, item, organization, purchase):
     plan_form = SwitchPricingPlanForm({'pricing_plan': purchase.plan.pk})
     pp = MyPayPalForm(request)
-    return render(request, 'payee_test/organization-payment-view.html',
+    return render(request, 'debits_test/organization-payment-view.html',
                   {'organization_id': organization.pk,
                    'organization': organization.name,
                    'item_id': item.pk,
@@ -37,7 +37,7 @@ def do_organization_payment_view(request, item, organization, purchase):
                    'active': item.is_active(),
                    'blocked': item.blocked,
                    'manual_mode': not item.active_subscription,
-                   'processor_name': item.active_subscription.transaction.processor.name if item.active_subscription else None,  # only for automatic recurring payee
+                   'processor_name': item.active_subscription.transaction.processor.name if item.active_subscription else None,  # only for automatic recurring payment
                    'plan': purchase.plan.name,
                    'trial': item.trial,
                    'trial_period': period_to_string(item.trial_period),
@@ -63,15 +63,15 @@ def create_organization_view(request):
     else:
         form = CreateOrganizationForm()
 
-    return render(request, 'payee_test/create-organization.html', {'form': form})
+    return render(request, 'debits_test/create-organization.html', {'form': form})
 
 
 def get_processor(request, hash):
     processor_name = hash.pop('arcamens_processor')
     if processor_name == 'PayPal':
         form = MyPayPalForm(request)
-        processor_id = payee.payee_base.processors.PAYMENT_PROCESSOR_PAYPAL
-        processor = payee.payee_base.models.PaymentProcessor.objects.get(pk=processor_id)
+        processor_id = debits.debits_base.processors.PAYMENT_PROCESSOR_PAYPAL
+        processor = debits.debits_base.models.PaymentProcessor.objects.get(pk=processor_id)
     else:
         raise RuntimeError("Unsupported payment form.")
     return form, processor
@@ -197,5 +197,5 @@ def unsubscribe_organization_view(request, organization_pk):
 
 def list_organizations_view(request):
     list = [{'id': o.id, 'name': o.name} for o in Organization.objects.all()]
-    return render(request, 'payee_test/list-organizations.html',
+    return render(request, 'debits_test/list-organizations.html',
                   {'organizations': list})

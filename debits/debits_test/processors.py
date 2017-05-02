@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from payee.paypal.form import PayPalForm
+from debits.paypal.form import PayPalForm
 
 class MyPayPalForm(PayPalForm):
     def __init__(self, request):
