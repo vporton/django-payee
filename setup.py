@@ -22,7 +22,7 @@ setup(
     long_description='Accepting payements (currently supports PayPal)',
 
     # The project's main homepage.
-    url='freesoft.portonvictor.org/django-debits.xml',
+    url='http://freesoft.portonvictor.org/django-debits.xml',
 
     # Author details
     author='Victor Porton',
