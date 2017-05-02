@@ -1,5 +1,5 @@
 """
-WSGI config for django-payee project.
+WSGI config for django-debits project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 
