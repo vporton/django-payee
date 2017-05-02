@@ -7,12 +7,12 @@ from django.utils.translation import ugettext_lazy as _
 from .models import Organization, Purchase, PricingPlan
 from .forms import CreateOrganizationForm, SwitchPricingPlanForm
 from .business import create_organization
-from payee.payee_base.models import Transaction, Period, ProlongItem, SubscriptionItem, period_to_string, logger, CannotCancelSubscription
+from payee.payee_base.models import SimpleTransaction, SubscriptionTransaction, Period, ProlongItem, SubscriptionItem, period_to_string, logger, CannotCancelSubscription
 import payee
 from .processors import MyPayPalForm
 
 def transaction_payment_view(request, transaction_id):
-    transaction = Transaction.objects.get(pk=int(transaction_id))
+    transaction = SubscriptionTransaction.objects.get(pk=int(transaction_id))
     purchase = transaction.purchase
     organization = purchase.organization
     return do_organization_payment_view(request, transaction, organization, purchase)
@@ -66,87 +66,113 @@ def create_organization_view(request):
     return render(request, 'payee_test/create-organization.html', {'form': form})
 
 
-def purchase_view(request):
-    hash = request.POST.dict()
-    organization_pk = int(hash['organization'])  # in real code should use user login information
-    del hash['organization']
-    op = hash['arcamens_op']
-    del hash['arcamens_op']
-    if hash['arcamens_processor'] == 'PayPal':
-        del hash['arcamens_processor']
+def get_processor(request, hash):
+    processor_name = hash.pop('arcamens_processor')
+    if processor_name == 'PayPal':
         form = MyPayPalForm(request)
         processor_id = payee.payee_base.processors.PAYMENT_PROCESSOR_PAYPAL
         processor = payee.payee_base.models.PaymentProcessor.objects.get(pk=processor_id)
     else:
-        logger.warning("Unsupported payment form.")
-        return
+        raise RuntimeError("Unsupported payment form.")
+    return form, processor
+
+
+def do_subscribe(hash, form, processor, item):
+    transaction = SubscriptionTransaction.objects.create(processor=processor, item=item)
+    return form.make_purchase_from_form(hash, transaction)
+
+
+def do_prolong(hash, form, processor, item):
+    periods = int(hash['periods'])
+    subitem = ProlongItem.objects.create(product=item.product,
+                                         currency=item.currency,
+                                         price=item.price * periods,
+                                         parent=item,
+                                         prolong_unit=Period.UNIT_MONTHS,
+                                         prolong_count=periods)
+    subtransaction = SimpleTransaction.objects.create(processor=processor, item=subitem)
+    return form.make_purchase_from_form(hash, subtransaction)
+
+
+def upgrade_calculate_new_period(k, item):
+    if item.due_payment_date:
+        period = (item.due_payment_date - datetime.date.today()).days
+    else:
+        period = 0
+    return round(period / k) if k > 1 else period  # don't increase paid period when downgrading
+
+
+def upgrade_create_new_item(item, plan, new_period):
+    new_item = SubscriptionItem(product=item.product,
+                                currency=plan.currency,
+                                price=plan.price,
+                                trial=item.trial,
+                                payment_period_unit=Period.UNIT_MONTHS,
+                                payment_period_count=1,
+                                trial_period_unit=item.trial_period_unit,
+                                trial_period_count=item.trial_period_count)
+    new_item.set_payment_date(datetime.date.today() + datetime.timedelta(days=new_period))
+    if item.active_subscription:
+        new_item.old_subscription = item.active_subscription
+    new_item.adjust_dates()
+    new_item.save()
+    return new_item
+
+
+def upgrade_subscription(organization, item, new_item, plan):
+    try:
+        item.active_subscription.force_cancel()
+    except CannotCancelSubscription:
+        pass
+    item.active_subscription = None
+    item.save()
+    organization.purchase = Purchase.objects.create(plan=plan, item=new_item)
+    organization.save()
+    return HttpResponseRedirect(reverse('organization-prolong-payment', args=[organization.pk]))
+
+
+def do_upgrade(hash, form, processor, item, organization):
+    plan = PricingPlan.objects.get(pk=int(hash['pricing_plan']))
+    if plan.currency != item.currency:
+        raise RuntimeError(_("Cannot upgrade to a payment plan with other currency."))
+    if item.payment_period.unit != Period.UNIT_MONTHS or item.payment_period.count != 1:
+        raise RuntimeError(_("Only one month payment period supported."))
+
+    k = plan.price / item.price  # price multiplies
+    new_period = upgrade_calculate_new_period(k, item)
+
+    new_item = upgrade_create_new_item(item, plan, new_period)
+
+    if not item.active_subscription:
+        # Simply create a new purchase which can be paid later
+        organization.purchase = Purchase.objects.create(plan=plan, item=new_item)
+        organization.save()
+        return HttpResponseRedirect(reverse('organization-prolong-payment', args=[organization.pk]))
+    elif k <= 1:
+        return upgrade_subscription(organization, item, new_item, plan)
+    else:
+        upgrade_transaction = SubscriptionTransaction.objects.create(processor=processor, item=new_item)
+        Purchase.objects.create(plan=plan, item=new_item, for_organization=organization)
+        return form.make_purchase_from_form(hash, upgrade_transaction)
+
+
+def purchase_view(request):
+    hash = request.POST.dict()
+    op = hash.pop('arcamens_op')
+    form, processor = get_processor(request, hash)
+    organization_pk = int(hash.pop('organization'))  # in real code should use user login information
     organization = Organization.objects.get(pk=organization_pk)
     purchase = organization.purchase
     item = purchase.item
     if op == 'subscribe':
-        transaction = Transaction.objects.create(processor=processor, item=item)
-        return form.make_purchase_from_form(hash, transaction)
+        return do_subscribe(hash, form, processor, item)
     elif op == 'manual':
-        periods = int(request.POST['periods'])
-        subitem = ProlongItem.objects.create(product=item.product,
-                                             currency=item.currency,
-                                             price=item.price * periods,
-                                             parent=item,
-                                             prolong_unit=Period.UNIT_MONTHS,
-                                             prolong_count=periods)
-        subtransaction = Transaction.objects.create(processor=processor, item=subitem.item)
-        return form.make_purchase_from_form(hash, subtransaction)
+        return do_prolong(hash, form, processor, item)
     elif op == 'upgrade':
-        plan = PricingPlan.objects.get(pk=int(request.POST['pricing_plan']))
-        if plan.currency != item.currency:
-            raise RuntimeError(_("Cannot upgrade to a payment plan with other currency."))
-        if item.payment_period.unit != Period.UNIT_MONTHS or item.payment_period.count != 1:
-            raise RuntimeError(_("Only one month payment period supported."))
-
-        k = plan.price / item.price  # price multiplies
-        if item.due_payment_date:
-            period = (item.due_payment_date - datetime.date.today()).days
-        else:
-            period = 0
-        new_period = round(period / k) if k > 1 else period  # don't increase paid period when downgrading
-
-        # Make the new_item
-        new_item = SubscriptionItem(product=item.product,
-                                    currency=plan.currency,
-                                    price=plan.price,
-                                    trial=item.trial,
-                                    payment_period_unit=Period.UNIT_MONTHS,
-                                    payment_period_count=1,
-                                    trial_period_unit=item.trial_period_unit,
-                                    trial_period_count=item.trial_period_count)
-        new_item.set_payment_date(datetime.date.today() + datetime.timedelta(days=new_period))
-        if item.active_subscription:
-            new_item.old_subscription = item.active_subscription
-        new_item.adjust_dates()
-        new_item.save()
-
-        if k <= 1 or not item.active_subscription:
-            if item.active_subscription:
-                try:
-                    item.active_subscription.force_cancel()
-                except CannotCancelSubscription:
-                    pass
-                item.active_subscription = None
-                item.save()
-            organization.purchase = Purchase.objects.create(plan=plan, item=new_item)
-            organization.save()
-            return HttpResponseRedirect(reverse('organization-prolong-payment', args=[organization.pk]))
-        else:
-            upgrade_transaction = Transaction.objects.create(processor=processor, item=new_item)
-            Purchase.objects.create(plan=plan, item=new_item, for_organization=organization)
-            return form.make_purchase_from_form(hash, upgrade_transaction)
+        return do_upgrade(hash, form, processor, item, organization)
 
 
-def unsubscribe_organization_view(request, organization_pk):
-    organization_pk = int(organization_pk)  # in real code should use user login information
-    organization = Organization.objects.get(pk=organization_pk)
-    item = organization.purchase.item
-    subscription = item.active_subscription
+def do_unsubscribe(subscription, item):
     try:
         if not subscription:
             raise CannotCancelSubscription(_("Subscription was already canceled"))
@@ -155,11 +181,17 @@ def unsubscribe_organization_view(request, organization_pk):
         # Without active_subscription=None it may remain in falsely subscribed state without a way to exit
         SubscriptionItem.objects.filter(pk=item.pk).update(active_subscription=None,
                                                            subinvoice=F('subinvoice') + 1)
-        # item.active_subscription = None
-        # item.save()
         return HttpResponse(e)
     else:
         return HttpResponse('')  # empty string means success
+
+
+def unsubscribe_organization_view(request, organization_pk):
+    organization_pk = int(organization_pk)  # in real code should use user login information
+    organization = Organization.objects.get(pk=organization_pk)
+    item = organization.purchase.item
+    subscription = item.active_subscription
+    return do_unsubscribe(subscription, item)
     # return HttpResponseRedirect(reverse('organization-prolong-payment', args=[organization.pk]))
 
 

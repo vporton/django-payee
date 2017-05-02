@@ -6,7 +6,7 @@ from django.db import transaction
 from django.http import HttpResponse
 from django.views import View
 from payee.payee_base.processors import PaymentCallback
-from payee.payee_base.models import Transaction, Period, Payment, AutomaticPayment, Subscription, SubscriptionItem, logger, period_to_delta, CannotCancelSubscription
+from payee.payee_base.models import BaseTransaction, SimpleTransaction, SubscriptionTransaction, Period, Payment, AutomaticPayment, Subscription, SubscriptionItem, logger, period_to_delta, CannotCancelSubscription
 from django.conf import settings
 
 
@@ -84,65 +84,71 @@ class PayPalIPN(PaymentCallback, View):
             self.do_post(request)
         except KeyError as e:
             logger.warning("PayPal IPN var %s is missing" % e)
-        except AttributeError as e:  # if for example item.subscriptionitem for non-subscription item
+        except AttributeError as e:  # if for example item for non-subscription item
             import traceback
             traceback.print_exc()
             # logger.warning(e)
         return HttpResponse('', content_type="text/plain")
 
     def do_post(self, request):
-        POST = request.POST
-
         # 'payment_date', 'time_created' unused
-
-        if POST['receiver_email'] == settings.PAYPAL_EMAIL:
-            debug = settings.PAYPAL_DEBUG
-            url = 'https://www.sandbox.paypal.com' if debug else 'https://www.paypal.com'
-            r = requests.post(url + '/cgi-bin/webscr',
-                              'cmd=_notify-validate&' + request.body.decode(POST.get('charset') or request.content_params['charset']),
-                              headers={'content-type': request.content_type})  # message must use the same encoding as the original
-            if r.text == 'VERIFIED':
-                try:
-                    transaction_id = Transaction.pk_from_custom(POST['custom'])
-                    self.on_transaction_complete(POST, transaction_id)
-                except Transaction.DoesNotExist:
-                    logger.warning("Wrong 'custom' field for a transaction")
-            else:
-                logger.warning("PayPal verification not passed")
+        if request.POST['receiver_email'] == settings.PAYPAL_EMAIL:
+            self.do_do_post(request.POST, request)
         else:
             logger.warning("Wrong PayPal email")
+
+    def do_do_post(self, POST, request):
+        debug = settings.PAYPAL_DEBUG
+        url = 'https://www.sandbox.paypal.com' if debug else 'https://www.paypal.com'
+        r = requests.post(url + '/cgi-bin/webscr',
+                          'cmd=_notify-validate&' + request.body.decode(
+                              POST.get('charset') or request.content_params['charset']),
+                          headers={
+                              'content-type': request.content_type})  # message must use the same encoding as the original
+        if r.text == 'VERIFIED':
+            self.verified_post(POST, request)
+        else:
+            logger.warning("PayPal verification not passed")
+
+    def verified_post(self, POST, request):
+        try:
+            transaction_id = BaseTransaction.pk_from_custom(POST['custom'])
+            self.on_transaction_complete(POST, transaction_id)
+        except BaseTransaction.DoesNotExist:
+            logger.warning("Wrong 'custom' field for a transaction")
 
     def on_transaction_complete(self, POST, transaction_id):
         # Crazy: Recurring payee and subscription payee are not the same.
         # 'recurring_payment_id' and 'subscr_id' are equivalent: https://thereforei.am/2012/07/03/cancelling-subscriptions-created-with-paypal-standard-via-the-express-checkout-api/
+        type_dispatch = {
+            'web_accept': self.accept_regular_payment,
+            'cart': self.accept_regular_payment,
+            'express_checkout': self.accept_regular_payment,
+            'recurring_payment': self.accept_recurring_payment,
+            'subscr_payment': self.accept_subscription_payment,
+            'recurring_payment_profile_created': self.accept_recurring_signup,
+            'subscr_signup': self.accept_subscription_signup,
+            'recurring_payment_profile_cancel': self.accept_recurring_canceled,
+            'recurring_payment_suspended': self.accept_recurring_canceled,
+            'subscr_cancel': self.accept_recurring_canceled
+        }
         if 'payment_status' in POST and POST['payment_status'] == 'Refunded':
             self.accept_refund(POST, transaction_id)
-        elif POST['txn_type'] in ('web_accept', 'cart', 'express_checkout'):
-            self.accept_regular_payment(POST, transaction_id)
-        elif POST['txn_type'] == 'recurring_payment' and \
-                        POST['payment_status'] == 'Completed':
-            self.accept_recurring_payment(POST, transaction_id)
-        elif POST['txn_type'] == 'subscr_payment' and \
-                        POST['payment_status'] == 'Completed':
-            self.accept_subscription_payment(POST, transaction_id)
-        elif POST['txn_type'] == 'recurring_payment_profile_created':
-            self.accept_recurring_signup(POST, transaction_id)
-        elif POST['txn_type'] == 'subscr_signup':
-            self.accept_subscription_signup(POST, transaction_id)
-        elif POST['txn_type'] in ('recurring_payment_profile_cancel', 'recurring_payment_suspended'):
-            self.accept_recurring_canceled(POST, transaction_id)
-        elif POST['txn_type'] == 'subscr_cancel':
-            self.accept_subscription_canceled(POST, transaction_id)
+        else:
+            type_dispatch[POST['txn_type']](POST, transaction_id)
 
     def accept_refund(self, POST, transaction_id):
         try:
-            transaction = Transaction.objects.get(pk=transaction_id)
-            if POST['mc_currency'] == transaction.item.currency:
-                transaction.payment.refund_payment()
-            else:
-                logger.warning("Wrong refund currency.")
-        except Transaction.DoesNotExist:
-            logger.warning("Transaction %d does not exist" % transaction_id)
+            self.do_appect_refund(POST, transaction_id)
+        except BaseTransaction.DoesNotExist:
+            logger.warning("BaseTransaction %d does not exist" % transaction_id)
+
+    def do_appect_refund(self, POST, transaction_id):
+        transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
+        if POST['mc_currency'] == transaction.item.currency:
+            transaction.payment.refund_payment()
+        else:
+            logger.warning("Wrong refund currency.")
 
     def accept_regular_payment(self, POST, transaction_id):
         if POST['payment_status'] == 'Completed':
@@ -151,178 +157,131 @@ class PayPalIPN(PaymentCallback, View):
     def do_accept_regular_payment(self, POST, transaction_id):
         POST = POST.dict()  # for POST.get() below
         try:
-            transaction = Transaction.objects.get(pk=transaction_id)
-            item = transaction.item
-            if not hasattr(item, 'subscriptionitem') and \
-                            Decimal(POST['mc_gross']) == item.price and \
-                            Decimal(POST['shipping']) == item.shipping and \
-                            POST['mc_currency'] == item.currency:
-                payment = Payment.objects.create(transaction=transaction, email=POST['payer_email'])
-                item.paid = True
-                item.last_payment = datetime.date.today()
-                self.upgrade_subscription(transaction, item)
-                item.save()
-                if hasattr(item, 'prolongitem'):  # don't load the object here
-                    self.advance_parent(item.prolongitem)
-                else:  # TODO: Remove this else?
-                    self.on_payment(payment)
-            else:
-                logger.warning("Wrong amount or currency")
-        except Transaction.DoesNotExist:
-            logger.warning("Transaction %d does not exist" % transaction_id)
+            self.do_do_accept_regular_payment(POST, transaction_id)
+        except BaseTransaction.DoesNotExist:
+            logger.warning("BaseTransaction %d does not exist" % transaction_id)
 
-    @transaction.atomic
-    def advance_parent(self, prolongitem):
-        parent_item = SubscriptionItem.objects.select_for_update().get(pk=prolongitem.parent_id)  # must be inside transaction
-        # parent.email = transaction.email
-        base_date = max(datetime.date.today(), parent_item.due_payment_date)
-        parent_item.set_payment_date(base_date + period_to_delta(prolongitem.prolong))
-        parent_item.save()
+    def do_do_accept_regular_payment(self, POST, transaction_id):
+        transaction = SimpleTransaction.objects.get(pk=transaction_id)
+        if Decimal(POST['mc_gross']) == transaction.item.price and \
+                        Decimal(POST['shipping']) == transaction.item.shipping and \
+                        POST['mc_currency'] == transaction.item.currency:
+            payment = transaction.on_accept_regular_payment(POST['payer_email'])
+            self.on_payment(payment)
+        else:
+            logger.warning("Wrong amount or currency")
 
     def accept_recurring_payment(self, POST, transaction_id):
+        if POST['payment_status'] != 'Completed':
+            return
         try:
             self.do_accept_recurring_payment(POST, transaction_id)
-        except Transaction.DoesNotExist:
-            logger.warning("Transaction %d does not exist" % transaction_id)
+        except BaseTransaction.DoesNotExist:
+            logger.warning("BaseTransaction %d does not exist" % transaction_id)
 
     def do_accept_recurring_payment(self, POST, transaction_id):
-        # transaction = Transaction.objects.select_for_update().get(pk=transaction_id)  # only inside transaction
-        transaction = Transaction.objects.get(pk=transaction_id)
-        item = transaction.item
-        if hasattr(item, 'subscriptionitem') and \
-                        Decimal(POST['amount_per_cycle']) == item.price + item.shipping and \
-                        POST['payment_cycle'] in self.pp_payment_cycles(item.subscriptionitem):
-            subscription_reference = POST['recurring_payment_id']
-            subscription = self.do_create_subscription(transaction, item.subscriptionitem, subscription_reference, POST['payer_email'])
-            payment = AutomaticPayment.objects.create(transaction=transaction,
-                                                      email=POST['payer_email'])
-            self.do_subscription_or_recurring_payment(transaction, POST)
-            self.on_payment(payment)
+        # transaction = BaseTransaction.objects.select_for_update().get(pk=transaction_id)  # only inside transaction
+        transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
+        if Decimal(POST['amount_per_cycle']) == transaction.item.price + transaction.item.shipping and \
+                        POST['payment_cycle'] in self.pp_payment_cycles(transaction.item):
+            self.do_do_accept_subscription_or_recurring_payment(transaction, transaction.item, POST, POST['recurring_payment_id'])
         else:
             logger.warning("Wrong recurring payment data")
 
     def accept_subscription_payment(self, POST, transaction_id):
+        if POST['payment_status'] != 'Completed':
+            return
         try:
             self.do_accept_subscription_payment(POST, transaction_id)
-        except Transaction.DoesNotExist:
-            logger.warning("Transaction %d does not exist" % transaction_id)
+        except BaseTransaction.DoesNotExist:
+            logger.warning("SubscriptionTransaction %d does not exist" % transaction_id)
 
-    @transaction.atomic
-    def do_create_subscription(self, transaction, subscriptionitem, ref, email):
-        if subscriptionitem.active_subscription and \
-                        subscriptionitem.active_subscription.subscription_reference == ref:
-            return subscriptionitem.active_subscription
-        else:
-            subscriptionitem.active_subscription = Subscription.objects.create(transaction=transaction,
-                                                                               subscription_reference=ref,
-                                                                               email=email)
-            subscriptionitem.save()
-            return subscriptionitem.active_subscription
+    def do_do_accept_subscription_or_recurring_payment(self, transaction, item, POST, ref):
+        transaction.obtain_active_subscription(ref, POST['payer_email'])
+        payment = AutomaticPayment.objects.create(transaction=transaction,
+                                                  email=POST['payer_email'])
+        self.do_subscription_or_recurring_payment(item)
+        self.on_payment(payment)
 
     def do_accept_subscription_payment(self, POST, transaction_id):
-        # transaction = Transaction.objects.select_for_update().get(pk=transaction_id)  # only inside transaction
-        transaction = Transaction.objects.get(pk=transaction_id)
+        # transaction = BaseTransaction.objects.select_for_update().get(pk=transaction_id)  # only inside transaction
+        transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
         item = transaction.item
-        if hasattr(item, 'subscriptionitem') and \
-                        Decimal(POST['mc_gross']) == item.price + item.shipping and \
+        if Decimal(POST['mc_gross']) == item.price + item.shipping and \
                         POST['mc_currency'] == item.currency:
-            subscription_reference = POST['subscr_id']
-            subscription = self.do_create_subscription(transaction, item.subscriptionitem, subscription_reference, POST['payer_email'])
-            payment = AutomaticPayment.objects.create(transaction=transaction,
-                                                      email=POST['payer_email'])
-            self.do_subscription_or_recurring_payment(transaction, POST)
-            self.on_payment(payment)
+            self.do_do_accept_subscription_or_recurring_payment(transaction, item, POST, POST['subscr_id'])
         else:
             logger.warning("Wrong subscription payment data")
 
-    def do_subscription_or_recurring_payment(self, transaction, POST):
+    def do_subscription_or_recurring_payment(self, item):
         # transaction.processor = PaymentProcessor.objects.get(pk=PAYMENT_PROCESSOR_PAYPAL)
-        item = transaction.item
-        subscription_item = item.subscriptionitem
-        subscription_item.trial = False
-        date = subscription_item.due_payment_date
-        while date <= datetime.date.today():
-            date += period_to_delta(subscription_item.payment_period)
-            subscription_item.set_payment_date(date)
-            subscription_item.last_payment = datetime.date.today()
-            subscription_item.reminders_sent = 0
-        subscription_item.save()
+        item.trial = False
+        date = item.due_payment_date
+        if item.payment_period.count > 0:  # hack to eliminate infinite loop
+            while date <= datetime.date.today():
+                date = self.advance_item_date(date, item)
+        item.save()
 
-    def do_subscription_or_recurring_created(self, transaction, POST):
+    def advance_item_date(self, date, item):
+        date += period_to_delta(item.payment_period)
+        item.set_payment_date(date)
+        item.last_payment = datetime.date.today()
+        item.reminders_sent = 0
+        return date
+
+    def do_subscription_or_recurring_created(self, transaction, POST, ref):
+        subscription = transaction.obtain_active_subscription(ref, POST['payer_email'])
         # transaction.processor = PaymentProcessor.objects.get(pk=PAYMENT_PROCESSOR_PAYPAL)
-        item = transaction.item
-        subscription_item = item.subscriptionitem
-        subscription_item.trial = False
-        subscription_item.save()
-        self.upgrade_subscription(transaction, item)
+        transaction.item.trial = False
+        transaction.item.save()
+        transaction.item.upgrade_subscription()
+        self.on_subscription_created(POST, subscription)
 
     def accept_subscription_signup(self, POST, transaction_id):
         try:
-            transaction = Transaction.objects.get(pk=transaction_id)
-            item = transaction.item
-            subscription_item = item.subscriptionitem
-            letter = {
-                Period.UNIT_DAYS: 'D',
-                Period.UNIT_WEEKS: 'W',
-                Period.UNIT_MONTHS: 'M',
-                Period.UNIT_YEARS: 'Y',
-            }[subscription_item.payment_period.unit]
-            if hasattr(item, 'subscriptionitem') and \
-                            Decimal(POST['amount3']) == item.price + item.shipping and \
-                            POST['period3'] == str(subscription_item.payment_period.count) + ' ' + letter and \
-                            POST['mc_currency'] == item.currency:
-                subscription = self.do_create_subscription(transaction, item.subscriptionitem, POST['subscr_id'], POST['payer_email'])
-                self.do_subscription_or_recurring_created(transaction, POST)
-                self.on_subscription_created(POST, subscription)
-            else:
-                logger.warning("Wrong subscription signup data")
-        except Transaction.DoesNotExist:
-            logger.warning("Transaction %d does not exist" % transaction_id)
+            self.do_accept_subscription_signup(POST, transaction_id)
+        except BaseTransaction.DoesNotExist:
+            logger.warning("SubscriptionTransaction %d does not exist" % transaction_id)
+
+    def do_accept_subscription_signup(self, POST, transaction_id):
+        transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
+        item = transaction.item
+        letter = {
+            Period.UNIT_DAYS: 'D',
+            Period.UNIT_WEEKS: 'W',
+            Period.UNIT_MONTHS: 'M',
+            Period.UNIT_YEARS: 'Y',
+        }[item.payment_period.unit]
+        if Decimal(POST['amount3']) == transaction.item.price + transaction.item.shipping and \
+                        POST['period3'] == str(transaction.item.payment_period.count) + ' ' + letter and \
+                        POST['mc_currency'] == transaction.item.currency:
+            self.do_subscription_or_recurring_created(transaction, POST, POST['subscr_id'])
+        else:
+            logger.warning("Wrong subscription signup data")
 
     def accept_recurring_signup(self, POST, transaction_id):
         try:
-            transaction = Transaction.objects.get(pk=transaction_id)
-            item = transaction.item
-            if hasattr(item, 'subscriptionitem') and \
-                            'period1' not in POST and 'period2' not in POST and \
-                            Decimal(POST['mc_amount3']) == item.price + item.shipping and \
-                            POST['mc_currency'] == item.currency and \
+            transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
+            if 'period1' not in POST and 'period2' not in POST and \
+                            Decimal(POST['mc_amount3']) == transaction.item.price + transaction.item.shipping and \
+                            POST['mc_currency'] == transaction.item.currency and \
                             POST['period3'] in self.pp_payment_cycles(transaction):
-                subscription = self.do_create_subscription(transaction, item.subscriptionitem, POST['recurring_payment_id'], POST['payer_email'])
-                self.do_subscription_or_recurring_created(transaction, POST)
-                self.on_subscription_created(POST, subscription)
+                self.do_subscription_or_recurring_created(transaction, POST, POST['recurring_payment_id'])
             else:
                 logger.warning("Wrong recurring signup data")
-        except Transaction.DoesNotExist:
-            logger.warning("Transaction %d does not exist" % transaction_id)
+        except BaseTransaction.DoesNotExist:
+            logger.warning("SubscriptionTransaction %d does not exist" % transaction_id)
 
     def accept_recurring_canceled(self, POST, transaction_id):
         try:
-            transaction = Transaction.objects.get(pk=transaction_id)
-            transaction.item.subscriptionitem.cancel_subscription()
-            self.on_subscription_canceled(POST, transaction.item.subscriptionitem)
-        except Transaction.DoesNotExist:
+            self.do_accept_recurring_canceled(POST, transaction_id)
+        except BaseTransaction.DoesNotExist:
             pass
 
-    def accept_subscription_canceled(self, POST, transaction_id):
-        try:
-            transaction = Transaction.objects.get(pk=transaction_id)
-            transaction.item.subscriptionitem.cancel_subscription()
-            self.on_subscription_canceled(POST, transaction.item.subscriptionitem)
-        except Transaction.DoesNotExist:
-            pass
-
-    # Can be called from both subscription IPN and payment IPN
-    @transaction.atomic
-    def upgrade_subscription(self, transaction, item):
-        if item.old_subscription:
-            try:
-                item.old_subscription.force_cancel(is_upgrade=True)
-            except CannotCancelSubscription:
-                pass
-            # self.on_upgrade_subscription(transaction, item.old_subscription)  # TODO: Needed?
-            item.old_subscription = None
-            item.save()
+    def do_accept_recurring_canceled(self, POST, transaction_id):
+        transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
+        transaction.item.cancel_subscription()
+        self.on_subscription_canceled(POST, transaction.item)
 
     # Ugh, PayPal
     def pp_payment_cycles(self, item):

@@ -14,12 +14,12 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-    name='django-payee',
+    name='django-debits',
 
     version='0.0.1',
 
-    description='Accepting payee',
-    long_description='Accepting payee (currently supports PayPal)',
+    description='Accepting payements',
+    long_description='Accepting payements (currently supports PayPal)',
 
     # The project's main homepage.
     url='FIXME',

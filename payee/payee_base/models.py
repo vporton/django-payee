@@ -1,3 +1,4 @@
+import abc
 import hmac
 import datetime
 from dateutil.relativedelta import relativedelta
@@ -6,6 +7,8 @@ from django.apps import apps
 from django.urls import reverse
 from django.db import models
 from django.db.models import F
+import django.db
+from django.db import transaction
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
@@ -14,7 +17,7 @@ from composite_field import CompositeField
 from django.conf import settings
 
 
-logger = logging.getLogger('hacker.payment.paypal')
+logger = logging.getLogger('debits')
 
 
 class ModelRef(CompositeField):
@@ -86,24 +89,23 @@ def period_to_string(period):
     return "%d %s" % (period.count, hash[period.unit])
 
 
-class Transaction(models.Model):
+class BaseTransaction(models.Model):
     """
     ONE redirect to the payment processor
     """
+
+    # class Meta:
+    #     abstract = True
+
     processor = models.ForeignKey(PaymentProcessor)
     creation_date = models.DateField(auto_now_add=True)
 
-    item = models.ForeignKey('Item', related_name='transactions', null=False)
-
-    # A transaction should have a code that identifies it. # TODO
-    # code = models.CharField(max_length=255)
-
     def __repr__(self):
-        return "<Transaction: %s>" % (("pk=%d" % self.pk) if self.pk else "no pk")
+        return "<BaseTransaction: %s>" % (("pk=%d" % self.pk) if self.pk else "no pk")
 
     @staticmethod
     def custom_from_pk(pk):
-        # Secret can be known only to one who created a Transaction.
+        # Secret can be known only to one who created a BaseTransaction.
         # This prevents third parties to make fake IPNs from a payment processor.
         secret = hmac.new(settings.SECRET_KEY.encode(), ('payid ' + str(pk)).encode()).hexdigest()
         return settings.PAYMENTS_REALM + ' ' + str(pk) + ' ' + secret
@@ -112,15 +114,93 @@ class Transaction(models.Model):
     def pk_from_custom(custom):
         r = custom.split(' ', 2)
         if len(r) != 3 or r[0] != settings.PAYMENTS_REALM:
-            raise Transaction.DoesNotExist
+            raise BaseTransaction.DoesNotExist
         try:
             pk = int(r[1])
             secret = hmac.new(settings.SECRET_KEY.encode(), ('payid ' + str(pk)).encode()).hexdigest()
             if r[2] != secret:
-                raise Transaction.DoesNotExist
+                raise BaseTransaction.DoesNotExist
             return pk
         except ValueError:
-            raise Transaction.DoesNotExist
+            raise BaseTransaction.DoesNotExist
+
+    # https://bitbucket.org/arcamens/django-payments/wiki/Invoice%20IDs
+    @abc.abstractmethod
+    def invoice_id(self):
+        pass
+
+    def invoiced_item(self):
+        return self.item.old_subscription.transaction.item \
+            if self.item and self.item.old_subscription \
+            else self.item
+
+    @abc.abstractmethod
+    def subinvoice(self):
+        pass
+
+class SimpleTransaction(BaseTransaction):
+    item = models.ForeignKey('SimpleItem', related_name='transactions', null=False)
+
+    def subinvoice(self):
+        return 1
+
+    def invoice_id(self):
+        return settings.PAYMENTS_REALM + ' p-%d' % (self.item.pk,)
+
+    def on_accept_regular_payment(self, email):
+        payment = SimplePayment.objects.create(transaction=self, email=email)
+        self.item.paid = True
+        self.item.last_payment = datetime.date.today()
+        self.item.upgrade_subscription()
+        self.item.save()
+        try:
+            self.advance_parent(self.item.prolongitem)
+        except AttributeError:
+            pass
+        return payment
+
+
+    @transaction.atomic
+    def advance_parent(self, prolongitem):
+        parent_item = SubscriptionItem.objects.select_for_update().get(
+            pk=prolongitem.parent_id)  # must be inside transaction
+        # parent.email = transaction.email
+        base_date = max(datetime.date.today(), parent_item.due_payment_date)
+        parent_item.set_payment_date(base_date + period_to_delta(prolongitem.prolong))
+        parent_item.save()
+
+
+class SubscriptionTransaction(BaseTransaction):
+    item = models.ForeignKey('SubscriptionItem', related_name='transactions', null=False)
+
+    def subinvoice(self):
+        return self.invoiced_item().subinvoice
+
+    def invoice_id(self):
+        if self.item.old_subscription:
+            return settings.PAYMENTS_REALM + ' %d-%d-u' % (self.item.pk, self.subinvoice())
+        else:
+            return settings.PAYMENTS_REALM + ' %d-%d' % (self.item.pk, self.subinvoice())
+
+    def create_active_subscription(self, ref, email):
+        """
+        Internal
+        """
+        self.item.active_subscription = Subscription.objects.create(transaction=self,
+                                                                    subscription_reference=ref,
+                                                                    email=email)
+        self.item.save()
+        return self.item.active_subscription
+
+    @django.db.transaction.atomic
+    def obtain_active_subscription(self, ref, email):
+        """
+        Internal
+        """
+        if self.item.active_subscription and self.item.active_subscription.subscription_reference == ref:
+            return self.item.active_subscription
+        else:
+            return self.create_active_subscription(ref, email)
 
 
 class Item(models.Model):
@@ -161,6 +241,28 @@ class Item(models.Model):
     def __str__(self):
         return self.product.name
 
+    def adjust(self):
+        pass
+
+    @abc.abstractmethod
+    def is_subscription(self):
+        pass
+
+    # Can be called from both subscription IPN and payment IPN, so prepare to handle it two times
+    @transaction.atomic
+    def upgrade_subscription(self):
+        if self.old_subscription:
+            self.do_upgrade_subscription()
+
+    def do_upgrade_subscription(self):
+        try:
+            self.old_subscription.force_cancel(is_upgrade=True)
+        except CannotCancelSubscription:
+            pass
+        # self.on_upgrade_subscription(transaction, item.old_subscription)  # TODO: Needed?
+        self.old_subscription = None
+        self.save()
+
     def send_rendered_email(self, template_name, subject, data):
         try:
             self.email = self.subscription.email
@@ -173,102 +275,15 @@ class Item(models.Model):
         # FIXME: second argument should be plain text
         send_mail(subject, text, settings.FROM_EMAIL, [self.email], html_message=text)
 
-    @staticmethod
-    def send_reminders():
-        Item.send_regular_reminders()
-        Item.send_trial_reminders()
-
-    @staticmethod
-    def send_regular_reminders():
-        # start with the last
-
-        days_before = settings.PAYMENTS_DAYS_BEFORE_DUE_REMIND
-        reminder_date = datetime.date.today() + datetime.timedelta(days=days_before)
-        q = SubscriptionItem.objects.filter(reminders_sent__lt=3, due_payment_date__lte=reminder_date, trial=False)
-        for transaction in q:
-            transaction.reminders_set = 3
-            transaction.save()
-            url = reverse(settings.PROLONG_PAYMENT_VIEW, args=[transaction.pk])
-            transaction.send_rendered_email('payee/email/before-due-remind.html',
-                                            _("You need to pay for %s") % transaction.product.name,
-                                            {'transaction': transaction,
-                                             'product': transaction.product.name,
-                                             'url': url,
-                                             'days_before': days_before})
-
-        reminder_date = datetime.date.today()
-        q = SubscriptionItem.objects.filter(reminders_sent__lt=2, due_payment_date__lte=reminder_date, trial=False)
-        for transaction in q:
-            transaction.reminders_set = 2
-            transaction.save()
-            url = reverse(settings.PROLONG_PAYMENT_VIEW, args=[transaction.pk])
-            transaction.send_rendered_email('payee/email/due-remind.html',
-                                            _("You need to pay for %s") % transaction.product.name,
-                                            {'transaction': transaction,
-                                             'product': transaction.product.name,
-                                             'url': url})
-
-        reminder_date = datetime.date.today()
-        q = SubscriptionItem.objects.filter(reminders_sent__lt=1, payment_deadline__lte=reminder_date, trial=False)
-        for transaction in q:
-            transaction.reminders_set = 1
-            transaction.save()
-            url = reverse(settings.PROLONG_PAYMENT_VIEW, args=[transaction.pk])
-            transaction.send_rendered_email('payee/email/deadline-remind.html',
-                                            _("You need to pay for %s") % transaction.product.name,
-                                            {'transaction': transaction,
-                                             'product': transaction.product.name,
-                                             'url': url})
-
-    @staticmethod
-    def send_trial_reminders():
-        # start with the last
-
-        days_before = settings.PAYMENTS_DAYS_BEFORE_TRIAL_END_REMIND
-        reminder_date = datetime.date.today() + datetime.timedelta(days=days_before)
-        q = SubscriptionItem.objects.filter(reminders_sent__lt=3, due_payment_date__lte=reminder_date, trial=True)
-        for transaction in q:
-            transaction.reminders_set = 3
-            transaction.save()
-            url = reverse(settings.PROLONG_PAYMENT_VIEW, args=[transaction.pk])
-            transaction.send_rendered_email('payee/email/before-due-remind.html',
-                                            _("You need to pay for %s") % transaction.product.name,
-                                            {'transaction': transaction,
-                                             'product': transaction.product.name,
-                                             'url': url,
-                                             'days_before': days_before})
-
-        reminder_date = datetime.date.today()
-        q = SubscriptionItem.objects.filter(reminders_sent__lt=2, due_payment_date__lte=reminder_date, trial=True)
-        for transaction in q:
-            transaction.reminders_set = 2
-            transaction.save()
-            url = reverse(settings.PROLONG_PAYMENT_VIEW, args=[transaction.pk])
-            transaction.send_rendered_email('payee/email/due-remind.html',
-                                            _("You need to pay for %s") % transaction.product.name,
-                                            {'transaction': transaction,
-                                             'product': transaction.product.name,
-                                             'url': url})
-
-        reminder_date = datetime.date.today()
-        q = SubscriptionItem.objects.filter(reminders_sent__lt=1, payment_deadline__lte=reminder_date, trial=True)
-        for transaction in q:
-            transaction.reminders_set = 1
-            transaction.save()
-            url = reverse(settings.PROLONG_PAYMENT_VIEW, args=[transaction.pk])
-            transaction.send_rendered_email('payee/email/deadline-remind.html',
-                                            _("You need to pay for %s") % transaction.product.name,
-                                            {'transaction': transaction,
-                                             'product': transaction.product.name,
-                                             'url': url})
-
-
 class SimpleItem(Item):
     """
     Non-subscription item.
     """
 
     paid = models.BooleanField(default=False)
+
+    def is_subscription(self):
+        return False
 
     def is_paid(self):
         return (self.paid or self.gratis) and not self.blocked
@@ -292,6 +307,9 @@ class SubscriptionItem(Item):
     # https://bitbucket.org/arcamens/django-payments/wiki/Invoice%20IDs
     subinvoice = models.PositiveIntegerField(default=1)  # no need for index, as it is used only at PayPal side
 
+    def is_subscription(self):
+        return True
+
     # Usually you should use quick_is_active() instead because that is faster
     def is_active(self):
         prior = self.payment_deadline is not None and \
@@ -310,6 +328,11 @@ class SubscriptionItem(Item):
                 (period.unit == Period.UNIT_YEARS and \
                              date.month == 2 and date.day == 29)
 
+    def adjust(self):
+        self.trial = self.trial_period.count != 0
+        self.adjust_dates()
+        self.save()
+
     # If one bills at 29, 30, or 31, he should be given additional about 1-3 days free
     def adjust_dates(self):
         # We may have a trouble with non-monthly trials - the only solution is to make trial period ourselves
@@ -318,38 +341,152 @@ class SubscriptionItem(Item):
         if self.due_payment_date:
             period_end = max(period_end, self.due_payment_date)
         if SubscriptionItem.day_needs_adjustment(self.trial_period, period_end):
-            period = period_end - datetime.date.today()
-            while period_end.day != 1:
-                period_end += datetime.timedelta(days=1)
-                period += datetime.timedelta(days=1)
-            # self.trial_period.both = (Period.UNIT_DAYS, period.days)  # setting it to due payment date would be wrong
-            self.set_payment_date(period_end)
+            self.do_adjust_dates(period_end)
+
+    def do_adjust_dates(self, period_end):
+        period = period_end - datetime.date.today()
+        while period_end.day != 1:
+            period_end += datetime.timedelta(days=1)
+            period += datetime.timedelta(days=1)
+        # self.trial_period.both = (Period.UNIT_DAYS, period.days)  # setting it to due payment date would be wrong
+        self.set_payment_date(period_end)
 
     def set_payment_date(self, date):
         self.due_payment_date = date
         self.payment_deadline = self.due_payment_date + period_to_delta(self.grace_period)
 
     def start_trial(self):
-        self.trial = True
-        self.set_payment_date(datetime.date.today() + period_to_delta(self.trial_period))
+        if self.trial_period.count != 0:
+            self.trial = True
+            self.set_payment_date(datetime.date.today() + period_to_delta(self.trial_period))
 
     def cancel_subscription(self):
         # atomic operation
         SubscriptionItem.objects.filter(pk=self.pk).update(active_subscription=None,
                                                            subinvoice=F('subinvoice') + 1)
         if not self.old_subscription:  # don't send this email on plan upgrade
-            url = settings.PAYMENTS_HOST + reverse(settings.PROLONG_PAYMENT_VIEW, args=[self.pk])
-            days_before = (self.due_payment_date - datetime.date.today()).days
-            self.send_rendered_email('payee/email/subscription-canceled.html',
-                                     _("Service subscription canceled"),
-                                     {'self': self,
-                                      'product': self.product.name,
-                                      'url': url,
-                                      'days_before': days_before})
+            self.cancel_subscription_email()
+
+    def cancel_subscription_email(self):
+        url = settings.PAYMENTS_HOST + reverse(settings.PROLONG_PAYMENT_VIEW, args=[self.pk])
+        days_before = (self.due_payment_date - datetime.date.today()).days
+        self.send_rendered_email('payee/email/subscription-canceled.html',
+                                 _("Service subscription canceled"),
+                                 {'self': self,
+                                  'product': self.product.name,
+                                  'url': url,
+                                  'days_before': days_before})
+
+    @staticmethod
+    def send_reminders():
+        SubscriptionItem.send_regular_reminders()
+        SubscriptionItem.send_trial_reminders()
+
+    @staticmethod
+    def send_regular_reminders():
+        # start with the last
+        SubscriptionItem.send_regular_before_due_reminders()
+        SubscriptionItem.send_regular_due_reminders()
+        SubscriptionItem.send_regular_deadline_reminders()
+
+    @staticmethod
+    def send_regular_before_due_reminders():
+        days_before = settings.PAYMENTS_DAYS_BEFORE_DUE_REMIND
+        reminder_date = datetime.date.today() + datetime.timedelta(days=days_before)
+        q = SubscriptionItem.objects.filter(reminders_sent__lt=3, due_payment_date__lte=reminder_date, trial=False)
+        for transaction in q:
+            transaction.reminders_set = 3
+            transaction.save()
+            url = reverse(settings.PROLONG_PAYMENT_VIEW, args=[transaction.pk])
+            transaction.send_rendered_email('payee/email/before-due-remind.html',
+                                            _("You need to pay for %s") % transaction.product.name,
+                                            {'transaction': transaction,
+                                             'product': transaction.product.name,
+                                             'url': url,
+                                             'days_before': days_before})
+
+    @staticmethod
+    def send_regular_due_reminders():
+        reminder_date = datetime.date.today()
+        q = SubscriptionItem.objects.filter(reminders_sent__lt=2, due_payment_date__lte=reminder_date, trial=False)
+        for transaction in q:
+            transaction.reminders_set = 2
+            transaction.save()
+            url = reverse(settings.PROLONG_PAYMENT_VIEW, args=[transaction.pk])
+            transaction.send_rendered_email('payee/email/due-remind.html',
+                                            _("You need to pay for %s") % transaction.product.name,
+                                            {'transaction': transaction,
+                                             'product': transaction.product.name,
+                                             'url': url})
+
+    @staticmethod
+    def send_regular_deadline_reminders():
+        reminder_date = datetime.date.today()
+        q = SubscriptionItem.objects.filter(reminders_sent__lt=1, payment_deadline__lte=reminder_date, trial=False)
+        for transaction in q:
+            transaction.reminders_set = 1
+            transaction.save()
+            url = reverse(settings.PROLONG_PAYMENT_VIEW, args=[transaction.pk])
+            transaction.send_rendered_email('payee/email/deadline-remind.html',
+                                            _("You need to pay for %s") % transaction.product.name,
+                                            {'transaction': transaction,
+                                             'product': transaction.product.name,
+                                             'url': url})
+
+    @staticmethod
+    def send_trial_reminders():
+        # start with the last
+        SubscriptionItem.send_trial_before_due_reminders()
+        SubscriptionItem.send_trial_due_reminders()
+        SubscriptionItem.send_trial_deadline_reminders()
+
+    @staticmethod
+    def send_trial_before_due_reminders():
+        days_before = settings.PAYMENTS_DAYS_BEFORE_TRIAL_END_REMIND
+        reminder_date = datetime.date.today() + datetime.timedelta(days=days_before)
+        q = SubscriptionItem.objects.filter(reminders_sent__lt=3, due_payment_date__lte=reminder_date, trial=True)
+        for transaction in q:
+            transaction.reminders_set = 3
+            transaction.save()
+            url = reverse(settings.PROLONG_PAYMENT_VIEW, args=[transaction.pk])
+            transaction.send_rendered_email('payee/email/before-due-remind.html',
+                                            _("You need to pay for %s") % transaction.product.name,
+                                            {'transaction': transaction,
+                                             'product': transaction.product.name,
+                                             'url': url,
+                                             'days_before': days_before})
+
+    @staticmethod
+    def send_trial_due_reminders():
+        reminder_date = datetime.date.today()
+        q = SubscriptionItem.objects.filter(reminders_sent__lt=2, due_payment_date__lte=reminder_date, trial=True)
+        for transaction in q:
+            transaction.reminders_set = 2
+            transaction.save()
+            url = reverse(settings.PROLONG_PAYMENT_VIEW, args=[transaction.pk])
+            transaction.send_rendered_email('payee/email/due-remind.html',
+                                            _("You need to pay for %s") % transaction.product.name,
+                                            {'transaction': transaction,
+                                             'product': transaction.product.name,
+                                             'url': url})
+
+    @staticmethod
+    def send_trial_deadline_reminders():
+        reminder_date = datetime.date.today()
+        q = SubscriptionItem.objects.filter(reminders_sent__lt=1, payment_deadline__lte=reminder_date, trial=True)
+        for transaction in q:
+            transaction.reminders_set = 1
+            transaction.save()
+            url = reverse(settings.PROLONG_PAYMENT_VIEW, args=[transaction.pk])
+            transaction.send_rendered_email('payee/email/deadline-remind.html',
+                                            _("You need to pay for %s") % transaction.product.name,
+                                            {'transaction': transaction,
+                                             'product': transaction.product.name,
+                                             'url': url})
 
 
-class ProlongItem(Item):
-    item = models.OneToOneField(Item, related_name='prolongitem', parent_link=True)
+class ProlongItem(SimpleItem):
+    # item = models.OneToOneField('SimpleItem', related_name='prolongitem', parent_link=True)
     parent = models.ForeignKey('SubscriptionItem', related_name='child', parent_link=False)
     prolong = Period(unit=Period.UNIT_MONTHS, count=0)  # TODO: rename
 
@@ -363,7 +500,7 @@ class Subscription(models.Model):
     When the user subscribes for automatic payment.
     """
 
-    transaction = models.OneToOneField('Transaction')
+    transaction = models.OneToOneField('SubscriptionTransaction')
 
     # Avangate has it for every product, but PayPal for transaction as a whole.
     # So have it both in AutomaticPayment and Subscription
@@ -381,24 +518,27 @@ class Subscription(models.Model):
 
 
 class Payment(models.Model):
-    # The transaction which corresponds to the starting
-    # process of purchase.
-    transaction = models.OneToOneField('Transaction')
     email = models.EmailField(null=True)  # DalPay requires to notify the customer 10 days before every payment
 
     def refund_payment(self):
         try:
-            self.manualsubscriptionpayment.refund_payment()
+            self.transaction.item.prolongitem.refund_payment()
         except ObjectDoesNotExist:
             pass
 
 
+class SimplePayment(Payment):
+    transaction = models.OneToOneField('SimpleTransaction')
+
+
 class AutomaticPayment(Payment):
     """
-    This class models automatic payee.
+    This class models automatic payment.
     """
 
-    pass
+    # The transaction which corresponds to the starting
+    # process of purchase.
+    transaction = models.ForeignKey('SubscriptionTransaction')
 
     # subscription = models.ForeignKey('Subscription')
 

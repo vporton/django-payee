@@ -24,9 +24,6 @@ class BasePaymentProcessor(object, metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     def real_make_purchase(self, hash, transaction):
-        base_transaction = transaction
-        if hasattr(base_transaction, 'prolongtransaction'):
-            base_transaction = base_transaction.prolongtransaction.parent
         hash = self.amend_hash_new_purchase(transaction, hash)
         return self.redirect_to_processor(hash)
 
@@ -35,12 +32,7 @@ class BasePaymentProcessor(object, metaclass=abc.ABCMeta):
         return self.redirect_to_processor(hash)
 
     def make_purchase(self, hash, transaction):
-        item = transaction.item
-        if hasattr(item, 'subscriptionitem'):
-            subscriptionitem = item.subscriptionitem
-            subscriptionitem.trial = subscriptionitem.trial_period.count != 0
-            subscriptionitem.adjust_dates()
-            subscriptionitem.save()
+        transaction.item.adjust()
         return self.real_make_purchase(hash, transaction)
 
     def make_purchase_from_form(self, hash, transaction):
@@ -73,14 +65,18 @@ class BasePaymentProcessor(object, metaclass=abc.ABCMeta):
 
     def calculate_remaining_days(self, transaction):
         date = datetime.date.today()
-        item = transaction.item.subscriptionitem
+        item = transaction.item
         remaining_days = (item.due_payment_date - date).days
         if remaining_days > 0:
             date = item.due_payment_date
         if SubscriptionItem.day_needs_adjustment(item.payment_period, date):
-            while date.day != 1:
-                date += datetime.timedelta(days=1)
-                remaining_days += 1
+            remaining_days = self.do_days_adjustment(date, remaining_days)
+        return remaining_days
+
+    def do_days_adjustment(self, date, remaining_days):
+        while date.day != 1:
+            date += datetime.timedelta(days=1)
+            remaining_days += 1
         return remaining_days
 
     # Makes sense only in manual recurring mode
