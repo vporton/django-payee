@@ -1,13 +1,13 @@
 [
   {
-    "model": "payee_base.product",
+    "model": "debits_base.product",
     "pk": 1,
     "fields": {
       "name": "Item 1"
     }
   },
   {
-    "model": "payee_base.product",
+    "model": "debits_base.product",
     "pk": 2,
     "fields": {
       "name": "Item 2"
