@@ -41,7 +41,7 @@ class PayPalForm(BasePaymentProcessor):
                 'notify_url': self.ipn_url(),
                 'custom': BaseTransaction.custom_from_pk(transaction.pk),
                 'invoice': transaction.invoice_id(),
-                'bn': 'Arcamens_SP_EC'}
+                'bn': 'Arcamens_SP_EC'}  # TODO: Disallow to change this without changing the code
 
     def make_subscription(self, items, transaction, item):
         """
