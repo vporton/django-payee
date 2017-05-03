@@ -30,6 +30,7 @@ class PayPalForm(BasePaymentProcessor):
             self.make_regular(items, transaction, transaction.item, cart)
 
         items.update(hash)
+        items['bn'] = 'Arcamens_SP_EC'  # we don't want this token be changed without changing the code
         return items
 
     def init_items(self, transaction):
@@ -40,8 +41,7 @@ class PayPalForm(BasePaymentProcessor):
                 'cmd': "_xclick-subscriptions" if transaction.item.is_subscription() else "_xclick",
                 'notify_url': self.ipn_url(),
                 'custom': BaseTransaction.custom_from_pk(transaction.pk),
-                'invoice': transaction.invoice_id(),
-                'bn': 'Arcamens_SP_EC'}  # TODO: Disallow to change this without changing the code
+                'invoice': transaction.invoice_id()}
 
     def make_subscription(self, items, transaction, item):
         """
