@@ -40,7 +40,8 @@ class PayPalForm(BasePaymentProcessor):
                 'cmd': "_xclick-subscriptions" if transaction.item.is_subscription() else "_xclick",
                 'notify_url': self.ipn_url(),
                 'custom': BaseTransaction.custom_from_pk(transaction.pk),
-                'invoice': transaction.invoice_id()}
+                'invoice': transaction.invoice_id(),
+                'bn': 'Arcamens_SP_EC'}
 
     def make_subscription(self, items, transaction, item):
         """
