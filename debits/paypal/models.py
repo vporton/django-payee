@@ -6,7 +6,8 @@ from django.utils.translation import ugettext_lazy as _
 from debits.debits_base.models import logger, CannotCancelSubscription
 
 
-# This is a quick hack. For serious work use https://github.com/paypal/PayPal-Python-SDK instead.
+# This code only provides a subset of the possible functionality, for
+# something more comprehensive see https://github.com/paypal/PayPal-Python-SDK
 # To login into PayPal we use a Bearer from https://api.paypal.com/v1/oauth2/token
 # with secret from https://developer.paypal.com/developer/applications
 class PayPalAPI(models.Model):
