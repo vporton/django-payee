@@ -26,22 +26,6 @@ class Purchase(models.Model):
         return "<Purchase: %s>" % (("pk=%d" % self.pk) if self.pk else "no pk")
 
 
-class MySubscriptionItem(SubscriptionItem):
-    class Meta:
-        proxy = True
-
-    def __str__(self):
-        return self.product.name + ' - ' + self.purchase.plan.name
-
-
-class MyProlongItem(SubscriptionItem):
-    class Meta:
-        proxy = True
-
-    def __str__(self):
-        return self.product.name + ' - ' + self.parent.purchase.plan.name
-
-
 class Organization(models.Model):
     name = models.CharField(max_length=255)
     purchase = models.OneToOneField(Purchase)
