@@ -1,5 +1,5 @@
 from django.db import models
-from debits.debits_base.models import Period, Product, BaseTransaction, SubscriptionItem, SimpleItem
+from debits.debits_base.models import Period, Product, SubscriptionItem, ProlongItem
 
 
 class PricingPlan(models.Model):
@@ -34,7 +34,7 @@ class MySubscriptionItem(SubscriptionItem):
         return self.product.name + ' - ' + self.purchase.plan.name
 
 
-class MyProlongItem(SubscriptionItem):
+class MyProlongItem(ProlongItem):
     class Meta:
         proxy = True
 
