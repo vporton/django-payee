@@ -4,7 +4,7 @@ from django.db.models import F
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, reverse
 from django.utils.translation import ugettext_lazy as _
-from .models import Organization, Purchase, PricingPlan
+from .models import Organization, Purchase, PricingPlan, MySubscriptionItem
 from .forms import CreateOrganizationForm, SwitchPricingPlanForm
 from .business import create_organization
 from debits.debits_base.models import SimpleTransaction, SubscriptionTransaction, Period, ProlongItem, SubscriptionItem, period_to_string, logger, CannotCancelSubscription
@@ -103,14 +103,14 @@ def upgrade_calculate_new_period(k, item):
 
 
 def upgrade_create_new_item(item, plan, new_period):
-    new_item = SubscriptionItem(product=item.product,
-                                currency=plan.currency,
-                                price=plan.price,
-                                trial=item.trial,
-                                payment_period_unit=Period.UNIT_MONTHS,
-                                payment_period_count=1,
-                                trial_period_unit=item.trial_period_unit,
-                                trial_period_count=item.trial_period_count)
+    new_item = MySubscriptionItem(product=item.product,
+                                  currency=plan.currency,
+                                  price=plan.price,
+                                  trial=item.trial,
+                                  payment_period_unit=Period.UNIT_MONTHS,
+                                  payment_period_count=1,
+                                  trial_period_unit=item.trial_period_unit,
+                                  trial_period_count=item.trial_period_count)
     new_item.set_payment_date(datetime.date.today() + datetime.timedelta(days=new_period))
     if item.active_subscription:
         new_item.old_subscription = item.active_subscription
