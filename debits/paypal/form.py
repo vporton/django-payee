@@ -68,13 +68,13 @@ class PayPalForm(BasePaymentProcessor):
         Internal 
         """
         if cart:
-            items['item_name_1'] = item.product.name
+            items['item_name_1'] = self.product_name(item)
             items['amount_1'] = item.price
             items['shipping_1'] = item.shipping
             items['quantity_1'] = item.product_qty
             items['upload'] = 1
         else:
-            items['item_name'] = item.product.name[0:127]
+            items['item_name'] = self.product_name(item)[0:127]
             items['amount'] = item.price
             items['shipping'] = item.shipping
             items['quantity'] = item.product_qty

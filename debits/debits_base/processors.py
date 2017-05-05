@@ -87,6 +87,9 @@ class BasePaymentProcessor(object, metaclass=abc.ABCMeta):
     def subscription_allowed_date(self, transaction):
         pass
 
+    def product_name(self, item):
+        return item.product.name
+
 
 PAYMENT_PROCESSOR_AVANGATE = 1
 PAYMENT_PROCESSOR_PAYPAL = 2
