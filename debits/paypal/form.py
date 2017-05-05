@@ -47,7 +47,7 @@ class PayPalForm(BasePaymentProcessor):
         """
         Internal 
         """
-        items['item_name'] = item.product.name
+        items['item_name'] = self.product_name(item)
         items['src'] = 1
 
         unit_map = {Period.UNIT_DAYS: 'D',
