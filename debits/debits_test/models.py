@@ -18,7 +18,7 @@ class PricingPlan(models.Model):
 
 class Purchase(models.Model):
     plan = models.ForeignKey(PricingPlan)
-    item = models.OneToOneField(SubscriptionItem)
+    item = models.OneToOneField('MySubscriptionItem')
     # Don't mess .for_organization with .organization!
     for_organization = models.ForeignKey('Organization', null=True, related_name='for_purchase')
 
