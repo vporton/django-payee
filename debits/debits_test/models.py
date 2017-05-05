@@ -26,8 +26,10 @@ class Purchase(models.Model):
         return "<Purchase: %s>" % (("pk=%d" % self.pk) if self.pk else "no pk")
 
 
-# proxy model
 class MySubscriptionItem(SubscriptionItem):
+    class Meta:
+        proxy = True
+
     def __str__(self):
         return self.product.name + ' - ' + self.purchase.plan.name
 
