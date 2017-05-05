@@ -164,7 +164,6 @@ def purchase_view(request):
     organization = Organization.objects.get(pk=organization_pk)
     purchase = organization.purchase
     item = purchase.item
-    print("TEST:", str(item))  # FIXME
     if op == 'subscribe':
         return do_subscribe(hash, form, processor, item)
     elif op == 'manual':
