@@ -318,9 +318,9 @@ class SubscriptionItem(Item):
 
     @staticmethod
     def quick_is_active(item_id):
-        transaction = SubscriptionItem.objects.filter(pk=item_id).\
+        item = SubscriptionItem.objects.filter(pk=item_id).\
             only('payment_deadline', 'gratis', 'blocked').get()
-        return transaction.is_active()
+        return item.is_active()
 
     @staticmethod
     def day_needs_adjustment(period, date):
