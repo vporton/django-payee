@@ -41,6 +41,19 @@ class PayPalAPI(models.Model):
             raise CannotCancelSubscription(r.json()["message"])
             # raise RuntimeError(_("Cannot cancel a billing agreement at PayPal. Please contact support:\n" + r.json()["message"]))
 
+    def refund(self, transaction_id, sum=None, currency='USD'):
+        logger.debug("PayPal: now refunding transaction %s" % escape(transaction_id))
+        data = {}
+        if sum is not None:
+            data['amount'] = {'total': sum, 'currency': currency}
+        r = self.session.post(self.server + ('/v1/payments/sale/%s/refund' % escape(transaction_id)),
+                              data=json.dumps(data),
+                              headers = {'content-type': 'application/json'})
+        if r.status_code < 200 or r.status_code >= 300:  # PayPal returns 204, to be sure
+            # Don't include secret information into the message
+            raise CannotRefundSubscription(r.json()["message"])  # FIXME: Exception classes
+            # raise RuntimeError(_("Cannot cancel a billing agreement at PayPal. Please contact support:\n" + r.json()["message"]))
+
     # It does not work with PayPal subscriptions: https://www.paypal-knowledge.com/infocenter/index?page=content&id=FAQ1987&actp=LIST
     # def agreement_is_active(self, agreement_id):
     #     r = self.session.get(self.server + ('/v1/payments/billing-agreements/%s' % escape(agreement_id)),

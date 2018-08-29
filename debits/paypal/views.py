@@ -76,6 +76,9 @@ def parse_date(value):
         return dt
 
 
+# FIXME: Refund fails for coupon or gift certificates, because they support only full refunds
+
+@method_decorator(csrf_exempt, name='dispatch')
 class PayPalIPN(PaymentCallback, View):
     # See https://developer.paypal.com/docs/classic/express-checkout/integration-guide/ECRecurringPayments/
     # for all kinds of IPN for recurring payments.
@@ -166,6 +169,8 @@ class PayPalIPN(PaymentCallback, View):
         if Decimal(POST['mc_gross']) == transaction.item.price and \
                         Decimal(POST['shipping']) == transaction.item.shipping and \
                         POST['mc_currency'] == transaction.item.currency:
+            if self.auto_refund(transaction, transaction.item.parent, POST):
+                return HttpResponse('')
             payment = transaction.on_accept_regular_payment(POST['payer_email'])
             self.on_payment(payment)
         else:
@@ -197,6 +202,8 @@ class PayPalIPN(PaymentCallback, View):
             logger.warning("SubscriptionTransaction %d does not exist" % transaction_id)
 
     def do_do_accept_subscription_or_recurring_payment(self, transaction, item, POST, ref):
+        if self.auto_refund(transaction, item, POST):
+            return HttpResponse('')
         transaction.obtain_active_subscription(ref, POST['payer_email'])
         payment = AutomaticPayment.objects.create(transaction=transaction,
                                                   email=POST['payer_email'])
@@ -215,7 +222,7 @@ class PayPalIPN(PaymentCallback, View):
 
     def do_subscription_or_recurring_payment(self, item):
         # transaction.processor = PaymentProcessor.objects.get(pk=PAYMENT_PROCESSOR_PAYPAL)
-        item.trial = False
+        item.trial = False  # FIXME
         date = item.due_payment_date
         if item.payment_period.count > 0:  # hack to eliminate infinite loop
             while date <= datetime.date.today():
@@ -252,9 +259,13 @@ class PayPalIPN(PaymentCallback, View):
             Period.UNIT_MONTHS: 'M',
             Period.UNIT_YEARS: 'Y',
         }[item.payment_period.unit]
-        if Decimal(POST['amount3']) == transaction.item.price + transaction.item.shipping and \
-                        POST['period3'] == str(transaction.item.payment_period.count) + ' ' + letter and \
-                        POST['mc_currency'] == transaction.item.currency:
+        period1_right = (transaction.trial_period == 0 and 'period1' not in POST) or \
+                        (transaction.trial_period != 0 and 'period1' in POST and \
+                         POST['period1'] == str(transaction.trial_period) + ' D')
+        if period1_right and 'period2' not in POST and \
+                        Decimal(POST['amount3']) == item.price and \
+                        POST['period3'] == str(item.payment_period) + ' D' and \
+                        POST['mc_currency'] == item.currency:
             self.do_subscription_or_recurring_created(transaction, POST, POST['subscr_id'])
         else:
             logger.warning("Wrong subscription signup data")

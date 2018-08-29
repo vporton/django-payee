@@ -254,6 +254,7 @@ class Item(models.Model):
         if self.old_subscription:
             self.do_upgrade_subscription()
 
+    # FIXME: remove ALL old subscriptions as in payment_system2
     def do_upgrade_subscription(self):
         try:
             self.old_subscription.force_cancel(is_upgrade=True)
@@ -307,6 +308,8 @@ class SubscriptionItem(Item):
     # https://bitbucket.org/arcamens/django-payments/wiki/Invoice%20IDs
     subinvoice = models.PositiveIntegerField(default=1)  # no need for index, as it is used only at PayPal side
 
+    price_period = models.OneToOneField('FixedPricePeriod')
+
     def is_subscription(self):
         return True
 
@@ -314,12 +317,13 @@ class SubscriptionItem(Item):
     def is_active(self):
         prior = self.payment_deadline is not None and \
                 datetime.date.today() <= self.payment_deadline
-        return (prior or self.gratis) and not self.blocked
+        # return (prior or self.gratis) and not self.blocked
+        return (prior or self.price_period.price == 0) and not self.blocked
 
     @staticmethod
     def quick_is_active(item_id):
         item = SubscriptionItem.objects.filter(pk=item_id).\
-            only('payment_deadline', 'gratis', 'blocked').get()
+            only('payment_deadline', 'price_period', 'blocked').get()
         return item.is_active()
 
     @staticmethod
@@ -484,6 +488,25 @@ class SubscriptionItem(Item):
                                              'product': transaction.product.name,
                                              'url': url})
 
+    # FIXME
+    # def get_email(self):
+    #     try:
+    #         # We get the first email, as normally we have no more than one non-canceled transaction
+    #         t = self.transactions.filter(subscription__canceled=False)[0]
+    #         payment = AutomaticPayment.objects.filter(transaction=t).order_by('-id')[0]
+    #         return payment.email
+    #     except IndexError:  # no object
+    #         return None
+
+
+# FIXME: Check all places it is used (in both repos)
+class FixedPricePeriod(models.Model):
+    currency = models.CharField(max_length=3, default='USD')
+    price = models.DecimalField(max_digits=10, decimal_places=2)  # for recurring payment the amount of one payment
+
+    # We remove old_subscription automatically when new subscription is created.
+    # old_subscription = models.ForeignKey('Subscription', null=True)
+
 
 class ProlongItem(SimpleItem):
     # item = models.OneToOneField('SimpleItem', related_name='prolongitem', parent_link=True)
@@ -509,11 +532,18 @@ class Subscription(models.Model):
     # duplicates email in Payment
     email = models.EmailField(null=True)  # DalPay requires to notify the customer 10 days before every payment
 
+    # TODO: Make Celery support optional
+    # FIXME: The same as in do_upgrade_subscription()
+    @shared_task  # PayPal tormoz, so run in a separate thread
     def force_cancel(self, is_upgrade=False):
         if self.subscription_reference:
             klass = model_from_ref(self.transaction.processor.api)
             api = klass()
-            api.cancel_agreement(self.subscription_reference, is_upgrade=is_upgrade)  # may raise an exception
+            try:
+                api.cancel_agreement(self.subscription_reference, is_upgrade=is_upgrade)  # may raise an exception
+            except CannotCancelSubscription:
+                # fallback
+                Subscription.objects.filter(pk=pk).update(canceled=True)
             # transaction.cancel_subscription()  # runs in the callback
 
 
