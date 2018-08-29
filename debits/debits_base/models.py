@@ -316,12 +316,12 @@ class SubscriptionItem(Item):
         prior = self.payment_deadline is not None and \
                 datetime.date.today() <= self.payment_deadline
         # return (prior or self.gratis) and not self.blocked
-        return (prior or not self.price_period or self.price_period.price == 0) and not self.blocked
+        return (prior or not gratis) and not self.blocked
 
     @staticmethod
     def quick_is_active(item_id):
         item = SubscriptionItem.objects.filter(pk=item_id).\
-            only('payment_deadline', 'price_period', 'blocked').get()
+            only('payment_deadline', 'gratis', 'blocked').get()
         return item.is_active()
 
     @staticmethod
