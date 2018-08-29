@@ -318,7 +318,7 @@ class SubscriptionItem(Item):
         prior = self.payment_deadline is not None and \
                 datetime.date.today() <= self.payment_deadline
         # return (prior or self.gratis) and not self.blocked
-        return (prior or self.price_period.price == 0) and not self.blocked
+        return (prior or not self.price_period or self.price_period.price == 0) and not self.blocked
 
     @staticmethod
     def quick_is_active(item_id):
@@ -500,6 +500,7 @@ class SubscriptionItem(Item):
 
 
 # FIXME: Check all places it is used (in both repos)
+# FIXME: It is almost not used!
 class FixedPricePeriod(models.Model):
     currency = models.CharField(max_length=3, default='USD')
     price = models.DecimalField(max_digits=10, decimal_places=2)  # for recurring payment the amount of one payment
