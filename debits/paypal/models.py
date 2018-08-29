@@ -6,7 +6,7 @@ except ImportError:
 from django.db import models
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
-from debits.debits_base.models import logger, CannotCancelSubscription
+from debits.debits_base.models import logger, CannotCancelSubscription, CannotRefundSubscription
 
 
 # This code only provides a subset of the possible functionality, for
@@ -54,7 +54,7 @@ class PayPalAPI(models.Model):
                               headers = {'content-type': 'application/json'})
         if r.status_code < 200 or r.status_code >= 300:  # PayPal returns 204, to be sure
             # Don't include secret information into the message
-            raise CannotRefundSubscription(r.json()["message"])  # FIXME: Exception classes
+            raise CannotRefundSubscription(r.json()["message"])
             # raise RuntimeError(_("Cannot cancel a billing agreement at PayPal. Please contact support:\n" + r.json()["message"]))
 
     # It does not work with PayPal subscriptions: https://www.paypal-knowledge.com/infocenter/index?page=content&id=FAQ1987&actp=LIST

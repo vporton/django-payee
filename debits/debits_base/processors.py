@@ -19,7 +19,6 @@ def hidden_field(f, v):
 # The hash is stored in the DB.
 # Then the hash is amended (for example added the price) and passed to the payment processor.
 class BasePaymentProcessor(abc.ABC):
-
     @abc.abstractmethod
     def amend_hash_new_purchase(self, transaction, hash):
         pass

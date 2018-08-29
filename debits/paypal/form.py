@@ -83,5 +83,5 @@ class PayPalForm(BasePaymentProcessor):
         return max(datetime.date.today(),
                    item.due_payment_date - datetime.timedelta(days=89))  # intentionally one day added to be sure
 
-# TODO: Support Exress Checkout
+# TODO: Support Express Checkout
 # https://developer.paypal.com/docs/classic/products/express-checkout/

@@ -225,7 +225,7 @@ class PayPalIPN(PaymentCallback, View):
 
     def do_subscription_or_recurring_payment(self, item):
         # transaction.processor = PaymentProcessor.objects.get(pk=PAYMENT_PROCESSOR_PAYPAL)
-        item.trial = False  # FIXME
+        item.trial = False
         date = item.due_payment_date
         if item.payment_period.count > 0:  # hack to eliminate infinite loop
             while date <= datetime.date.today():

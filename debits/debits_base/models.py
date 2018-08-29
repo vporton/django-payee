@@ -2,6 +2,7 @@ import abc
 import hmac
 import datetime
 
+import html2text
 from celery import shared_task
 from dateutil.relativedelta import relativedelta
 import logging
@@ -256,7 +257,7 @@ class Item(models.Model):
         if self.old_subscription:
             self.do_upgrade_subscription()
 
-    # FIXME: remove ALL old subscriptions as in payment_system2
+    # TODO: remove ALL old subscriptions as in payment_system2
     def do_upgrade_subscription(self):
         try:
             self.old_subscription.force_cancel(is_upgrade=True)
@@ -274,9 +275,9 @@ class Item(models.Model):
         if self.email is None:  # hack!
             return
         self.save()
-        text = render_to_string(template_name, data, request=None, using=None)
-        # FIXME: second argument should be plain text
-        send_mail(subject, text, settings.FROM_EMAIL, [self.email], html_message=text)
+        html = render_to_string(template_name, data, request=None, using=None)
+        text = html2text.HTML2Text(html)
+        send_mail(subject, text, settings.FROM_EMAIL, [self.email], html_message=html)
 
 class SimpleItem(Item):
     """
@@ -488,7 +489,7 @@ class SubscriptionItem(Item):
                                              'product': transaction.product.name,
                                              'url': url})
 
-    # FIXME
+    # TODO
     # def get_email(self):
     #     try:
     #         # We get the first email, as normally we have no more than one non-canceled transaction
@@ -524,7 +525,7 @@ class Subscription(models.Model):
     email = models.EmailField(null=True)  # DalPay requires to notify the customer 10 days before every payment
 
     # TODO: Make Celery support optional
-    # FIXME: The same as in do_upgrade_subscription()
+    # TODO: The same as in do_upgrade_subscription()
     @shared_task  # PayPal tormoz, so run in a separate thread
     def force_cancel(self, is_upgrade=False):
         if self.subscription_reference:
@@ -570,4 +571,7 @@ class AutomaticPayment(Payment):
 
 
 class CannotCancelSubscription(Exception):
+    pass
+
+class CannotRefundSubscription(Exception):
     pass
