@@ -6,7 +6,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-SECRET_KEY = 'XXX'
+SECRET_KEY = 'Eech4Ak6Iedah1ahahMaeng4mahsee7Z'
 
 INSTALLED_APPS = [
     'django.contrib.admin',
