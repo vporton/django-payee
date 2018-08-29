@@ -217,7 +217,6 @@ class Item(models.Model):
     product_qty = models.IntegerField(default=1)
     blocked = models.BooleanField(default=False)  # hacker or misbehavior detected
 
-    # FIXME: Price can change after beginning of payment!
     currency = models.CharField(max_length=3, default='USD')
     price = models.DecimalField(max_digits=10, decimal_places=2)  # for recurring payment the amount of one payment
     shipping = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -308,8 +307,6 @@ class SubscriptionItem(Item):
 
     # https://bitbucket.org/arcamens/django-payments/wiki/Invoice%20IDs
     subinvoice = models.PositiveIntegerField(default=1)  # no need for index, as it is used only at PayPal side
-
-    price_period = models.OneToOneField('FixedPricePeriod')
 
     def is_subscription(self):
         return True
@@ -498,16 +495,6 @@ class SubscriptionItem(Item):
     #         return payment.email
     #     except IndexError:  # no object
     #         return None
-
-
-# FIXME: Check all places it is used (in both repos)
-# FIXME: It is almost not used!
-class FixedPricePeriod(models.Model):
-    currency = models.CharField(max_length=3, default='USD')
-    price = models.DecimalField(max_digits=10, decimal_places=2)  # for recurring payment the amount of one payment
-
-    # We remove old_subscription automatically when new subscription is created.
-    # old_subscription = models.ForeignKey('Subscription', null=True)
 
 
 class ProlongItem(SimpleItem):
