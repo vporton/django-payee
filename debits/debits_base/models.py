@@ -63,7 +63,7 @@ class Period(CompositeField):
     count = models.SmallIntegerField()
 
     def __init__(self, unit=None, count=None):
-        super().__init__()
+        super(Period, self).__init__()
         if unit is not None:
             self['unit'].default = unit
         if count is not None:
