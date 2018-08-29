@@ -217,6 +217,7 @@ class Item(models.Model):
     product_qty = models.IntegerField(default=1)
     blocked = models.BooleanField(default=False)  # hacker or misbehavior detected
 
+    # FIXME: Price can change after beginning of payment!
     currency = models.CharField(max_length=3, default='USD')
     price = models.DecimalField(max_digits=10, decimal_places=2)  # for recurring payment the amount of one payment
     shipping = models.DecimalField(max_digits=10, decimal_places=2, default=0)
