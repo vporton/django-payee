@@ -3,7 +3,10 @@ from debits.debits_base.models import SubscriptionItem
 import abc
 import datetime
 from django.http import HttpResponse
-from html import escape
+try:
+    from html import escape  # python 3.x
+except ImportError:
+    from cgi import escape  # python 2.x
 import debits.debits_base
 
 
@@ -15,7 +18,8 @@ def hidden_field(f, v):
 # We receive a hash from user (see for example DalPay documentation).
 # The hash is stored in the DB.
 # Then the hash is amended (for example added the price) and passed to the payment processor.
-class BasePaymentProcessor(object, metaclass=abc.ABCMeta):
+class BasePaymentProcessor(abc.ABC):
+
     @abc.abstractmethod
     def amend_hash_new_purchase(self, transaction, hash):
         pass

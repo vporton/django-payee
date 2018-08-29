@@ -1,0 +1,5 @@
+django
+django-composite-field
+python-dateutil
+requests
+celery

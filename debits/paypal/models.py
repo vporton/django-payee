@@ -1,5 +1,8 @@
 import requests
-from html import escape
+try:
+    from html import escape  # python 3.x
+except ImportError:
+    from cgi import escape  # python 2.x
 from django.db import models
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _

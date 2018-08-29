@@ -4,7 +4,10 @@ import requests
 from django.utils import timezone
 from django.db import transaction
 from django.http import HttpResponse
+from django.utils.decorators import method_decorator
 from django.views import View
+from django.views.decorators.csrf import csrf_exempt
+
 from debits.debits_base.processors import PaymentCallback
 from debits.debits_base.models import BaseTransaction, SimpleTransaction, SubscriptionTransaction, Period, Payment, AutomaticPayment, Subscription, SubscriptionItem, logger, period_to_delta, CannotCancelSubscription
 from django.conf import settings

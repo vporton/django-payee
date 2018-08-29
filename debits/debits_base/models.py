@@ -1,6 +1,8 @@
 import abc
 import hmac
 import datetime
+
+from celery import shared_task
 from dateutil.relativedelta import relativedelta
 import logging
 from django.apps import apps
@@ -97,7 +99,7 @@ class BaseTransaction(models.Model):
     # class Meta:
     #     abstract = True
 
-    processor = models.ForeignKey(PaymentProcessor)
+    processor = models.ForeignKey(PaymentProcessor, on_delete=models.CASCADE)
     creation_date = models.DateField(auto_now_add=True)
 
     def __repr__(self):
@@ -139,7 +141,7 @@ class BaseTransaction(models.Model):
         pass
 
 class SimpleTransaction(BaseTransaction):
-    item = models.ForeignKey('SimpleItem', related_name='transactions', null=False)
+    item = models.ForeignKey('SimpleItem', related_name='transactions', null=False, on_delete=models.CASCADE)
 
     def subinvoice(self):
         return 1
@@ -171,7 +173,7 @@ class SimpleTransaction(BaseTransaction):
 
 
 class SubscriptionTransaction(BaseTransaction):
-    item = models.ForeignKey('SubscriptionItem', related_name='transactions', null=False)
+    item = models.ForeignKey('SubscriptionItem', related_name='transactions', null=False, on_delete=models.CASCADE)
 
     def subinvoice(self):
         return self.invoiced_item().subinvoice
@@ -213,7 +215,7 @@ class Item(models.Model):
     """
     creation_date = models.DateField(auto_now_add=True)
 
-    product = models.ForeignKey('Product', null=True)
+    product = models.ForeignKey('Product', null=True, on_delete=models.CASCADE)
     product_qty = models.IntegerField(default=1)
     blocked = models.BooleanField(default=False)  # hacker or misbehavior detected
 
@@ -233,7 +235,7 @@ class Item(models.Model):
 
     # We remove old_subscription automatically when new subscription is created.
     # The new payment may be either one-time (SimpleItem) or subscription (SubscriptionItem).
-    old_subscription = models.ForeignKey('Subscription', null=True, related_name='new_subscription')
+    old_subscription = models.ForeignKey('Subscription', null=True, related_name='new_subscription', on_delete=models.CASCADE)
 
     def __repr__(self):
         return "<Item pk=%d, %s>" % (self.pk, self.product.name)
@@ -291,9 +293,9 @@ class SimpleItem(Item):
 
 
 class SubscriptionItem(Item):
-    item = models.OneToOneField(Item, related_name='subscriptionitem', parent_link=True)
+    item = models.OneToOneField(Item, related_name='subscriptionitem', parent_link=True, on_delete=models.CASCADE)
 
-    active_subscription = models.OneToOneField('Subscription', null=True)
+    active_subscription = models.OneToOneField('Subscription', null=True, on_delete=models.CASCADE)
 
     due_payment_date = models.DateField(default=datetime.date.today, db_index=True)
     payment_deadline = models.DateField(null=True, db_index=True)  # may include "grace period"
@@ -499,7 +501,7 @@ class SubscriptionItem(Item):
 
 class ProlongItem(SimpleItem):
     # item = models.OneToOneField('SimpleItem', related_name='prolongitem', parent_link=True)
-    parent = models.ForeignKey('SubscriptionItem', related_name='child', parent_link=False)
+    parent = models.ForeignKey('SubscriptionItem', related_name='child', parent_link=False, on_delete=models.CASCADE)
     prolong = Period(unit=Period.UNIT_MONTHS, count=0)  # TODO: rename
 
     def refund_payment(self):
@@ -512,7 +514,7 @@ class Subscription(models.Model):
     When the user subscribes for automatic payment.
     """
 
-    transaction = models.OneToOneField('SubscriptionTransaction')
+    transaction = models.OneToOneField('SubscriptionTransaction', on_delete=models.CASCADE)
 
     # Avangate has it for every product, but PayPal for transaction as a whole.
     # So have it both in AutomaticPayment and Subscription
@@ -547,7 +549,7 @@ class Payment(models.Model):
 
 
 class SimplePayment(Payment):
-    transaction = models.OneToOneField('SimpleTransaction')
+    transaction = models.OneToOneField('SimpleTransaction', on_delete=models.CASCADE)
 
 
 class AutomaticPayment(Payment):
@@ -557,7 +559,7 @@ class AutomaticPayment(Payment):
 
     # The transaction which corresponds to the starting
     # process of purchase.
-    transaction = models.ForeignKey('SubscriptionTransaction')
+    transaction = models.ForeignKey('SubscriptionTransaction', on_delete=models.CASCADE)
 
     # subscription = models.ForeignKey('Subscription')
 
