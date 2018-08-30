@@ -255,6 +255,7 @@ class Item(models.Model):
     # Can be called from both subscription IPN and payment IPN, so prepare to handle it two times
     @transaction.atomic
     def upgrade_subscription(self):
+        print("XX upgrade_subscription, old_subscription=", self.old_subscription)
         if self.old_subscription:
             self.do_upgrade_subscription()
 

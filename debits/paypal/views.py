@@ -243,6 +243,7 @@ class PayPalIPN(PaymentCallback, View):
         return date
 
     def do_subscription_or_recurring_created(self, transaction, POST, ref):
+        print("XX do_subscription_or_recurring_created")
         subscription = transaction.obtain_active_subscription(ref, POST['payer_email'])
         # transaction.processor = PaymentProcessor.objects.get(pk=PAYMENT_PROCESSOR_PAYPAL)
         transaction.item.trial = False
@@ -251,12 +252,14 @@ class PayPalIPN(PaymentCallback, View):
         self.on_subscription_created(POST, subscription)
 
     def accept_subscription_signup(self, POST, transaction_id):
+        print("XX accept_subscription_signup")
         try:
             self.do_accept_subscription_signup(POST, transaction_id)
         except BaseTransaction.DoesNotExist:
             logger.warning("SubscriptionTransaction %d does not exist" % transaction_id)
 
     def do_accept_subscription_signup(self, POST, transaction_id):
+        print("XX do_accept_subscription_signup")
         transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
         item = transaction.item
         letter = {
