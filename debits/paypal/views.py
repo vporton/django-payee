@@ -209,7 +209,6 @@ class PayPalIPN(PaymentCallback, View):
     def do_do_accept_subscription_or_recurring_payment(self, transaction, item, POST, ref):
         if self.auto_refund(transaction, item, POST):
             return HttpResponse('')
-        print("XX transaction.obtain_active_subscription")
         transaction.obtain_active_subscription(ref, POST['payer_email'])
         payment = AutomaticPayment.objects.create(transaction=transaction,
                                                   email=POST['payer_email'])
@@ -243,7 +242,6 @@ class PayPalIPN(PaymentCallback, View):
         return date
 
     def do_subscription_or_recurring_created(self, transaction, POST, ref):
-        print("XX do_subscription_or_recurring_created")
         subscription = transaction.obtain_active_subscription(ref, POST['payer_email'])
         # transaction.processor = PaymentProcessor.objects.get(pk=PAYMENT_PROCESSOR_PAYPAL)
         transaction.item.trial = False
@@ -252,28 +250,26 @@ class PayPalIPN(PaymentCallback, View):
         self.on_subscription_created(POST, subscription)
 
     def accept_subscription_signup(self, POST, transaction_id):
-        print("XX accept_subscription_signup")
         try:
             self.do_accept_subscription_signup(POST, transaction_id)
         except BaseTransaction.DoesNotExist:
             logger.warning("SubscriptionTransaction %d does not exist" % transaction_id)
 
     def do_accept_subscription_signup(self, POST, transaction_id):
-        print("XX do_accept_subscription_signup")
         transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
         item = transaction.item
-        letter = {
+        m = {
             Period.UNIT_DAYS: 'D',
             Period.UNIT_WEEKS: 'W',
             Period.UNIT_MONTHS: 'M',
             Period.UNIT_YEARS: 'Y',
-        }[item.payment_period.unit]
+        }
         period1_right = (item.trial_period == 0 and 'period1' not in POST) or \
                         (item.trial_period != 0 and 'period1' in POST and \
-                         POST['period1'] == str(item.trial_period) + ' D')
+                         POST['period1'] == str(item.trial_period.count)+' '+m[item.trial_period.unit])
         if period1_right and 'period2' not in POST and \
                         Decimal(POST['amount3']) == item.price and \
-                        POST['period3'] == str(item.payment_period) + ' D' and \
+                        POST['period3'] == str(item.payment_period.count)+' '+m[item.payment_period.unit] and \
                         POST['mc_currency'] == item.currency:
             self.do_subscription_or_recurring_created(transaction, POST, POST['subscr_id'])
         else:
