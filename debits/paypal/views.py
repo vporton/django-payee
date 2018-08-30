@@ -305,6 +305,7 @@ class PayPalIPN(PaymentCallback, View):
             amount = (transaction.price - Decimal(0.30)).quantize(Decimal('1.00'))
             api.refund(POST['txn_id'], str(amount))
             return True
+        return False
 
     def should_auto_refund(self):
         return False

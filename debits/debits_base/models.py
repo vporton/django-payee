@@ -66,7 +66,7 @@ class Period(CompositeField):
     count = models.SmallIntegerField()
 
     def __init__(self, unit=None, count=None):
-        super(Period, self).__init__()
+        super().__init__()
         if unit is not None:
             self['unit'].default = unit
         if count is not None:
@@ -318,8 +318,7 @@ class SubscriptionItem(Item):
     def is_active(self):
         prior = self.payment_deadline is not None and \
                 datetime.date.today() <= self.payment_deadline
-        # return (prior or self.gratis) and not self.blocked
-        return (prior or not self.gratis) and not self.blocked
+        return (prior or self.gratis) and not self.blocked
 
     @staticmethod
     def quick_is_active(item_id):
