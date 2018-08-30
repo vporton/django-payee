@@ -4,7 +4,6 @@ import datetime
 
 import html2text
 from celery import shared_task
-from dateutil.relativedelta import relativedelta
 import logging
 from django.apps import apps
 from django.urls import reverse
