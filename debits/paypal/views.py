@@ -9,7 +9,7 @@ from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
 from debits.debits_base.processors import PaymentCallback
-from debits.debits_base.models import BaseTransaction, SimpleTransaction, SubscriptionTransaction, Period, Payment, AutomaticPayment, Subscription, SubscriptionItem, logger, period_to_delta, CannotCancelSubscription
+from debits.debits_base.models import BaseTransaction, SimpleTransaction, SubscriptionTransaction, Period, AutomaticPayment, logger
 from django.conf import settings
 
 
@@ -235,7 +235,7 @@ class PayPalIPN(PaymentCallback, View):
         item.save()
 
     def advance_item_date(self, date, item):
-        date += period_to_delta(item.payment_period)
+        date = PayPalAPI.calculate_date(date, item.payment_period)  # FIXME: Eliminate (here and in other places) hardcoded PayPal
         item.set_payment_date(date)
         item.last_payment = datetime.date.today()
         item.reminders_sent = 0

@@ -19,6 +19,7 @@ from django.utils.translation import ugettext_lazy as _
 from composite_field import CompositeField
 from django.conf import settings
 
+from debits.paypal.models import PayPalAPI
 
 logger = logging.getLogger('debits')
 
@@ -74,18 +75,6 @@ class Period(CompositeField):
 
 # The following two functions does not work as methods, because
 # CompositeField is replaced with composite_field.base.CompositeField.Proxy:
-
-# See Monthly Billing Cycles in
-# https://developer.paypal.com/docs/classic/paypal-payments-standard/integration-guide/subscription_billing_cycles/
-# there's 4 datetime libraries for python: datetime, arrow, pendulum, delorean, python-dateutil
-def period_to_delta(period):
-    return {
-        Period.UNIT_DAYS: lambda: relativedelta(days=period.count),
-        Period.UNIT_WEEKS: lambda: relativedelta(weeks=period.count),
-        Period.UNIT_MONTHS: lambda: relativedelta(months=period.count),
-        Period.UNIT_YEARS: lambda: relativedelta(years=period.count),
-    }[period.unit]()
-
 
 def period_to_string(period):
     hash = {e[0]: e[1] for e in Period.period_choices}
@@ -169,7 +158,7 @@ class SimpleTransaction(BaseTransaction):
             pk=prolongitem.parent_id)  # must be inside transaction
         # parent.email = transaction.email
         base_date = max(datetime.date.today(), parent_item.due_payment_date)
-        parent_item.set_payment_date(base_date + period_to_delta(prolongitem.prolong))
+        parent_item.set_payment_date(PayPalAPI.calculate_date(base_date, prolongitem.prolong))
         parent_item.save()
 
 
@@ -325,12 +314,12 @@ class SubscriptionItem(Item):
 
     def set_payment_date(self, date):
         self.due_payment_date = date
-        self.payment_deadline = self.due_payment_date + period_to_delta(self.grace_period)
+        self.payment_deadline = PayPalAPI.calculate_date(self.due_payment_date, self.grace_period)
 
     def start_trial(self):
         if self.trial_period.count != 0:
             self.trial = True
-            self.set_payment_date(datetime.date.today() + period_to_delta(self.trial_period))
+            self.set_payment_date(PayPalAPI.calculate_date(datetime.date.today(), self.trial_period))
 
     def cancel_subscription(self):
         # atomic operation
@@ -473,7 +462,9 @@ class ProlongItem(SimpleItem):
     prolong = Period(unit=Period.UNIT_MONTHS, count=0)  # TODO: rename
 
     def refund_payment(self):
-        self.parent.set_payment_date(self.parent.due_payment_date - period_to_delta(self.prolong))
+        prolong2 = self.prolong
+        prolong2.count *= -1
+        self.parent.set_payment_date(PayPalAPI.calculate_date(self.parent.due_payment_date, prolong2))
         self.parent.save()
 
 
