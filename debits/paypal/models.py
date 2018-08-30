@@ -1,7 +1,6 @@
 import json
 
 import requests
-from dateutil.relativedelta import relativedelta
 
 try:
     from html import escape  # python 3.x
@@ -60,19 +59,6 @@ class PayPalAPI(models.Model):
             # Don't include secret information into the message
             raise CannotRefundSubscription(r.json()["message"])
             # raise RuntimeError(_("Cannot cancel a billing agreement at PayPal. Please contact support:\n" + r.json()["message"]))
-
-    @staticmethod
-    def calculate_date(date, offset):
-        delta = {
-            Period.UNIT_DAYS: lambda: relativedelta(days=offset.count),
-            Period.UNIT_WEEKS: lambda: relativedelta(weeks=offset.count),
-            Period.UNIT_MONTHS: lambda: relativedelta(months=offset.count),
-            Period.UNIT_YEARS: lambda: relativedelta(years=offset.count),
-        }[offset.unit]()
-        new_date = date + delta
-        if new_date.day != date.day:
-            new_date += relativedelta(days=1)
-        return new_date
 
 
     # It does not work with PayPal subscriptions: https://www.paypal-knowledge.com/infocenter/index?page=content&id=FAQ1987&actp=LIST

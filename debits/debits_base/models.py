@@ -19,6 +19,7 @@ from composite_field import CompositeField
 from django.conf import settings
 
 from debits.paypal.models import PayPalAPI
+from debits.paypal.utils import PayPalUtils
 
 logger = logging.getLogger('debits')
 
@@ -157,7 +158,7 @@ class SimpleTransaction(BaseTransaction):
             pk=prolongitem.parent_id)  # must be inside transaction
         # parent.email = transaction.email
         base_date = max(datetime.date.today(), parent_item.due_payment_date)
-        parent_item.set_payment_date(PayPalAPI.calculate_date(base_date, prolongitem.prolong))
+        parent_item.set_payment_date(PayPalUtils.calculate_date(base_date, prolongitem.prolong))
         parent_item.save()
 
 
@@ -313,12 +314,12 @@ class SubscriptionItem(Item):
 
     def set_payment_date(self, date):
         self.due_payment_date = date
-        self.payment_deadline = PayPalAPI.calculate_date(self.due_payment_date, self.grace_period)
+        self.payment_deadline = PayPalUtils.calculate_date(self.due_payment_date, self.grace_period)
 
     def start_trial(self):
         if self.trial_period.count != 0:
             self.trial = True
-            self.set_payment_date(PayPalAPI.calculate_date(datetime.date.today(), self.trial_period))
+            self.set_payment_date(PayPalUtils.calculate_date(datetime.date.today(), self.trial_period))
 
     def cancel_subscription(self):
         # atomic operation
@@ -463,7 +464,7 @@ class ProlongItem(SimpleItem):
     def refund_payment(self):
         prolong2 = self.prolong
         prolong2.count *= -1
-        self.parent.set_payment_date(PayPalAPI.calculate_date(self.parent.due_payment_date, prolong2))
+        self.parent.set_payment_date(PayPalUtils.calculate_date(self.parent.due_payment_date, prolong2))
         self.parent.save()
 
 
