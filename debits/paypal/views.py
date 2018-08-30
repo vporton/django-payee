@@ -262,9 +262,9 @@ class PayPalIPN(PaymentCallback, View):
             Period.UNIT_MONTHS: 'M',
             Period.UNIT_YEARS: 'Y',
         }[item.payment_period.unit]
-        period1_right = (transaction.trial_period == 0 and 'period1' not in POST) or \
-                        (transaction.trial_period != 0 and 'period1' in POST and \
-                         POST['period1'] == str(transaction.trial_period) + ' D')
+        period1_right = (item.trial_period == 0 and 'period1' not in POST) or \
+                        (item.trial_period != 0 and 'period1' in POST and \
+                         POST['period1'] == str(item.trial_period) + ' D')
         if period1_right and 'period2' not in POST and \
                         Decimal(POST['amount3']) == item.price and \
                         POST['period3'] == str(item.payment_period) + ' D' and \
