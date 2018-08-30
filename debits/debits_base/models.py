@@ -18,7 +18,6 @@ from django.utils.translation import ugettext_lazy as _
 from composite_field import CompositeField
 from django.conf import settings
 
-from debits.paypal.models import PayPalAPI
 from debits.paypal.utils import PayPalUtils
 
 logger = logging.getLogger('debits')
