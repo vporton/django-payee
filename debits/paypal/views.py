@@ -264,8 +264,8 @@ class PayPalIPN(PaymentCallback, View):
             Period.UNIT_MONTHS: 'M',
             Period.UNIT_YEARS: 'Y',
         }
-        period1_right = (item.trial_period == 0 and 'period1' not in POST) or \
-                        (item.trial_period != 0 and 'period1' in POST and \
+        period1_right = (item.trial_period.count == 0 and 'period1' not in POST) or \
+                        (item.trial_period.count != 0 and 'period1' in POST and \
                          POST['period1'] == str(item.trial_period.count)+' '+m[item.trial_period.unit])
         print("XX:", period1_right)
         if period1_right and 'period2' not in POST and \
