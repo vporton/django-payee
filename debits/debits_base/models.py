@@ -189,6 +189,7 @@ class SubscriptionTransaction(BaseTransaction):
         """
         Internal
         """
+        print("XX create_active_subscription")
         self.item.active_subscription = Subscription.objects.create(transaction=self,
                                                                     subscription_reference=ref,
                                                                     email=email)
