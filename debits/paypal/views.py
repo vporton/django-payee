@@ -49,6 +49,8 @@ from django.conf import settings
 
 
 # Internal.
+from debits.paypal.models import PayPalAPI
+
 MONTHS = [
     'Jan', 'Feb', 'Mar', 'Apr',
     'May', 'Jun', 'Jul', 'Aug',
@@ -300,7 +302,7 @@ class PayPalIPN(PaymentCallback, View):
     def auto_refund(self, transaction, item, POST):
         # "item" is SubscriptionItem
         if self.should_auto_refund():
-            api = register_base.paypal_api.PayPalAPI()
+            api = PayPalAPI()
             # FIXME: Wrong for American Express card: https://www.paypal.com/us/selfhelp/article/How-do-I-issue-a-full-or-partial-refund-FAQ780
             amount = (transaction.price - Decimal(0.30)).quantize(Decimal('1.00'))
             api.refund(POST['txn_id'], str(amount))
