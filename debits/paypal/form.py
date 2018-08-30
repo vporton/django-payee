@@ -54,11 +54,10 @@ class PayPalForm(BasePaymentProcessor):
                     Period.UNIT_WEEKS: 'W',
                     Period.UNIT_MONTHS: 'M',
                     Period.UNIT_YEARS: 'Y'}
-        remaining_days = self.calculate_remaining_days(transaction)
-        if remaining_days > 0:
+        if item.trial_period.count > 0:
             items['a1'] = 0
-            items['p1'] = remaining_days
-            items['t1'] = 'D'
+            items['p1'] = item.trial_period.count
+            items['t1'] = item.trial_period.unit
         items['a3'] = item.price + item.shipping
         items['p3'] = item.payment_period.count
         items['t3'] = unit_map[item.payment_period.unit]

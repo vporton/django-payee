@@ -34,8 +34,8 @@ class BasePaymentProcessor(abc.ABC):
         hash = self.amend_hash_change_subscription(transaction, hash)
         return self.redirect_to_processor(hash)
 
+    # TODO: These two methods do the same
     def make_purchase(self, hash, transaction):
-        transaction.item.adjust()
         return self.real_make_purchase(hash, transaction)
 
     def make_purchase_from_form(self, hash, transaction):
@@ -65,22 +65,6 @@ class BasePaymentProcessor(abc.ABC):
             "<form method='post' action='"+action+"'>\n" + \
             '\n'.join([hidden_field(i[0], str(i[1])) for i in hash.items()]) + \
             "\n</form></body></html>"
-
-    def calculate_remaining_days(self, transaction):
-        date = datetime.date.today()
-        item = transaction.item
-        remaining_days = (item.due_payment_date - date).days
-        if remaining_days > 0:
-            date = item.due_payment_date
-        if SubscriptionItem.day_needs_adjustment(item.payment_period, date):
-            remaining_days = self.do_days_adjustment(date, remaining_days)
-        return remaining_days
-
-    def do_days_adjustment(self, date, remaining_days):
-        while date.day != 1:
-            date += datetime.timedelta(days=1)
-            remaining_days += 1
-        return remaining_days
 
     # Makes sense only in manual recurring mode
     def ready_for_subscription(self, transaction):

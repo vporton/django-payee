@@ -244,9 +244,6 @@ class Item(models.Model):
     def __str__(self):
         return self.product.name
 
-    def adjust(self):
-        pass
-
     @abc.abstractmethod
     def is_subscription(self):
         pass
@@ -325,35 +322,6 @@ class SubscriptionItem(Item):
         item = SubscriptionItem.objects.filter(pk=item_id).\
             only('payment_deadline', 'gratis', 'blocked').get()
         return item.is_active()
-
-    @staticmethod
-    def day_needs_adjustment(period, date):
-        return (period.unit == Period.UNIT_MONTHS and date.day >= 29) or \
-                (period.unit == Period.UNIT_YEARS and \
-                             date.month == 2 and date.day == 29)
-
-    def adjust(self):
-        self.trial = self.trial_period.count != 0
-        self.adjust_dates()
-        self.save()
-
-    # If one bills at 29, 30, or 31, he should be given additional about 1-3 days free
-    def adjust_dates(self):
-        # We may have a trouble with non-monthly trials - the only solution is to make trial period ourselves
-        creation_date = self.creation_date if self.creation_date else datetime.date.today()  # for not yet saved records
-        period_end = creation_date + period_to_delta(self.trial_period)
-        if self.due_payment_date:
-            period_end = max(period_end, self.due_payment_date)
-        if SubscriptionItem.day_needs_adjustment(self.trial_period, period_end):
-            self.do_adjust_dates(period_end)
-
-    def do_adjust_dates(self, period_end):
-        period = period_end - datetime.date.today()
-        while period_end.day != 1:
-            period_end += datetime.timedelta(days=1)
-            period += datetime.timedelta(days=1)
-        # self.trial_period.both = (Period.UNIT_DAYS, period.days)  # setting it to due payment date would be wrong
-        self.set_payment_date(period_end)
 
     def set_payment_date(self, date):
         self.due_payment_date = date
