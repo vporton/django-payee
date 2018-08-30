@@ -267,7 +267,8 @@ class PayPalIPN(PaymentCallback, View):
         period1_right = (item.trial_period.count == 0 and 'period1' not in POST) or \
                         (item.trial_period.count != 0 and 'period1' in POST and \
                          POST['period1'] == str(item.trial_period.count)+' '+m[item.trial_period.unit])
-        print("XX:", period1_right)
+        # FIXME: when adding "leap" days (because of 29-31 date) to paypal calculate_remaining_days()
+        # is used only at PayPal side and does not update item.trial_period - this makes error above!!
         if period1_right and 'period2' not in POST and \
                         Decimal(POST['amount3']) == item.price and \
                         POST['period3'] == str(item.payment_period.count)+' '+m[item.payment_period.unit] and \
