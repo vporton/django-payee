@@ -1,6 +1,6 @@
 from dateutil.relativedelta import relativedelta
 
-from debits.debits_base.models import Period
+from debits.debits_base.base import Period
 
 
 class PayPalUtils(object):

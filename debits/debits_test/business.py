@@ -1,5 +1,6 @@
 from django.db import transaction
-from debits.debits_base.models import SubscriptionItem, Period
+from debits.debits_base.base import Period
+from debits.debits_base.models import SubscriptionItem
 from .models import Organization, Purchase, PricingPlan
 
 

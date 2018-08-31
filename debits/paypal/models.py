@@ -9,7 +9,7 @@ except ImportError:
 from django.db import models
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
-from debits.debits_base.models import logger, CannotCancelSubscription, CannotRefundSubscription, Period
+from debits.debits_base.models import logger, CannotCancelSubscription, CannotRefundSubscription
 
 
 # This code only provides a subset of the possible functionality, for

@@ -2,7 +2,8 @@ import abc
 import datetime
 from django.urls import reverse
 from debits.debits_base.processors import BasePaymentProcessor
-from debits.debits_base.models import BaseTransaction, Period
+from debits.debits_base.base import Period
+from debits.debits_base.models import BaseTransaction
 from django.conf import settings
 
 
