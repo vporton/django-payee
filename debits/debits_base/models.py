@@ -461,9 +461,8 @@ class Subscription(models.Model):
     # duplicates email in Payment
     email = models.EmailField(null=True)  # DalPay requires to notify the customer 10 days before every payment
 
-    # TODO: Make Celery support optional
     # TODO: The same as in do_upgrade_subscription()
-    @shared_task  # PayPal tormoz, so run in a separate thread
+    #@shared_task  # PayPal tormoz, so run in a separate thread # TODO: celery (with `TypeError: force_cancel() missing 1 required positional argument: 'self'`)
     def force_cancel(self, is_upgrade=False):
         if self.subscription_reference:
             klass = model_from_ref(self.transaction.processor.api)
