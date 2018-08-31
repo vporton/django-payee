@@ -3,7 +3,6 @@ import hmac
 import datetime
 
 import html2text
-from celery import shared_task
 import logging
 from django.apps import apps
 from django.urls import reverse
@@ -157,6 +156,7 @@ class SubscriptionTransaction(BaseTransaction):
         """
         Internal
         """
+        # FIXME: UNIQUE constraint for transaction_id fails (https://github.com/vporton/django-debits/issues/10)
         self.item.active_subscription = Subscription.objects.create(transaction=self,
                                                                     subscription_reference=ref,
                                                                     email=email)

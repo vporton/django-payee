@@ -2,5 +2,4 @@ django
 django-composite-field
 python-dateutil
 requests
-celery
 html2text
