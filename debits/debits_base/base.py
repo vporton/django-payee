@@ -1,5 +1,6 @@
 from composite_field import CompositeField
 from django.forms import models
+from django.utils.translation import ugettext_lazy as _
 
 
 class Period(CompositeField):
