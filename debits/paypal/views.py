@@ -176,7 +176,7 @@ class PayPalIPN(PaymentCallback, View):
         if Decimal(POST['mc_gross']) == transaction.item.price and \
                         Decimal(POST['shipping']) == transaction.item.shipping and \
                         POST['mc_currency'] == transaction.item.currency:
-            if self.auto_refund(transaction, transaction.item.parent, POST):  # FIXME: `AttributeError: 'SimpleItem' object has no attribute 'parent'` (on prolong payment)
+            if self.auto_refund(transaction, transaction.item.prolongitem.parent, POST):
                 return HttpResponse('')
             payment = transaction.on_accept_regular_payment(POST['payer_email'])
             self.on_payment(payment)
