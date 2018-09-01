@@ -103,7 +103,6 @@ def upgrade_calculate_new_period(k, item):
     return round(period / k) if k > 1 else period  # don't increase paid period when downgrading
 
 
-# FIXME: Confused new_period and item.trial_period (so it does not postpone the subscription date as it should)
 def upgrade_create_new_item(item, plan, new_period):
     new_item = SubscriptionItem(product=item.product,
                                 currency=plan.currency,
@@ -111,8 +110,8 @@ def upgrade_create_new_item(item, plan, new_period):
                                 trial=item.trial,
                                 payment_period_unit=Period.UNIT_MONTHS,
                                 payment_period_count=1,
-                                trial_period_unit=item.trial_period_unit,
-                                trial_period_count=item.trial_period_count)
+                                trial_period_unit=Period.UNIT_DAYS,
+                                trial_period_count=new_period)
     new_item.set_payment_date(datetime.date.today() + datetime.timedelta(days=new_period))
     if item.active_subscription:
         new_item.old_subscription = item.active_subscription
