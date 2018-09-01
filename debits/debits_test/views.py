@@ -119,17 +119,16 @@ def upgrade_create_new_item(item, plan, new_period):
     return new_item
 
 
-# FIXME: https://github.com/vporton/django-debits/issues/11 (Subscription is lost when downgrading)
-def upgrade_subscription(organization, item, new_item, plan):
-    try:
-        item.active_subscription.force_cancel()
-    except CannotCancelSubscription:
-        pass
-    item.active_subscription = None
-    item.save()
-    organization.purchase = Purchase.objects.create(plan=plan, item=new_item)
-    organization.save()
-    return HttpResponseRedirect(reverse('organization-prolong-payment', args=[organization.pk]))
+# def upgrade_subscription(organization, item, new_item, plan):
+#     try:
+#         item.active_subscription.force_cancel()
+#     except CannotCancelSubscription:
+#         pass
+#     item.active_subscription = None
+#     item.save()
+#     organization.purchase = Purchase.objects.create(plan=plan, item=new_item)
+#     organization.save()
+#     return HttpResponseRedirect(reverse('organization-prolong-payment', args=[organization.pk]))
 
 
 def do_upgrade(hash, form, processor, item, organization):
@@ -149,8 +148,6 @@ def do_upgrade(hash, form, processor, item, organization):
         organization.purchase = Purchase.objects.create(plan=plan, item=new_item)
         organization.save()
         return HttpResponseRedirect(reverse('organization-prolong-payment', args=[organization.pk]))
-    elif k <= 1:
-        return upgrade_subscription(organization, item, new_item, plan)
     else:
         upgrade_transaction = SubscriptionTransaction.objects.create(processor=processor, item=new_item)
         Purchase.objects.create(plan=plan, item=new_item, for_organization=organization)
