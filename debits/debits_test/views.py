@@ -104,7 +104,6 @@ def upgrade_calculate_new_period(k, item):
 
 
 def upgrade_create_new_item(item, plan, new_period):
-    print("XX", new_period)
     new_item = SubscriptionItem(product=item.product,
                                 currency=plan.currency,
                                 price=plan.price,
@@ -162,7 +161,7 @@ def purchase_view(request):
     organization_pk = int(hash.pop('organization'))  # in real code should use user login information
     organization = Organization.objects.get(pk=organization_pk)
     purchase = organization.purchase
-    item = purchase.item
+    item = purchase.item  # FIXME: need to copy the item to change such things as trial period
     if op == 'subscribe':
         item.trial_period_unit = Period.UNIT_DAYS
         item.trial_period_count = max(0, (item.due_payment_date - datetime.date.today()).days)
