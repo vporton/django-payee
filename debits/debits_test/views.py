@@ -166,6 +166,7 @@ def purchase_view(request):
     if op == 'subscribe':
         item.trial_period_unit = Period.UNIT_DAYS
         item.trial_period_count = max(0, (item.due_payment_date - datetime.date.today()).days)
+        item.save()  # hack
         return do_subscribe(hash, form, processor, item)
     elif op == 'manual':
         return do_prolong(hash, form, processor, item)
