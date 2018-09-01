@@ -104,6 +104,7 @@ def upgrade_calculate_new_period(k, item):
 
 
 def upgrade_create_new_item(item, plan, new_period):
+    print("XX", new_period)
     new_item = SubscriptionItem(product=item.product,
                                 currency=plan.currency,
                                 price=plan.price,
