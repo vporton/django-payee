@@ -164,6 +164,8 @@ def purchase_view(request):
     purchase = organization.purchase
     item = purchase.item
     if op == 'subscribe':
+        item.trial_period_unit = Period.UNIT_DAYS
+        item.trial_period_count = min(0, (item.due_payment_date - datetime.date.today()).days)
         return do_subscribe(hash, form, processor, item)
     elif op == 'manual':
         return do_prolong(hash, form, processor, item)
