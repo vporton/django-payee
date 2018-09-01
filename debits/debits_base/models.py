@@ -471,7 +471,7 @@ class Subscription(models.Model):
                 api.cancel_agreement(self.subscription_reference, is_upgrade=is_upgrade)  # may raise an exception
             except CannotCancelSubscription:
                 # fallback
-                Subscription.objects.filter(pk=self.pk).update(canceled=True)
+                Subscription.objects.filter(pk=self.pk).update(canceled=True)  # FIXME: Subscription has no field named 'canceled'
                 logger.warn("Cannot cancel subscription " + self.subscription_reference)
             # transaction.cancel_subscription()  # runs in the callback
 
