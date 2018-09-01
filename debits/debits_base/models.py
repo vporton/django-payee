@@ -472,6 +472,7 @@ class Subscription(models.Model):
             except CannotCancelSubscription:
                 # fallback
                 Subscription.objects.filter(pk=self.pk).update(canceled=True)
+                logger.warn("Cannot cancel subscription " + self.subscription_reference)
             # transaction.cancel_subscription()  # runs in the callback
 
 
