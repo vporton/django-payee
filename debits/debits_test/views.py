@@ -119,6 +119,7 @@ def upgrade_create_new_item(item, plan, new_period):
     return new_item
 
 
+# FIXME: https://github.com/vporton/django-debits/issues/11 (Subscription is lost when downgrading)
 def upgrade_subscription(organization, item, new_item, plan):
     try:
         item.active_subscription.force_cancel()
