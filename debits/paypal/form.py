@@ -58,7 +58,7 @@ class PayPalForm(BasePaymentProcessor):
         if item.trial_period.count > 0:
             items['a1'] = 0
             items['p1'] = item.trial_period.count
-            items['t1'] = item.trial_period.unit
+            items['t1'] = unit_map[item.trial_period.unit]
         items['a3'] = item.price + item.shipping
         items['p3'] = item.payment_period.count
         items['t3'] = unit_map[item.payment_period.unit]
