@@ -161,12 +161,17 @@ def purchase_view(request):
     organization_pk = int(hash.pop('organization'))  # in real code should use user login information
     organization = Organization.objects.get(pk=organization_pk)
     purchase = organization.purchase
-    item = purchase.item  # FIXME: need to copy the item to change such things as trial period
+    item = purchase.item
     if op == 'subscribe':
-        item.trial_period_unit = Period.UNIT_DAYS
-        item.trial_period_count = max(0, (item.due_payment_date - datetime.date.today()).days)
-        item.save()  # hack  # FIXME: move to initialization of item
-        return do_subscribe(hash, form, processor, item)
+        item2 = SubscriptionItem(product=item.product,
+                                 currency=purchase.plan.currency,
+                                 price=purchase.plan.price,
+                                 trial=item.trial,
+                                 payment_period_unit=Period.UNIT_MONTHS,
+                                 payment_period_count=1)
+        item2.set_payment_date(datetime.date.today())
+        item2.save()
+        return do_subscribe(hash, form, processor, item2)
     elif op == 'manual':
         return do_prolong(hash, form, processor, item)
     elif op == 'upgrade':
