@@ -104,11 +104,13 @@ def upgrade_calculate_new_period(k, item):
 
 
 def upgrade_create_new_item(item, plan, new_period):
-    item.pk = None
-    item.currency = plan.currency
-    item.price = plan.price
-    item.trial_period_unit = Period.UNIT_DAYS
-    item.trial_period_count = new_period
+    item = Purchase(product=plan.product,
+                    currency=plan.currency,
+                    price=plan.price,
+                    payment_period_unit=Period.UNIT_MONTHS,
+                    payment_period_count=1,
+                    trial_period_unit=Period.UNIT_DAYS,
+                    trial_period_count=new_period)
     item.set_payment_date(datetime.date.today() + datetime.timedelta(days=new_period))
     if item.active_subscription:
         item.old_subscription = item.active_subscription
@@ -131,12 +133,11 @@ def do_upgrade(hash, form, processor, item, organization):
 
     if not item.active_subscription:
         # Simply create a new purchase which can be paid later
-        organization.purchase = Purchase.objects.create(plan=plan, item=new_item)
+        organization.purchase = new_item
         organization.save()
         return HttpResponseRedirect(reverse('organization-prolong-payment', args=[organization.pk]))
     else:
         upgrade_transaction = SubscriptionTransaction.objects.create(processor=processor, item=new_item)
-        Purchase.objects.create(plan=plan, item=new_item, for_organization=organization)
         return form.make_purchase_from_form(hash, upgrade_transaction)
 
 
@@ -146,19 +147,18 @@ def purchase_view(request):
     form, processor = get_processor(request, hash)
     organization_pk = int(hash.pop('organization'))  # in real code should use user login information
     organization = Organization.objects.get(pk=organization_pk)
-    purchase = organization.purchase
-    item = purchase.item
+    item = organization.purchase
     if op == 'subscribe':
         due_date = item.payment_deadline
         if due_date < datetime.date.today():
             due_date = datetime.date.today()
-        item.pk = None
-        item.currency = purchase.plan.currency,
-        item.price = purchase.plan.price
-        item.payment_period_unit = Period.UNIT_MONTHS,
-        item.payment_period_count = 1
-        item.trial_period_unit = Period.UNIT_DAYS
-        item.trial_period_count = (due_date - datetime.date.today()).days
+        item = Purchase(product=item.plan.product,
+                        currency=item.plan.currency,
+                        price=item.plan.price,
+                        payment_period_unit=Period.UNIT_MONTHS,
+                        payment_period_count=1,
+                        trial_period_unit=Period.UNIT_DAYS,
+                        trial_period_count=(due_date - datetime.date.today()).days)
         item.set_payment_date(due_date)
         item.save()
         return do_subscribe(hash, form, processor, item)
