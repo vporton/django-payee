@@ -170,7 +170,7 @@ def purchase_view(request):
                                  payment_period_unit=Period.UNIT_MONTHS,
                                  payment_period_count=1)
         item2.set_payment_date(datetime.date.today())
-        item2.save()
+        item2.save()  # FIXME: Now when subscribing:  SubscriptionItem has no purchase.
         return do_subscribe(hash, form, processor, item2)
     elif op == 'manual':
         return do_prolong(hash, form, processor, item)
