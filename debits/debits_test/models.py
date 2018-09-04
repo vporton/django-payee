@@ -19,7 +19,6 @@ class PricingPlan(models.Model):
 
 class Purchase(SubscriptionItem):
     plan = models.ForeignKey(PricingPlan, on_delete=models.CASCADE)
-    item = models.OneToOneField(SubscriptionItem, on_delete=models.CASCADE, related_name='for_purchase', null=True)
     # Don't mess .for_organization with .organization!
     for_organization = models.ForeignKey('Organization', null=True, related_name='for_purchase', on_delete=models.CASCADE)
 

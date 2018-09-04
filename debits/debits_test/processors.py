@@ -13,4 +13,4 @@ class MyPayPalForm(PayPalForm):
     def product_name(self, item):
         if isinstance(item, ProlongItem):
             item = item.parent
-        return item.product.name + ': ' + item.testsubscriptionitem.for_purchase.plan.name
+        return item.product.name + ': ' + item.for_purchase.plan.name
