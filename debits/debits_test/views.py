@@ -104,31 +104,17 @@ def upgrade_calculate_new_period(k, item):
 
 
 def upgrade_create_new_item(item, plan, new_period):
-    new_item = SubscriptionItem(product=item.product,
-                                currency=plan.currency,
-                                price=plan.price,
-                                trial=item.trial,
-                                payment_period_unit=Period.UNIT_MONTHS,
-                                payment_period_count=1,
-                                trial_period_unit=Period.UNIT_DAYS,
-                                trial_period_count=new_period)
-    new_item.set_payment_date(datetime.date.today() + datetime.timedelta(days=new_period))
+    item.pk = None
+    item.currency = plan.currency
+    item.price = plan.price
+    item.trial_period_unit = Period.UNIT_DAYS
+    item.trial_period_count = new_period
+    item.set_payment_date(datetime.date.today() + datetime.timedelta(days=new_period))
     if item.active_subscription:
-        new_item.old_subscription = item.active_subscription
-    new_item.save()
-    return new_item
-
-
-# def upgrade_subscription(organization, item, new_item, plan):
-#     try:
-#         item.active_subscription.force_cancel()
-#     except CannotCancelSubscription:
-#         pass
-#     item.active_subscription = None
-#     item.save()
-#     organization.purchase = Purchase.objects.create(plan=plan, item=new_item)
-#     organization.save()
-#     return HttpResponseRedirect(reverse('organization-prolong-payment', args=[organization.pk]))
+        item.old_subscription = item.active_subscription
+        item.active_subscription = None
+    item.save()
+    return item
 
 
 def do_upgrade(hash, form, processor, item, organization):
@@ -166,17 +152,16 @@ def purchase_view(request):
         due_date = item.payment_deadline
         if due_date < datetime.date.today():
             due_date = datetime.date.today()
-        item2 = SubscriptionItem(product=item.product,
-                                 currency=purchase.plan.currency,
-                                 price=purchase.plan.price,
-                                 trial=item.trial,
-                                 payment_period_unit=Period.UNIT_MONTHS,
-                                 payment_period_count=1,
-                                 trial_period_unit=Period.UNIT_DAYS,
-                                 trial_period_count=(due_date - datetime.date.today()).days)
-        item2.set_payment_date(due_date)
-        item2.save()
-        return do_subscribe(hash, form, processor, item2)
+        item.pk = None
+        item.currency = purchase.plan.currency,
+        item.price = purchase.plan.price
+        item.payment_period_unit = Period.UNIT_MONTHS,
+        item.payment_period_count = 1
+        item.trial_period_unit = Period.UNIT_DAYS
+        item.trial_period_count = (due_date - datetime.date.today()).days
+        item.set_payment_date(due_date)
+        item.save()
+        return do_subscribe(hash, form, processor, item)
     elif op == 'manual':
         return do_prolong(hash, form, processor, item)
     elif op == 'upgrade':

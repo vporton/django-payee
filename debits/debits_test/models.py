@@ -17,6 +17,10 @@ class PricingPlan(models.Model):
         return "<PricingPlan: %s, %s>" % ((("pk=%d" % self.pk) if self.pk else "no pk"), self.__str__())
 
 
+class TestSubscriptionItem(SubscriptionItem):
+    purchase = models.ForeignKey('Purchase', on_delete=models.CASCADE)
+
+
 class Purchase(models.Model):
     plan = models.ForeignKey(PricingPlan, on_delete=models.CASCADE)
     item = models.OneToOneField(SubscriptionItem, on_delete=models.CASCADE)
