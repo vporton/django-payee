@@ -1,6 +1,6 @@
 from django.db import transaction
 from debits.debits_base.base import Period
-from .models import Organization, Purchase, PricingPlan, TestSubscriptionItem
+from .models import Organization, Purchase, PricingPlan
 
 
 @transaction.atomic
