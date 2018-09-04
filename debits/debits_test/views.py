@@ -163,14 +163,19 @@ def purchase_view(request):
     purchase = organization.purchase
     item = purchase.item
     if op == 'subscribe':
+        due_date = item.payment_deadline
+        if due_date < datetime.date.today():
+            due_date = datetime.date.today()
         item2 = SubscriptionItem(product=item.product,
                                  currency=purchase.plan.currency,
                                  price=purchase.plan.price,
                                  trial=item.trial,
                                  payment_period_unit=Period.UNIT_MONTHS,
-                                 payment_period_count=1)
-        item2.set_payment_date(datetime.date.today())
-        item2.save()  # FIXME: Now when subscribing:  SubscriptionItem has no purchase.
+                                 payment_period_count=1,
+                                 trial_period_unit=Period.UNIT_DAYS,
+                                 trial_period_count=(due_date - datetime.date.today()).days)
+        item2.set_payment_date(due_date)
+        item2.save()
         return do_subscribe(hash, form, processor, item2)
     elif op == 'manual':
         return do_prolong(hash, form, processor, item)
