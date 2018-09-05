@@ -114,7 +114,6 @@ def upgrade_create_new_item(old_purchase, plan, new_period):
     purchase.set_payment_date(datetime.date.today() + datetime.timedelta(days=new_period))
     if old_purchase.active_subscription:
         purchase.old_subscription = old_purchase.active_subscription
-        purchase.active_subscription = None
     purchase.save()
     return purchase
 
