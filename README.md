@@ -1,5 +1,5 @@
 _Simplify the logic of integrating your Python/Django backend with PayPal
-(and in the future of other payment processors, too)._
+(and in the future of other payment processors, toowait)._
 
 Accepting payments (currently we support only PayPal).
 
@@ -13,6 +13,12 @@ For more details, see
 
 # Install
 
+## Automatically
+
+Type `pip install django-debits` (in your Python environment).
+
+## Manually
+
 Copy `debits/debits_base` into your Django application.
 
 Add `'debits.debits_base'` to your `INSTALLED_APPS`.
@@ -23,7 +29,7 @@ See
 [the wiki at GitHub.com](https://github.com/vporton/django-debits/wiki)
 and example code in `debits/debits_test`.
 
-# Documentation
+# Documentation & Features
 
 See
 [the wiki at GitHub.com](https://github.com/vporton/django-debits/wiki).
