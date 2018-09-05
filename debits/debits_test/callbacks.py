@@ -6,7 +6,6 @@ class MyPayPalIPN(PayPalIPN):
     # Two subscription IPNs may call both below methods. It is not a problem (if not to count a tiny performance lag).
     def on_subscription_created(self, POST, subscription):
         item = subscription.transaction.item
-        print("on_subscription_created()", item.active_subscription)
         self.do_purchase(item)
 
     def on_payment(self, payment):
@@ -16,7 +15,6 @@ class MyPayPalIPN(PayPalIPN):
 
     def do_purchase(self, item):
         organization = item.purchase.for_organization
-        print("do_purchase()", organization, "item:", item.active_subscription)
         if organization is not None:
             organization.purchase = item.purchase
             organization.save()
