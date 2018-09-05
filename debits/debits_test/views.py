@@ -129,7 +129,6 @@ def do_upgrade(hash, form, processor, item, organization):
     k = plan.price / item.price  # price multiplies
     new_period = upgrade_calculate_new_period(k, item)
 
-    print("new_period:", new_period)
     purchase = upgrade_create_new_item(item, plan, new_period)
 
     if not item.active_subscription:
