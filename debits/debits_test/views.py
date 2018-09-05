@@ -103,8 +103,9 @@ def upgrade_calculate_new_period(k, item):
     return round(period / k) if k > 1 else period  # don't increase paid period when downgrading
 
 
-def upgrade_create_new_item(old_purchase, plan, new_period):
-    purchase = Purchase(plan=plan,
+def upgrade_create_new_item(old_purchase, plan, new_period, organization):
+    purchase = Purchase(for_organizaition=organization,
+                        plan=plan,
                         for_organization=old_purchase.for_organization,
                         product=plan.product,
                         currency=plan.currency,
@@ -130,7 +131,7 @@ def do_upgrade(hash, form, processor, item, organization):
     k = plan.price / item.price  # price multiplies
     new_period = upgrade_calculate_new_period(k, item)
 
-    purchase = upgrade_create_new_item(item, plan, new_period)
+    purchase = upgrade_create_new_item(item, plan, new_period, organization)
 
     if not item.active_subscription:
         # Simply create a new purchase which can be paid later
@@ -153,8 +154,8 @@ def purchase_view(request):
         due_date = purchase.payment_deadline
         if due_date < datetime.date.today():
             due_date = datetime.date.today()
-        new_purchase = Purchase(plan=purchase.plan,
-                                for_organization=purchase.for_organization,
+        new_purchase = Purchase(for_organization=organization,
+                                plan=purchase.plan,
                                 product=purchase.plan.product,
                                 currency=purchase.plan.currency,
                                 price=purchase.plan.price,

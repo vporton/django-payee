@@ -17,4 +17,7 @@ def create_organization(name, pricing_plan_id, trial_months):
     if trial_months:
         purchase.start_trial()
     purchase.save()
-    return Organization.objects.create(name=name, purchase=purchase)
+    org = Organization.objects.create(name=name, purchase=purchase)
+    purchase.for_organization = org
+    purchase.save()
+    return org
