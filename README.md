@@ -19,7 +19,7 @@ Type `pip install django-debits` (in your Python environment).
 
 ## Manually
 
-Copy `debits/debits_base` into your Django application.
+Copy `debits/debits_base` and `debits/paypal` into your Django application.
 
 Add `'debits.debits_base'` to your `INSTALLED_APPS`.
 
