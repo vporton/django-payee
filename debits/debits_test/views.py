@@ -104,9 +104,8 @@ def upgrade_calculate_new_period(k, item):
 
 
 def upgrade_create_new_item(old_purchase, plan, new_period, organization):
-    purchase = Purchase(for_organizaition=organization,
+    purchase = Purchase(for_organization=organization,
                         plan=plan,
-                        for_organization=old_purchase.for_organization,
                         product=plan.product,
                         currency=plan.currency,
                         price=plan.price,
