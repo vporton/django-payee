@@ -4,7 +4,8 @@ This program is available under AGPL and under a commercial license ($40 current
 
 The program is in beta testing stage, use at your own risk.
 
-For more details, see the wiki at GitHub.com.
+For more details, see
+[the wiki at GitHub.com](https://github.com/vporton/django-debits/wiki).
 
 `Buy for $40
 <https://shopper.mycommerce.com/checkout/cart/add/57309-1>`_.
