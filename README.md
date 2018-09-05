@@ -1,5 +1,5 @@
 _Simplify the logic of integrating your Python/Django backend with PayPal
-(and in the future of other payment processors, toowait)._
+(and in the future of other payment processors, too)._
 
 Accepting payments (currently we support only PayPal).
 
