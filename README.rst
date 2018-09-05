@@ -1,5 +1,3 @@
-*This software is currently in rewrite to meet Arcamens company coding standards.*
-
 Accepting payments (currently we support only PayPal).
 
 This program is available under AGPL and under a commercial license ($40 currently).
