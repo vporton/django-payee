@@ -105,6 +105,7 @@ def upgrade_calculate_new_period(k, item):
 
 def upgrade_create_new_item(old_purchase, plan, new_period):
     purchase = Purchase(plan=plan,
+                        for_organization=old_purchase.for_organization,
                         product=plan.product,
                         currency=plan.currency,
                         price=plan.price,
@@ -147,15 +148,16 @@ def purchase_view(request):
     form, processor = get_processor(request, hash)
     organization_pk = int(hash.pop('organization'))  # in real code should use user login information
     organization = Organization.objects.get(pk=organization_pk)
-    new_purchase = organization.purchase
+    purchase = organization.purchase
     if op == 'subscribe':
         due_date = new_purchase.payment_deadline
         if due_date < datetime.date.today():
             due_date = datetime.date.today()
-        new_purchase = Purchase(plan=new_purchase.plan,
-                                product=new_purchase.plan.product,
-                                currency=new_purchase.plan.currency,
-                                price=new_purchase.plan.price,
+        new_purchase = Purchase(plan=purchase.plan,
+                                for_organization=purchase.for_organization,
+                                product=purchase.plan.product,
+                                currency=purchase.plan.currency,
+                                price=purchase.plan.price,
                                 payment_period_unit=Period.UNIT_MONTHS,
                                 payment_period_count=1,
                                 trial_period_unit=Period.UNIT_DAYS,
