@@ -1,5 +1,6 @@
-_Simplify the logic of integrating your Python/Django backend with PayPal
-(and in the future of other payment processors, too)._
+_Both simplify the logic of integrating your Python/Django backend with PayPal
+(and in the future of other payment processors, too)
+and support advanced payment features._
 
 Accepting payments (currently we support only PayPal).
 
