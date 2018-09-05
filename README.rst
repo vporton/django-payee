@@ -4,6 +4,7 @@ This program is available under AGPL and under a commercial license ($40 current
 
 The program is in beta testing stage, use at your own risk.
 
+The API is very advanced and supports regular and subscription payments.
 For more details, see
 [the wiki at GitHub.com](https://github.com/vporton/django-debits/wiki).
 
