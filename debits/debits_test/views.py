@@ -16,42 +16,41 @@ def transaction_payment_view(request, transaction_id):
     transaction = SubscriptionTransaction.objects.get(pk=int(transaction_id))
     purchase = transaction.purchase
     organization = purchase.organization
-    return do_organization_payment_view(request, transaction, organization, purchase)
+    return do_organization_payment_view(request, purchase, organization)
 
 
 def organization_payment_view(request, organization_id):
     organization = Organization.objects.get(pk=int(organization_id))
     purchase = organization.purchase
-    item = purchase.item
-    return do_organization_payment_view(request, item, organization, purchase)
+    return do_organization_payment_view(request, purchase, organization)
 
 
-def do_organization_payment_view(request, item, organization, purchase):
+def do_organization_payment_view(request, purchase, organization):
     plan_form = SwitchPricingPlanForm({'pricing_plan': purchase.plan.pk})
     pp = MyPayPalForm(request)
     return render(request, 'debits_test/organization-payment-view.html',
                   {'organization_id': organization.pk,
                    'organization': organization.name,
-                   'item_id': item.pk,
-                   'email': item.active_subscription.email if item.active_subscription else None,
-                   'gratis': item.gratis,
-                   'active': item.is_active(),
-                   'blocked': item.blocked,
-                   'manual_mode': not item.active_subscription,
-                   'processor_name': item.active_subscription.transaction.processor.name if item.active_subscription else None,  # only for automatic recurring payment
+                   'item_id': purchase.pk,
+                   'email': purchase.active_subscription.email if purchase.active_subscription else None,
+                   'gratis': purchase.gratis,
+                   'active': purchase.is_active(),
+                   'blocked': purchase.blocked,
+                   'manual_mode': not purchase.active_subscription,
+                   'processor_name': purchase.active_subscription.transaction.processor.name if purchase.active_subscription else None,  # only for automatic recurring payment
                    'plan': purchase.plan.name,
-                   'trial': item.trial,
-                   'trial_period': period_to_string(item.trial_period),
-                   'due_date': item.due_payment_date,
-                   'deadline': item.payment_deadline,
-                   'price': item.price,
-                   'currency': item.currency,
-                   'payment_period': period_to_string(item.payment_period),
+                   'trial': purchase.trial,
+                   'trial_period': period_to_string(purchase.trial_period),
+                   'due_date': purchase.due_payment_date,
+                   'deadline': purchase.payment_deadline,
+                   'price': purchase.price,
+                   'currency': purchase.currency,
+                   'payment_period': period_to_string(purchase.payment_period),
                    'plan_form': plan_form,
-                   'can_switch_to_recurring': pp.ready_for_subscription(item),
-                   'subscription_allowed_date': pp.subscription_allowed_date(item),
-                   'subscription_reference': item.active_subscription.subscription_reference if item.active_subscription else None,
-                   'subinvoice': item.subinvoice})
+                   'can_switch_to_recurring': pp.ready_for_subscription(purchase),
+                   'subscription_allowed_date': pp.subscription_allowed_date(purchase),
+                   'subscription_reference': purchase.active_subscription.subscription_reference if purchase.active_subscription else None,
+                   'subinvoice': purchase.subinvoice})
 
 
 def create_organization_view(request):
@@ -103,22 +102,23 @@ def upgrade_calculate_new_period(k, item):
     return round(period / k) if k > 1 else period  # don't increase paid period when downgrading
 
 
-def upgrade_create_new_item(item, plan, new_period):
-    item = Purchase(product=plan.product,
-                    currency=plan.currency,
-                    price=plan.price,
-                    payment_period_unit=Period.UNIT_MONTHS,
-                    payment_period_count=1,
-                    trial_period_unit=Period.UNIT_DAYS,
-                    trial_period_count=new_period)
-    item.set_payment_date(datetime.date.today() + datetime.timedelta(days=new_period))
-    if item.active_subscription:
-        item.old_subscription = item.active_subscription
-        item.active_subscription = None
-    item.save()
-    return item
+def upgrade_create_new_item(old_purchase, plan, new_period):
+    purchase = Purchase(product=plan.product,
+                        currency=plan.currency,
+                        price=plan.price,
+                        payment_period_unit=Period.UNIT_MONTHS,
+                        payment_period_count=1,
+                        trial_period_unit=Period.UNIT_DAYS,
+                        trial_period_count=new_period)
+    purchase.set_payment_date(datetime.date.today() + datetime.timedelta(days=new_period))
+    if old_purchase.active_subscription:
+        purchase.old_subscription = old_purchase.active_subscription
+        purchase.active_subscription = None
+    purchase.save()
+    return purchase
 
 
+# FIXME
 def do_upgrade(hash, form, processor, item, organization):
     plan = PricingPlan.objects.get(pk=int(hash['pricing_plan']))
     if plan.currency != item.currency:
@@ -141,6 +141,7 @@ def do_upgrade(hash, form, processor, item, organization):
         return form.make_purchase_from_form(hash, upgrade_transaction)
 
 
+# FIXME
 def purchase_view(request):
     hash = request.POST.dict()
     op = hash.pop('arcamens_op')
@@ -185,9 +186,8 @@ def do_unsubscribe(subscription, item):
 def unsubscribe_organization_view(request, organization_pk):
     organization_pk = int(organization_pk)  # in real code should use user login information
     organization = Organization.objects.get(pk=organization_pk)
-    item = organization.purchase.item
-    subscription = item.active_subscription
-    return do_unsubscribe(subscription, item)
+    item = organization.purchase.subscriptionitem
+    return do_unsubscribe(item.active_subscription, item)
     # return HttpResponseRedirect(reverse('organization-prolong-payment', args=[organization.pk]))
 
 
