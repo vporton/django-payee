@@ -104,7 +104,8 @@ def upgrade_calculate_new_period(k, item):
 
 
 def upgrade_create_new_item(old_purchase, plan, new_period):
-    purchase = Purchase(product=plan.product,
+    purchase = Purchase(plan=plan,
+                        product=plan.product,
                         currency=plan.currency,
                         price=plan.price,
                         payment_period_unit=Period.UNIT_MONTHS,
@@ -146,25 +147,26 @@ def purchase_view(request):
     form, processor = get_processor(request, hash)
     organization_pk = int(hash.pop('organization'))  # in real code should use user login information
     organization = Organization.objects.get(pk=organization_pk)
-    purchase = organization.purchase
+    new_purchase = organization.purchase
     if op == 'subscribe':
-        due_date = purchase.payment_deadline
+        due_date = new_purchase.payment_deadline
         if due_date < datetime.date.today():
             due_date = datetime.date.today()
-        purchase = Purchase(product=purchase.plan.product,
-                            currency=purchase.plan.currency,
-                            price=purchase.plan.price,
-                            payment_period_unit=Period.UNIT_MONTHS,
-                            payment_period_count=1,
-                            trial_period_unit=Period.UNIT_DAYS,
-                            trial_period_count=(due_date - datetime.date.today()).days)
-        purchase.set_payment_date(due_date)
-        purchase.save()
-        return do_subscribe(hash, form, processor, purchase)
+        new_purchase = Purchase(plan=new_purchase.plan,
+                                product=new_purchase.plan.product,
+                                currency=new_purchase.plan.currency,
+                                price=new_purchase.plan.price,
+                                payment_period_unit=Period.UNIT_MONTHS,
+                                payment_period_count=1,
+                                trial_period_unit=Period.UNIT_DAYS,
+                                trial_period_count=(due_date - datetime.date.today()).days)
+        new_purchase.set_payment_date(due_date)
+        new_purchase.save()
+        return do_subscribe(hash, form, processor, new_purchase)
     elif op == 'manual':
-        return do_prolong(hash, form, processor, purchase)
+        return do_prolong(hash, form, processor, new_purchase)
     elif op == 'upgrade':
-        return do_upgrade(hash, form, processor, purchase, organization)
+        return do_upgrade(hash, form, processor, new_purchase, organization)
 
 
 def do_unsubscribe(subscription, item):
