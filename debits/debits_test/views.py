@@ -151,7 +151,7 @@ def purchase_view(request):
     organization = Organization.objects.get(pk=organization_pk)
     purchase = organization.purchase
     if op == 'subscribe':
-        due_date = purchase.payment_deadline
+        due_date = purchase.due_payment_date
         if due_date < datetime.date.today():
             due_date = datetime.date.today()
         new_purchase = Purchase(for_organization=organization,
