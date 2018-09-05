@@ -167,9 +167,9 @@ def purchase_view(request):
         new_purchase.save()
         return do_subscribe(hash, form, processor, new_purchase)
     elif op == 'manual':
-        return do_prolong(hash, form, processor, new_purchase)
+        return do_prolong(hash, form, processor, purchase)
     elif op == 'upgrade':
-        return do_upgrade(hash, form, processor, new_purchase, organization)
+        return do_upgrade(hash, form, processor, purchase, organization)
 
 
 def do_unsubscribe(subscription, item):
