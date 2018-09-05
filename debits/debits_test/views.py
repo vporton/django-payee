@@ -12,6 +12,7 @@ from debits.debits_base.models import SimpleTransaction, SubscriptionTransaction
 import debits
 from .processors import MyPayPalForm
 
+
 def transaction_payment_view(request, transaction_id):
     transaction = SubscriptionTransaction.objects.get(pk=int(transaction_id))
     purchase = transaction.purchase
