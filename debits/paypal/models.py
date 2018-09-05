@@ -1,9 +1,15 @@
+import json
+
 import requests
-from html import escape
+
+try:
+    from html import escape  # python 3.x
+except ImportError:
+    from cgi import escape  # python 2.x
 from django.db import models
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
-from debits.debits_base.models import logger, CannotCancelSubscription
+from debits.debits_base.models import logger, CannotCancelSubscription, CannotRefundSubscription
 
 
 # This code only provides a subset of the possible functionality, for
@@ -40,6 +46,20 @@ class PayPalAPI(models.Model):
             # Don't include secret information into the message
             raise CannotCancelSubscription(r.json()["message"])
             # raise RuntimeError(_("Cannot cancel a billing agreement at PayPal. Please contact support:\n" + r.json()["message"]))
+
+    def refund(self, transaction_id, sum=None, currency='USD'):
+        logger.debug("PayPal: now refunding transaction %s" % escape(transaction_id))
+        data = {}
+        if sum is not None:
+            data['amount'] = {'total': sum, 'currency': currency}
+        r = self.session.post(self.server + ('/v1/payments/sale/%s/refund' % escape(transaction_id)),
+                              data=json.dumps(data),
+                              headers = {'content-type': 'application/json'})
+        if r.status_code < 200 or r.status_code >= 300:  # PayPal returns 204, to be sure
+            # Don't include secret information into the message
+            raise CannotRefundSubscription(r.json()["message"])
+            # raise RuntimeError(_("Cannot cancel a billing agreement at PayPal. Please contact support:\n" + r.json()["message"]))
+
 
     # It does not work with PayPal subscriptions: https://www.paypal-knowledge.com/infocenter/index?page=content&id=FAQ1987&actp=LIST
     # def agreement_is_active(self, agreement_id):

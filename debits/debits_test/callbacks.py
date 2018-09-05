@@ -15,7 +15,6 @@ class MyPayPalIPN(PayPalIPN):
 
     def do_purchase(self, item):
         organization = item.purchase.for_organization
-        if organization is None:
-            return
-        organization.purchase = item.purchase
-        organization.save()
+        if organization is not None:
+            organization.purchase = item.purchase
+            organization.save()

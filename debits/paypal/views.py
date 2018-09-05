@@ -4,9 +4,13 @@ import requests
 from django.utils import timezone
 from django.db import transaction
 from django.http import HttpResponse
+from django.utils.decorators import method_decorator
 from django.views import View
+from django.views.decorators.csrf import csrf_exempt
+
 from debits.debits_base.processors import PaymentCallback
-from debits.debits_base.models import BaseTransaction, SimpleTransaction, SubscriptionTransaction, Period, Payment, AutomaticPayment, Subscription, SubscriptionItem, logger, period_to_delta, CannotCancelSubscription
+from debits.debits_base.models import BaseTransaction, SimpleTransaction, SubscriptionTransaction, AutomaticPayment, logger
+from debits.debits_base.base import Period
 from django.conf import settings
 
 
@@ -46,6 +50,9 @@ from django.conf import settings
 
 
 # Internal.
+from debits.paypal.models import PayPalAPI
+from debits.paypal.utils import PayPalUtils
+
 MONTHS = [
     'Jan', 'Feb', 'Mar', 'Apr',
     'May', 'Jun', 'Jul', 'Aug',
@@ -76,6 +83,9 @@ def parse_date(value):
         return dt
 
 
+# FIXME: Refund fails for coupon or gift certificates, because they support only full refunds
+
+@method_decorator(csrf_exempt, name='dispatch')
 class PayPalIPN(PaymentCallback, View):
     # See https://developer.paypal.com/docs/classic/express-checkout/integration-guide/ECRecurringPayments/
     # for all kinds of IPN for recurring payments.
@@ -166,6 +176,8 @@ class PayPalIPN(PaymentCallback, View):
         if Decimal(POST['mc_gross']) == transaction.item.price and \
                         Decimal(POST['shipping']) == transaction.item.shipping and \
                         POST['mc_currency'] == transaction.item.currency:
+            if self.auto_refund(transaction, transaction.item.prolongitem.parent, POST):
+                return HttpResponse('')
             payment = transaction.on_accept_regular_payment(POST['payer_email'])
             self.on_payment(payment)
         else:
@@ -197,6 +209,8 @@ class PayPalIPN(PaymentCallback, View):
             logger.warning("SubscriptionTransaction %d does not exist" % transaction_id)
 
     def do_do_accept_subscription_or_recurring_payment(self, transaction, item, POST, ref):
+        if self.auto_refund(transaction, item, POST):
+            return HttpResponse('')
         transaction.obtain_active_subscription(ref, POST['payer_email'])
         payment = AutomaticPayment.objects.create(transaction=transaction,
                                                   email=POST['payer_email'])
@@ -223,7 +237,7 @@ class PayPalIPN(PaymentCallback, View):
         item.save()
 
     def advance_item_date(self, date, item):
-        date += period_to_delta(item.payment_period)
+        date = PayPalUtils.calculate_date(date, item.payment_period)  # FIXME: Eliminate (here and in other places) hardcoded PayPal
         item.set_payment_date(date)
         item.last_payment = datetime.date.today()
         item.reminders_sent = 0
@@ -246,15 +260,19 @@ class PayPalIPN(PaymentCallback, View):
     def do_accept_subscription_signup(self, POST, transaction_id):
         transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
         item = transaction.item
-        letter = {
+        m = {
             Period.UNIT_DAYS: 'D',
             Period.UNIT_WEEKS: 'W',
             Period.UNIT_MONTHS: 'M',
             Period.UNIT_YEARS: 'Y',
-        }[item.payment_period.unit]
-        if Decimal(POST['amount3']) == transaction.item.price + transaction.item.shipping and \
-                        POST['period3'] == str(transaction.item.payment_period.count) + ' ' + letter and \
-                        POST['mc_currency'] == transaction.item.currency:
+        }
+        period1_right = (item.trial_period.count == 0 and 'period1' not in POST) or \
+                        (item.trial_period.count != 0 and 'period1' in POST and \
+                         POST['period1'] == str(item.trial_period.count)+' '+m[item.trial_period.unit])
+        if period1_right and 'period2' not in POST and \
+                        Decimal(POST['amount3']) == item.price and \
+                        POST['period3'] == str(item.payment_period.count)+' '+m[item.payment_period.unit] and \
+                        POST['mc_currency'] == item.currency:
             self.do_subscription_or_recurring_created(transaction, POST, POST['subscr_id'])
         else:
             logger.warning("Wrong subscription signup data")
@@ -282,6 +300,19 @@ class PayPalIPN(PaymentCallback, View):
         transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
         transaction.item.cancel_subscription()
         self.on_subscription_canceled(POST, transaction.item)
+
+    def auto_refund(self, transaction, item, POST):
+        # "item" is SubscriptionItem
+        if self.should_auto_refund():
+            api = PayPalAPI()
+            # FIXME: Wrong for American Express card: https://www.paypal.com/us/selfhelp/article/How-do-I-issue-a-full-or-partial-refund-FAQ780
+            amount = (transaction.price - Decimal(0.30)).quantize(Decimal('1.00'))
+            api.refund(POST['txn_id'], str(amount))
+            return True
+        return False
+
+    def should_auto_refund(self):
+        return False
 
     # Ugh, PayPal
     def pp_payment_cycles(self, item):

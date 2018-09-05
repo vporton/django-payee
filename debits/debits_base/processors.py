@@ -3,7 +3,10 @@ from debits.debits_base.models import SubscriptionItem
 import abc
 import datetime
 from django.http import HttpResponse
-from html import escape
+try:
+    from html import escape  # python 3.x
+except ImportError:
+    from cgi import escape  # python 2.x
 import debits.debits_base
 
 
@@ -15,7 +18,7 @@ def hidden_field(f, v):
 # We receive a hash from user (see for example DalPay documentation).
 # The hash is stored in the DB.
 # Then the hash is amended (for example added the price) and passed to the payment processor.
-class BasePaymentProcessor(object, metaclass=abc.ABCMeta):
+class BasePaymentProcessor(abc.ABC):
     @abc.abstractmethod
     def amend_hash_new_purchase(self, transaction, hash):
         pass
@@ -31,8 +34,8 @@ class BasePaymentProcessor(object, metaclass=abc.ABCMeta):
         hash = self.amend_hash_change_subscription(transaction, hash)
         return self.redirect_to_processor(hash)
 
+    # TODO: These two methods do the same
     def make_purchase(self, hash, transaction):
-        transaction.item.adjust()
         return self.real_make_purchase(hash, transaction)
 
     def make_purchase_from_form(self, hash, transaction):
@@ -62,22 +65,6 @@ class BasePaymentProcessor(object, metaclass=abc.ABCMeta):
             "<form method='post' action='"+action+"'>\n" + \
             '\n'.join([hidden_field(i[0], str(i[1])) for i in hash.items()]) + \
             "\n</form></body></html>"
-
-    def calculate_remaining_days(self, transaction):
-        date = datetime.date.today()
-        item = transaction.item
-        remaining_days = (item.due_payment_date - date).days
-        if remaining_days > 0:
-            date = item.due_payment_date
-        if SubscriptionItem.day_needs_adjustment(item.payment_period, date):
-            remaining_days = self.do_days_adjustment(date, remaining_days)
-        return remaining_days
-
-    def do_days_adjustment(self, date, remaining_days):
-        while date.day != 1:
-            date += datetime.timedelta(days=1)
-            remaining_days += 1
-        return remaining_days
 
     # Makes sense only in manual recurring mode
     def ready_for_subscription(self, transaction):

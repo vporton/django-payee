@@ -2,7 +2,8 @@ import abc
 import datetime
 from django.urls import reverse
 from debits.debits_base.processors import BasePaymentProcessor
-from debits.debits_base.models import BaseTransaction, Period
+from debits.debits_base.base import Period
+from debits.debits_base.models import BaseTransaction
 from django.conf import settings
 
 
@@ -54,11 +55,10 @@ class PayPalForm(BasePaymentProcessor):
                     Period.UNIT_WEEKS: 'W',
                     Period.UNIT_MONTHS: 'M',
                     Period.UNIT_YEARS: 'Y'}
-        remaining_days = self.calculate_remaining_days(transaction)
-        if remaining_days > 0:
+        if item.trial_period.count > 0:
             items['a1'] = 0
-            items['p1'] = remaining_days
-            items['t1'] = 'D'
+            items['p1'] = item.trial_period.count
+            items['t1'] = unit_map[item.trial_period.unit]
         items['a3'] = item.price + item.shipping
         items['p3'] = item.payment_period.count
         items['t3'] = unit_map[item.payment_period.unit]
@@ -83,5 +83,5 @@ class PayPalForm(BasePaymentProcessor):
         return max(datetime.date.today(),
                    item.due_payment_date - datetime.timedelta(days=89))  # intentionally one day added to be sure
 
-# TODO: Support Exress Checkout
+# TODO: Support Express Checkout
 # https://developer.paypal.com/docs/classic/products/express-checkout/

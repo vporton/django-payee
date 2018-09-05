@@ -6,7 +6,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-SECRET_KEY = 'XXX'
+SECRET_KEY = 'Eech4Ak6Iedah1ahahMaeng4mahsee7Z'
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -64,17 +64,17 @@ USE_TZ = True
 
 ## Payments settings
 
-PAYMENTS_HOST = 'XXX'
-IPN_HOST = 'XXX'
-FROM_EMAIL = 'XXX'
+#PAYMENTS_HOST = 'XXX'
+#IPN_HOST = 'XXX'
+#FROM_EMAIL = 'XXX'
 PROLONG_PAYMENT_VIEW = 'transaction-prolong-payment'
 PAYMENTS_DAYS_BEFORE_DUE_REMIND = 10
 PAYMENTS_DAYS_BEFORE_TRIAL_END_REMIND = 10
-PAYPAL_EMAIL = 'XXX'
-PAYPAL_ID = 'XXX' #PayPal account ID
+#PAYPAL_EMAIL = 'XXX'
+#PAYPAL_ID = 'XXX' #PayPal account ID
 # https://developer.paypal.com/developer/applications
-PAYPAL_CLIENT_ID = 'XXX'
-PAYPAL_SECRET = 'XXX'
+#PAYPAL_CLIENT_ID = 'XXX'
+#PAYPAL_SECRET = 'XXX'
 PAYPAL_DEBUG = True
 PAYMENTS_REALM = 'testapp1'
 

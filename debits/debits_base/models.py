@@ -1,7 +1,8 @@
 import abc
 import hmac
 import datetime
-from dateutil.relativedelta import relativedelta
+
+import html2text
 import logging
 from django.apps import apps
 from django.urls import reverse
@@ -16,6 +17,8 @@ from django.utils.translation import ugettext_lazy as _
 from composite_field import CompositeField
 from django.conf import settings
 
+from debits.debits_base.base import Period
+from debits.paypal.utils import PayPalUtils
 
 logger = logging.getLogger('debits')
 
@@ -48,41 +51,8 @@ class Product(models.Model):
         return self.name
 
 
-class Period(CompositeField):
-    UNIT_DAYS = 1
-    UNIT_WEEKS = 2
-    UNIT_MONTHS = 3
-    UNIT_YEARS = 4
-
-    period_choices = ((UNIT_DAYS, _("days")),  # different processors may support a part of it
-                      (UNIT_WEEKS, _("weeks")),
-                      (UNIT_MONTHS, _("months")),
-                      (UNIT_YEARS, _("years")))
-
-    unit = models.SmallIntegerField()
-    count = models.SmallIntegerField()
-
-    def __init__(self, unit=None, count=None):
-        super().__init__()
-        if unit is not None:
-            self['unit'].default = unit
-        if count is not None:
-            self['count'].default = count
-
 # The following two functions does not work as methods, because
 # CompositeField is replaced with composite_field.base.CompositeField.Proxy:
-
-# See Monthly Billing Cycles in
-# https://developer.paypal.com/docs/classic/paypal-payments-standard/integration-guide/subscription_billing_cycles/
-# there's 4 datetime libraries for python: datetime, arrow, pendulum, delorean, python-dateutil
-def period_to_delta(period):
-    return {
-        Period.UNIT_DAYS: lambda: relativedelta(days=period.count),
-        Period.UNIT_WEEKS: lambda: relativedelta(weeks=period.count),
-        Period.UNIT_MONTHS: lambda: relativedelta(months=period.count),
-        Period.UNIT_YEARS: lambda: relativedelta(years=period.count),
-    }[period.unit]()
-
 
 def period_to_string(period):
     hash = {e[0]: e[1] for e in Period.period_choices}
@@ -97,7 +67,7 @@ class BaseTransaction(models.Model):
     # class Meta:
     #     abstract = True
 
-    processor = models.ForeignKey(PaymentProcessor)
+    processor = models.ForeignKey(PaymentProcessor, on_delete=models.CASCADE)
     creation_date = models.DateField(auto_now_add=True)
 
     def __repr__(self):
@@ -139,7 +109,7 @@ class BaseTransaction(models.Model):
         pass
 
 class SimpleTransaction(BaseTransaction):
-    item = models.ForeignKey('SimpleItem', related_name='transactions', null=False)
+    item = models.ForeignKey('SimpleItem', related_name='transactions', null=False, on_delete=models.CASCADE)
 
     def subinvoice(self):
         return 1
@@ -166,12 +136,12 @@ class SimpleTransaction(BaseTransaction):
             pk=prolongitem.parent_id)  # must be inside transaction
         # parent.email = transaction.email
         base_date = max(datetime.date.today(), parent_item.due_payment_date)
-        parent_item.set_payment_date(base_date + period_to_delta(prolongitem.prolong))
+        parent_item.set_payment_date(PayPalUtils.calculate_date(base_date, prolongitem.prolong))
         parent_item.save()
 
 
 class SubscriptionTransaction(BaseTransaction):
-    item = models.ForeignKey('SubscriptionItem', related_name='transactions', null=False)
+    item = models.ForeignKey('SubscriptionItem', related_name='transactions', null=False, on_delete=models.CASCADE)
 
     def subinvoice(self):
         return self.invoiced_item().subinvoice
@@ -186,6 +156,7 @@ class SubscriptionTransaction(BaseTransaction):
         """
         Internal
         """
+        # FIXME: UNIQUE constraint for transaction_id fails (https://github.com/vporton/django-debits/issues/10)
         self.item.active_subscription = Subscription.objects.create(transaction=self,
                                                                     subscription_reference=ref,
                                                                     email=email)
@@ -213,7 +184,7 @@ class Item(models.Model):
     """
     creation_date = models.DateField(auto_now_add=True)
 
-    product = models.ForeignKey('Product', null=True)
+    product = models.ForeignKey('Product', null=True, on_delete=models.CASCADE)
     product_qty = models.IntegerField(default=1)
     blocked = models.BooleanField(default=False)  # hacker or misbehavior detected
 
@@ -233,16 +204,13 @@ class Item(models.Model):
 
     # We remove old_subscription automatically when new subscription is created.
     # The new payment may be either one-time (SimpleItem) or subscription (SubscriptionItem).
-    old_subscription = models.ForeignKey('Subscription', null=True, related_name='new_subscription')
+    old_subscription = models.ForeignKey('Subscription', null=True, related_name='new_subscription', on_delete=models.CASCADE)
 
     def __repr__(self):
         return "<Item pk=%d, %s>" % (self.pk, self.product.name)
 
     def __str__(self):
         return self.product.name
-
-    def adjust(self):
-        pass
 
     @abc.abstractmethod
     def is_subscription(self):
@@ -254,6 +222,7 @@ class Item(models.Model):
         if self.old_subscription:
             self.do_upgrade_subscription()
 
+    # TODO: remove ALL old subscriptions as in payment_system2
     def do_upgrade_subscription(self):
         try:
             self.old_subscription.force_cancel(is_upgrade=True)
@@ -271,9 +240,9 @@ class Item(models.Model):
         if self.email is None:  # hack!
             return
         self.save()
-        text = render_to_string(template_name, data, request=None, using=None)
-        # FIXME: second argument should be plain text
-        send_mail(subject, text, settings.FROM_EMAIL, [self.email], html_message=text)
+        html = render_to_string(template_name, data, request=None, using=None)
+        text = html2text.HTML2Text(html)
+        send_mail(subject, text, settings.FROM_EMAIL, [self.email], html_message=html)
 
 class SimpleItem(Item):
     """
@@ -290,9 +259,9 @@ class SimpleItem(Item):
 
 
 class SubscriptionItem(Item):
-    item = models.OneToOneField(Item, related_name='subscriptionitem', parent_link=True)
+    item = models.OneToOneField(Item, related_name='subscriptionitem', parent_link=True, on_delete=models.CASCADE)
 
-    active_subscription = models.OneToOneField('Subscription', null=True)
+    active_subscription = models.OneToOneField('Subscription', null=True, on_delete=models.CASCADE)
 
     due_payment_date = models.DateField(default=datetime.date.today, db_index=True)
     payment_deadline = models.DateField(null=True, db_index=True)  # may include "grace period"
@@ -318,47 +287,18 @@ class SubscriptionItem(Item):
 
     @staticmethod
     def quick_is_active(item_id):
-        transaction = SubscriptionItem.objects.filter(pk=item_id).\
+        item = SubscriptionItem.objects.filter(pk=item_id).\
             only('payment_deadline', 'gratis', 'blocked').get()
-        return transaction.is_active()
-
-    @staticmethod
-    def day_needs_adjustment(period, date):
-        return (period.unit == Period.UNIT_MONTHS and date.day >= 29) or \
-                (period.unit == Period.UNIT_YEARS and \
-                             date.month == 2 and date.day == 29)
-
-    def adjust(self):
-        self.trial = self.trial_period.count != 0
-        self.adjust_dates()
-        self.save()
-
-    # If one bills at 29, 30, or 31, he should be given additional about 1-3 days free
-    def adjust_dates(self):
-        # We may have a trouble with non-monthly trials - the only solution is to make trial period ourselves
-        creation_date = self.creation_date if self.creation_date else datetime.date.today()  # for not yet saved records
-        period_end = creation_date + period_to_delta(self.trial_period)
-        if self.due_payment_date:
-            period_end = max(period_end, self.due_payment_date)
-        if SubscriptionItem.day_needs_adjustment(self.trial_period, period_end):
-            self.do_adjust_dates(period_end)
-
-    def do_adjust_dates(self, period_end):
-        period = period_end - datetime.date.today()
-        while period_end.day != 1:
-            period_end += datetime.timedelta(days=1)
-            period += datetime.timedelta(days=1)
-        # self.trial_period.both = (Period.UNIT_DAYS, period.days)  # setting it to due payment date would be wrong
-        self.set_payment_date(period_end)
+        return item.is_active()
 
     def set_payment_date(self, date):
         self.due_payment_date = date
-        self.payment_deadline = self.due_payment_date + period_to_delta(self.grace_period)
+        self.payment_deadline = PayPalUtils.calculate_date(self.due_payment_date, self.grace_period)
 
     def start_trial(self):
         if self.trial_period.count != 0:
             self.trial = True
-            self.set_payment_date(datetime.date.today() + period_to_delta(self.trial_period))
+            self.set_payment_date(PayPalUtils.calculate_date(datetime.date.today(), self.trial_period))
 
     def cancel_subscription(self):
         # atomic operation
@@ -484,14 +424,26 @@ class SubscriptionItem(Item):
                                              'product': transaction.product.name,
                                              'url': url})
 
+    # TODO
+    # def get_email(self):
+    #     try:
+    #         # We get the first email, as normally we have no more than one non-canceled transaction
+    #         t = self.transactions.filter(subscription__canceled=False)[0]
+    #         payment = AutomaticPayment.objects.filter(transaction=t).order_by('-id')[0]
+    #         return payment.email
+    #     except IndexError:  # no object
+    #         return None
+
 
 class ProlongItem(SimpleItem):
     # item = models.OneToOneField('SimpleItem', related_name='prolongitem', parent_link=True)
-    parent = models.ForeignKey('SubscriptionItem', related_name='child', parent_link=False)
+    parent = models.ForeignKey('SubscriptionItem', related_name='child', parent_link=False, on_delete=models.CASCADE)
     prolong = Period(unit=Period.UNIT_MONTHS, count=0)  # TODO: rename
 
     def refund_payment(self):
-        self.parent.set_payment_date(self.parent.due_payment_date - period_to_delta(self.prolong))
+        prolong2 = self.prolong
+        prolong2.count *= -1
+        self.parent.set_payment_date(PayPalUtils.calculate_date(self.parent.due_payment_date, prolong2))
         self.parent.save()
 
 
@@ -500,7 +452,7 @@ class Subscription(models.Model):
     When the user subscribes for automatic payment.
     """
 
-    transaction = models.OneToOneField('SubscriptionTransaction')
+    transaction = models.OneToOneField('SubscriptionTransaction', on_delete=models.CASCADE)
 
     # Avangate has it for every product, but PayPal for transaction as a whole.
     # So have it both in AutomaticPayment and Subscription
@@ -509,11 +461,18 @@ class Subscription(models.Model):
     # duplicates email in Payment
     email = models.EmailField(null=True)  # DalPay requires to notify the customer 10 days before every payment
 
+    # TODO: The same as in do_upgrade_subscription()
+    #@shared_task  # PayPal tormoz, so run in a separate thread # TODO: celery (with `TypeError: force_cancel() missing 1 required positional argument: 'self'`)
     def force_cancel(self, is_upgrade=False):
         if self.subscription_reference:
             klass = model_from_ref(self.transaction.processor.api)
             api = klass()
-            api.cancel_agreement(self.subscription_reference, is_upgrade=is_upgrade)  # may raise an exception
+            try:
+                api.cancel_agreement(self.subscription_reference, is_upgrade=is_upgrade)  # may raise an exception
+            except CannotCancelSubscription:
+                # fallback
+                Subscription.objects.filter(pk=self.pk).update(subscription_reference=None)
+                logger.warn("Cannot cancel subscription " + self.subscription_reference)
             # transaction.cancel_subscription()  # runs in the callback
 
 
@@ -528,7 +487,7 @@ class Payment(models.Model):
 
 
 class SimplePayment(Payment):
-    transaction = models.OneToOneField('SimpleTransaction')
+    transaction = models.OneToOneField('SimpleTransaction', on_delete=models.CASCADE)
 
 
 class AutomaticPayment(Payment):
@@ -538,7 +497,7 @@ class AutomaticPayment(Payment):
 
     # The transaction which corresponds to the starting
     # process of purchase.
-    transaction = models.ForeignKey('SubscriptionTransaction')
+    transaction = models.ForeignKey('SubscriptionTransaction', on_delete=models.CASCADE)
 
     # subscription = models.ForeignKey('Subscription')
 
@@ -549,4 +508,7 @@ class AutomaticPayment(Payment):
 
 
 class CannotCancelSubscription(Exception):
+    pass
+
+class CannotRefundSubscription(Exception):
     pass

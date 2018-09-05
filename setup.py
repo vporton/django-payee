@@ -16,7 +16,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 setup(
     name='django-debits',
 
-    version='0.0.2',
+    version='0.0.3',
 
     description='Accepting payments',
     long_description='Accepting payments (currently supports PayPal)',
