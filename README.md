@@ -1,3 +1,6 @@
+_Simplify the logic of integrating your Python/Django backend with PayPal
+(and in the future of other payment processors, too)._
+
 Accepting payments (currently we support only PayPal).
 
 This program is available under AGPL and under a commercial license ($40 currently).
