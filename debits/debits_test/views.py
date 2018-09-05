@@ -79,7 +79,7 @@ def get_processor(request, hash):
 
 
 def do_subscribe(hash, form, processor, item):
-    transaction = SubscriptionTransaction.objects.create(processor=processor, item=item)
+    transaction = SubscriptionTransaction.objects.create(processor=processor, item=item.subscriptionitem)
     return form.make_purchase_from_form(hash, transaction)
 
 
