@@ -13,10 +13,14 @@ here = path.abspath(path.dirname(__file__))
 # with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 #     long_description = f.read()
 
-setup(
-    name='django-debits',
+name = 'django-debits'
+version = '0.0.3'
+release = version
 
-    version='0.0.3',
+setup(
+    name=name,
+
+    version=version,
 
     description='Accepting payments',
     long_description='Accepting payments (currently supports PayPal)',
@@ -58,4 +62,11 @@ setup(
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
     packages=find_packages(exclude=['test*']),
+
+    command_options={
+        'build_sphinx': {
+            'project': ('setup.py', name),
+            'version': ('setup.py', version),
+            'release': ('setup.py', release),
+            'source_dir': ('setup.py', 'doc')}},
 )
