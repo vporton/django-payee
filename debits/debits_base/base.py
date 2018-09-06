@@ -11,7 +11,8 @@ logger = logging.getLogger('debits')
 class Period(CompositeField):
     """Period (for example of recurring payment or of a trial subscription).
 
-    It may be expressed in days, weeks, months, or years."""
+    It may be expressed in days, weeks, months, or years. Several units cannot be mixed:
+    for example, it cannot be 2 months and 13 days."""
     UNIT_DAYS = 1
     UNIT_WEEKS = 2
     UNIT_MONTHS = 3
@@ -21,7 +22,7 @@ class Period(CompositeField):
                       (UNIT_WEEKS, _("weeks")),
                       (UNIT_MONTHS, _("months")),
                       (UNIT_YEARS, _("years")))
-    """For Django `ChoiceField`."""
+    """For Django :class:`~django.forms.fields.ChoiceField`."""
 
     unit = models.SmallIntegerField()
     """days, weeks, months, or years."""
