@@ -10,13 +10,17 @@ from os import path
 here = path.abspath(path.dirname(__file__))
 
 # Get the long description from the README file
-with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
-    long_description = f.read()
+# with open(path.join(here, 'README.md'), encoding='utf-8') as f:
+#     long_description = f.read()
+
+name = 'django-debits'
+version = '0.0.4'
+release = version
 
 setup(
-    name='django-debits',
+    name=name,
 
-    version='0.0.3',
+    version=version,
 
     description='Accepting payments',
     long_description='Accepting payments (currently supports PayPal)',
@@ -48,6 +52,8 @@ setup(
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
     ],
 
     # What does your project relate to?
@@ -56,4 +62,11 @@ setup(
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
     packages=find_packages(exclude=['test*']),
+
+    command_options={
+        'build_sphinx': {
+            'project': ('setup.py', name),
+            'version': ('setup.py', version),
+            'release': ('setup.py', release),
+            'source_dir': ('setup.py', 'doc')}},
 )

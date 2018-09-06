@@ -1,0 +1,4 @@
+include doc/Makefile
+include doc/make.bat
+include doc/source/conf.py
+recursive-include doc/source *.rst

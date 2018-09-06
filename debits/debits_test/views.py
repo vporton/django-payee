@@ -1,4 +1,3 @@
-from decimal import Decimal
 import datetime
 from django.db.models import F
 from django.http import HttpResponse, HttpResponseRedirect
@@ -95,6 +94,7 @@ def do_prolong(hash, form, processor, item):
     return form.make_purchase_from_form(hash, subtransaction)
 
 
+# New period (in days) after an upgrade
 def upgrade_calculate_new_period(k, item):
     if item.due_payment_date:
         period = (item.due_payment_date - datetime.date.today()).days

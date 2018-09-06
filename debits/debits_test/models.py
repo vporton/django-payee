@@ -1,6 +1,6 @@
 from django.db import models
 from debits.debits_base.base import Period
-from debits.debits_base.models import Product, BaseTransaction, SubscriptionItem, SimpleItem
+from debits.debits_base.models import Product, SubscriptionItem
 
 
 class PricingPlan(models.Model):
