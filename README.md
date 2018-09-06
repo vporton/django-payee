@@ -34,3 +34,8 @@ and example code in `debits/debits_test`.
 
 See
 [the wiki at GitHub.com](https://github.com/vporton/django-debits/wiki).
+
+# Commercial version
+
+Pay $40 and you receive the commercial license (for one version of the software).
+[Pay now.](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=K6MJJ3LHQLJS2)
