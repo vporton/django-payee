@@ -1,4 +1,3 @@
-from decimal import Decimal
 import datetime
 from django.db.models import F
 from django.http import HttpResponse, HttpResponseRedirect
