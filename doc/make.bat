@@ -9,7 +9,7 @@ if "%SPHINXBUILD%" == "" (
 )
 set SOURCEDIR=source
 set BUILDDIR=build
-set SPHINXPROJ=XMLBoiler
+set SPHINXPROJ=DjangoDebits
 
 if "%1" == "" goto help
 
