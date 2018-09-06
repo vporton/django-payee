@@ -22,7 +22,7 @@ class Period(CompositeField):
                       (UNIT_WEEKS, _("weeks")),
                       (UNIT_MONTHS, _("months")),
                       (UNIT_YEARS, _("years")))
-    """For Django :class:`~django.forms.fields.ChoiceField`."""
+    """For Django :class:`~django.forms.ChoiceField`."""
 
     unit = models.SmallIntegerField()
     """days, weeks, months, or years."""
