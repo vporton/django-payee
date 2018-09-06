@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# XML Boiler documentation build configuration file, created by
+# Django Debits documentation build configuration file, created by
 # sphinx-quickstart on Thu Sep  6 17:50:54 2018.
 #
 # This file is execfile()d with the current directory set to its
@@ -53,7 +53,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'XML Boiler'
+project = u'Django Debits'
 copyright = u'2018, Victor Porton'
 author = u'Victor Porton'
 
@@ -125,7 +125,7 @@ html_sidebars = {
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'XMLBoilerdoc'
+htmlhelp_basename = 'DjangoDebitsdoc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -152,7 +152,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'XMLBoiler.tex', u'XML Boiler Documentation',
+    (master_doc, 'DjangoDebits.tex', u'Django Debits Documentation',
      u'Victor Porton', 'manual'),
 ]
 
@@ -162,7 +162,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'xmlboiler', u'XML Boiler Documentation',
+    (master_doc, 'djangodebits', u'Django Debits Documentation',
      [author], 1)
 ]
 
@@ -173,8 +173,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'XMLBoiler', u'XML Boiler Documentation',
-     author, 'XMLBoiler', 'One line description of project.',
+    (master_doc, 'DjangoDebits', u'Django Debits Documentation',
+     author, 'DjangoDebits', 'One line description of project.',
      'Miscellaneous'),
 ]
 
