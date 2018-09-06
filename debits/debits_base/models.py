@@ -3,7 +3,6 @@ import hmac
 import datetime
 
 import html2text
-import logging
 from django.apps import apps
 from django.urls import reverse
 from django.db import models
@@ -17,10 +16,8 @@ from django.utils.translation import ugettext_lazy as _
 from composite_field import CompositeField
 from django.conf import settings
 
-from debits.debits_base.base import Period
+from debits.debits_base.base import logger, Period
 from debits.paypal.utils import PayPalUtils
-
-logger = logging.getLogger('debits')
 
 
 class ModelRef(CompositeField):

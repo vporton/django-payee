@@ -9,7 +9,8 @@ from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
 from debits.debits_base.processors import PaymentCallback
-from debits.debits_base.models import BaseTransaction, SimpleTransaction, SubscriptionTransaction, AutomaticPayment, logger
+from debits.debits_base.base import logger
+from debits.debits_base.models import BaseTransaction, SimpleTransaction, SubscriptionTransaction, AutomaticPayment
 from debits.debits_base.base import Period
 from django.conf import settings
 

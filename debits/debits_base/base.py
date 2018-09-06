@@ -1,6 +1,10 @@
+import logging
 from composite_field import CompositeField
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
+
+
+logger = logging.getLogger('debits')
 
 
 class Period(CompositeField):
