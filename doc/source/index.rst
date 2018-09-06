@@ -8,7 +8,9 @@ Welcome to Django Debits's documentation!
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Package Contents:
+
+   modules
 
 
 
