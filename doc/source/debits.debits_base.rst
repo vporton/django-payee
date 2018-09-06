@@ -1,13 +1,6 @@
 debits\.debits\_base package
 ============================
 
-Subpackages
------------
-
-.. toctree::
-
-    debits.debits_base.migrations
-
 Submodules
 ----------
 

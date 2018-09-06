@@ -1,13 +1,6 @@
 debits\.paypal package
 ======================
 
-Subpackages
------------
-
-.. toctree::
-
-    debits.paypal.migrations
-
 Submodules
 ----------
 

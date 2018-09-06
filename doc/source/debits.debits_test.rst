@@ -1,13 +1,6 @@
 debits\.debits\_test package
 ============================
 
-Subpackages
------------
-
-.. toctree::
-
-    debits.debits_test.migrations
-
 Submodules
 ----------
 
