@@ -39,3 +39,4 @@ See
 
 Pay $40 and you receive the commercial license (for one version of the software).
 [Pay now.](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=K6MJJ3LHQLJS2)
+For details of the license, see `LICENSE` file in the source.
