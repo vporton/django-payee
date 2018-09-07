@@ -21,64 +21,120 @@ from debits.paypal.utils import PayPalUtils
 
 
 class ModelRef(CompositeField):
-    app_label = models.CharField(max_length=100)
-    model = models.CharField(_('python model class name'), max_length=100)
+    """Reference to a Django model"""
+
+    app_label = models.CharField(_('Django app with the model'), max_length=100)
+    """Django app with the model."""
+
+    model = models.CharField(_('Python model class name'), max_length=100)
+    """The model class name."""
 
 
-# The following two functions does not work as methods, because
+# The following function does not work as a method, because
 # CompositeField is replaced with composite_field.base.CompositeField.Proxy:
 
 def model_from_ref(model_ref):
+    """Retrieves a model from `ModelRef`.
+
+    Args:
+        model_ref: A `ModelRef` field instance.
+
+    Returns:
+        A Django model class.
+    """
     return apps.get_model(model_ref.app_label, model_ref.model)
 
 
 class PaymentProcessor(models.Model):
-    name = models.CharField(max_length=255)
+    """Payment processor (such as PayPal, DalPay, etc.)"""
+
+    name = models.CharField(_('The name of the company'), max_length=255)
+    """The name of the payment processing company or service."""
+
     url = models.URLField(max_length=255)
+    """The site of the payment processor."""
+
     api = ModelRef()
+    """The Django model which handles API for payments."""
 
     def __str__(self):
         return self.name
 
 
 class Product(models.Model):
-    name = models.CharField(max_length=255)
+    name = models.CharField(_('Product name'), max_length=255)
+    """Product name."""
 
     def __str__(self):
         return self.name
 
 
-# The following two functions does not work as methods, because
+# The following function does not work as a method, because
 # CompositeField is replaced with composite_field.base.CompositeField.Proxy:
 
 def period_to_string(period):
+    """Human readable description of a period.
+
+    Args:
+        period: `Period` field.
+
+    Returns:
+        A human readable string.
+
+    TODO:
+        Move to `base.py`.
+    """
     hash = {e[0]: e[1] for e in Period.period_choices}
     return "%d %s" % (period.count, hash[period.unit])
 
 
 class BaseTransaction(models.Model):
-    """
-    ONE redirect to the payment processor
-    """
+    """A redirect (or other query) to the payment processor.
+
+    It may be paid or (not yet) paid."""
 
     # class Meta:
     #     abstract = True
 
     processor = models.ForeignKey(PaymentProcessor, on_delete=models.CASCADE)
+    """Payment processor."""
+
     creation_date = models.DateField(auto_now_add=True)
+    """Date of the redirect.
+    
+    TODO:
+        Use time with seconds precision?
+    """
 
     def __repr__(self):
         return "<BaseTransaction: %s>" % (("pk=%d" % self.pk) if self.pk else "no pk")
 
     @staticmethod
     def custom_from_pk(pk):
-        # Secret can be known only to one who created a BaseTransaction.
-        # This prevents third parties to make fake IPNs from a payment processor.
+        """Secret code of a transaction.
+
+        Secret can be known only to one who created a BaseTransaction.
+        This prevents third parties to make fake IPNs from a payment processor.
+
+        Args:
+            pk: the serial primary key (of :class:`BaseTransaction`) used to calculate the secret transaction code.
+
+        Returns:
+            A secret string."""
         secret = hmac.new(settings.SECRET_KEY.encode(), ('payid ' + str(pk)).encode()).hexdigest()
         return settings.PAYMENTS_REALM + ' ' + str(pk) + ' ' + secret
 
     @staticmethod
     def pk_from_custom(custom):
+        """Restore the :class:`BaseTransaction` primary key from the secret "custom".
+
+        Raises :class:`BaseTransaction.DoesNotExist` if the custom is wrong.
+
+        Args:
+            custom: A secret string.
+
+        Returns:
+            The primary key for :class:`BaseTransaction`."""
         r = custom.split(' ', 2)
         if len(r) != 3 or r[0] != settings.PAYMENTS_REALM:
             raise BaseTransaction.DoesNotExist
@@ -91,22 +147,31 @@ class BaseTransaction(models.Model):
         except ValueError:
             raise BaseTransaction.DoesNotExist
 
-    # https://bitbucket.org/arcamens/django-payments/wiki/Invoice%20IDs
     @abc.abstractmethod
     def invoice_id(self):
+        """Invoice ID.
+
+        Used internally to prevent more than one payment for the same transaction."""
         pass
 
     def invoiced_item(self):
+        """Internal."""
         return self.item.old_subscription.transaction.item \
             if self.item and self.item.old_subscription \
             else self.item
 
     @abc.abstractmethod
     def subinvoice(self):
+        """Subinvoice ID.
+
+        Used internally to prevent more than one payment for the same transaction."""
         pass
 
 class SimpleTransaction(BaseTransaction):
+    """A one-time (non-recurring) transaction."""
+
     item = models.ForeignKey('SimpleItem', related_name='transactions', null=False, on_delete=models.CASCADE)
+    """The stuff sold by this transaction."""
 
     def subinvoice(self):
         return 1
@@ -115,6 +180,7 @@ class SimpleTransaction(BaseTransaction):
         return settings.PAYMENTS_REALM + ' p-%d' % (self.item.pk,)
 
     def on_accept_regular_payment(self, email):
+        """Handles confirmation of a (non-recurring) payment."""
         payment = SimplePayment.objects.create(transaction=self, email=email)
         self.item.paid = True
         self.item.last_payment = datetime.date.today()
@@ -129,6 +195,14 @@ class SimpleTransaction(BaseTransaction):
 
     @transaction.atomic
     def advance_parent(self, prolongitem):
+        """Advances the parent transaction on receive of a "prolong" payment.
+
+        Args:
+            prolongitem: :class:`ProlongItem`.
+
+        `prolongitem.prolong` contains the number of days to advance the parent (:class:`SubscriptionItem`)
+        item. The parent transaction is advanced this number of days.
+        """
         parent_item = SubscriptionItem.objects.select_for_update().get(
             pk=prolongitem.parent_id)  # must be inside transaction
         # parent.email = transaction.email
@@ -138,7 +212,10 @@ class SimpleTransaction(BaseTransaction):
 
 
 class SubscriptionTransaction(BaseTransaction):
+    """A transaction for a subscription service."""
+
     item = models.ForeignKey('SubscriptionItem', related_name='transactions', null=False, on_delete=models.CASCADE)
+    """The stuff sold by this transaction information."""
 
     def subinvoice(self):
         return self.invoiced_item().subinvoice
@@ -150,10 +227,7 @@ class SubscriptionTransaction(BaseTransaction):
             return settings.PAYMENTS_REALM + ' %d-%d' % (self.item.pk, self.subinvoice())
 
     def create_active_subscription(self, ref, email):
-        """
-        Internal
-        """
-        # FIXME: UNIQUE constraint for transaction_id fails (https://github.com/vporton/django-debits/issues/10)
+        """Internal."""
         self.item.active_subscription = Subscription.objects.create(transaction=self,
                                                                     subscription_reference=ref,
                                                                     email=email)
@@ -162,9 +236,7 @@ class SubscriptionTransaction(BaseTransaction):
 
     @django.db.transaction.atomic
     def obtain_active_subscription(self, ref, email):
-        """
-        Internal
-        """
+        """Internal."""
         if self.item.active_subscription and self.item.active_subscription.subscription_reference == ref:
             return self.item.active_subscription
         else:
