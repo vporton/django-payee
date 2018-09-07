@@ -8,9 +8,12 @@ The engine is very advanced and supports regular and subscription payments.
 For more details, see
 [the wiki at GitHub.com](https://github.com/vporton/django-debits/wiki).
 
-This program is available under AGPL and under a commercial license ($40 currently).
-
 The program is in beta testing stage, use at your own risk.
+
+# Licensing
+
+This package is available under AGPL (only for free software with published source)
+and under a commercial license ($40 currently, for any commercial software).
 
 # Install
 
