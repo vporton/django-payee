@@ -8,12 +8,7 @@ The engine is very advanced and supports regular and subscription payments.
 For more details, see
 [the wiki at GitHub.com](https://github.com/vporton/django-debits/wiki).
 
-The program is in beta testing stage, use at your own risk.
-
-# Licensing
-
-This package is available under AGPL (only for free software with published source)
-and under a commercial license ($40 currently, for any commercial software).
+The program is in beta testing stage.
 
 # Install
 
@@ -39,6 +34,9 @@ and example code in `debits/debits_test`.
 * [API docs](https://django-debits.readthedocs.io/en/latest/)
 
 # Commercial version
+
+This package is available under AGPL (only for free software with published source)
+and under a commercial license ($40 currently, for any commercial software).
 
 Pay $40 and you receive the commercial license (for one version of the software).
 [Pay now.](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=K6MJJ3LHQLJS2)
