@@ -244,36 +244,64 @@ class SubscriptionTransaction(BaseTransaction):
 
 
 class Item(models.Model):
-    """
-    Apps using this package should create
-    their product records manually.
+    """Anything sold or rent.
 
-    I may provide an interface for registering
-    new products.
+    Apps using this package should create their product records manually.
+    Then you create an instance of a subclass of this class before allowing
+    the user to make a transaction.
+
+    In a future we may provide an interface for registering new products.
     """
+
     creation_date = models.DateField(auto_now_add=True)
+    """Date of item creation.
+
+    TODO:
+        Use time with seconds precision?
+    """
 
     product = models.ForeignKey('Product', null=True, on_delete=models.CASCADE)
+    """The sold product."""
+
     product_qty = models.IntegerField(default=1)
-    blocked = models.BooleanField(default=False)  # hacker or misbehavior detected
+    """Quantity of the sold product (often 1)."""
+
+    blocked = models.BooleanField(default=False)
+    """A hacker or misbehavior detected."""
 
     currency = models.CharField(max_length=3, default='USD')
-    price = models.DecimalField(max_digits=10, decimal_places=2)  # for recurring payment the amount of one payment
+    """The currenct for which this is sold."""
+
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    """Price of the item.
+    
+    For recurring payment it is the amount of one payment."""
+
     shipping = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    """Price of shipping.
+    
+    Remain zero if doubt."""
 
     # code = models.CharField(max_length=255) # TODO
-    gratis = models.BooleanField(default=False)  # provide a product or service for free
+
+    gratis = models.BooleanField(default=False)
+    """Provide a product or service for free."""
+
     # recurring = models.BooleanField(default=False)
 
-    # 0 - no reminder sent
-    # 1 - before due payment sent
-    # 2 - at due payment sent
-    # 3 - day before deadline sent
     reminders_sent = models.SmallIntegerField(default=0, db_index=True)
+    """Email (or SMS, etc.) payment reminders sent state.
+    
+    * 0 - no reminder sent
+    * 1 - before due payment sent
+    * 2 - at due payment sent
+    * 3 - day before deadline sent"""
 
-    # We remove old_subscription automatically when new subscription is created.
-    # The new payment may be either one-time (SimpleItem) or subscription (SubscriptionItem).
     old_subscription = models.ForeignKey('Subscription', null=True, related_name='new_subscription', on_delete=models.CASCADE)
+    """We remove old_subscription (if not `None`) automatically when new subscription is created.
+    
+    The new payment may be either one-time (:class:`SimpleItem` (usually :class:`ProlongItem`))
+    or subscription (:class:`SubscriptionItem`)."""
 
     def __repr__(self):
         return "<Item pk=%d, %s>" % (self.pk, self.product.name)
@@ -284,15 +312,22 @@ class Item(models.Model):
     @abc.abstractmethod
     def is_subscription(self):
         pass
+    """Is this a recurring (or one-time) payment."""
 
-    # Can be called from both subscription IPN and payment IPN, so prepare to handle it two times
     @transaction.atomic
     def upgrade_subscription(self):
+        """Internal.
+
+        It cancels the old subscription (if any).
+
+        It can be called from both subscription IPN and payment IPN, so prepare to handle it two times."""
         if self.old_subscription:
             self.do_upgrade_subscription()
 
-    # TODO: remove ALL old subscriptions as in payment_system2
     def do_upgrade_subscription(self):
+        """Internal.
+
+        TODO: Remove ALL old subscriptions as in payment_system2."""
         try:
             self.old_subscription.force_cancel(is_upgrade=True)
         except CannotCancelSubscription:
@@ -302,6 +337,7 @@ class Item(models.Model):
         self.save()
 
     def send_rendered_email(self, template_name, subject, data):
+        """Internal."""
         try:
             self.email = self.subscription.email
         except AttributeError:
@@ -314,62 +350,99 @@ class Item(models.Model):
         send_mail(subject, text, settings.FROM_EMAIL, [self.email], html_message=html)
 
 class SimpleItem(Item):
-    """
-    Non-subscription item.
-    """
+    """Non-subscription item.
+
+    To sell a non-subscription item, create a subclass of this model, describing your sold good."""
 
     paid = models.BooleanField(default=False)
+    """It was paid by the user."""
 
     def is_subscription(self):
         return False
 
     def is_paid(self):
         return (self.paid or self.gratis) and not self.blocked
+    """If to consider the item paid (or gratis) but not blocked."""
 
 
 class SubscriptionItem(Item):
+    """Subscription (recurring) item.
+
+    To sell a subscription item, create a subclass of this model, describing your sold service."""
+
     item = models.OneToOneField(Item, related_name='subscriptionitem', parent_link=True, on_delete=models.CASCADE)
 
     active_subscription = models.OneToOneField('Subscription', null=True, on_delete=models.CASCADE)
+    """The :class:`Subscription` currently active for this item
+    
+    or `None` if the item is not available for the user."""
 
     due_payment_date = models.DateField(default=datetime.date.today, db_index=True)
-    payment_deadline = models.DateField(null=True, db_index=True)  # may include "grace period"
-    last_payment = models.DateField(null=True, db_index=True)
+    """The reference payment date."""
 
-    trial = models.BooleanField(default=False, db_index=True)  # now in trial
+    payment_deadline = models.DateField(null=True, db_index=True)  # may include "grace period"
+    """The dealine payment date.
+    
+    After it is reached, the item is considered inactive."""
+
+    last_payment = models.DateField(null=True, db_index=True)
+    """When the last payment for this item was received.
+    
+    May be `None` if there were no payments for this item, yet."""
+
+    trial = models.BooleanField(default=False, db_index=True)
+    """Now in trial period."""
 
     grace_period = Period(unit=Period.UNIT_DAYS, count=20)
+    """How much :attr:`payment_deadline` is above :attr:`due_payment_data`."""
+
     payment_period = Period(unit=Period.UNIT_MONTHS, count=1)
+    """How often to pay (for automatic recurring payments)."""
+
     trial_period = Period(unit=Period.UNIT_MONTHS, count=0)
+    """Trial period.
+    
+    It may be zero."""
 
     # https://bitbucket.org/arcamens/django-payments/wiki/Invoice%20IDs
     subinvoice = models.PositiveIntegerField(default=1)  # no need for index, as it is used only at PayPal side
+    """Internal."""
 
     def is_subscription(self):
         return True
 
-    # Usually you should use quick_is_active() instead because that is faster
     def is_active(self):
+        """Is the item active (paid on time and not blocked).
+
+        Usually you should use quick_is_active() instead because that is faster."""
         prior = self.payment_deadline is not None and \
                 datetime.date.today() <= self.payment_deadline
         return (prior or self.gratis) and not self.blocked
 
     @staticmethod
     def quick_is_active(item_id):
+        """Is the item with given PK active (paid on time and not blocked).
+
+        Usually you should use quick_is_active() instead because that is faster."""
         item = SubscriptionItem.objects.filter(pk=item_id).\
             only('payment_deadline', 'gratis', 'blocked').get()
         return item.is_active()
 
     def set_payment_date(self, date):
+        """Sets both :attr:`due_payment_date` and :attr:`payment_deadline`."""
         self.due_payment_date = date
         self.payment_deadline = PayPalUtils.calculate_date(self.due_payment_date, self.grace_period)
 
     def start_trial(self):
+        """Start trial period.
+
+        This should be called after setting non-zero :attr:`trial_period`."""
         if self.trial_period.count != 0:
             self.trial = True
             self.set_payment_date(PayPalUtils.calculate_date(datetime.date.today(), self.trial_period))
 
     def cancel_subscription(self):
+        """Called when we detect that the subscription was canceled."""
         # atomic operation
         SubscriptionItem.objects.filter(pk=self.pk).update(active_subscription=None,
                                                            subinvoice=F('subinvoice') + 1)
@@ -377,6 +450,9 @@ class SubscriptionItem(Item):
             self.cancel_subscription_email()
 
     def cancel_subscription_email(self):
+        """Internal.
+
+        Sends cancel subscription email."""
         url = settings.PAYMENTS_HOST + reverse(settings.PROLONG_PAYMENT_VIEW, args=[self.pk])
         days_before = (self.due_payment_date - datetime.date.today()).days
         self.send_rendered_email('debits/email/subscription-canceled.html',
@@ -388,11 +464,13 @@ class SubscriptionItem(Item):
 
     @staticmethod
     def send_reminders():
+        """Send all email reminders."""
         SubscriptionItem.send_regular_reminders()
         SubscriptionItem.send_trial_reminders()
 
     @staticmethod
     def send_regular_reminders():
+        """Internal."""
         # start with the last
         SubscriptionItem.send_regular_before_due_reminders()
         SubscriptionItem.send_regular_due_reminders()
@@ -400,6 +478,7 @@ class SubscriptionItem(Item):
 
     @staticmethod
     def send_regular_before_due_reminders():
+        """Internal."""
         days_before = settings.PAYMENTS_DAYS_BEFORE_DUE_REMIND
         reminder_date = datetime.date.today() + datetime.timedelta(days=days_before)
         q = SubscriptionItem.objects.filter(reminders_sent__lt=3, due_payment_date__lte=reminder_date, trial=False)
@@ -416,6 +495,7 @@ class SubscriptionItem(Item):
 
     @staticmethod
     def send_regular_due_reminders():
+        """Internal."""
         reminder_date = datetime.date.today()
         q = SubscriptionItem.objects.filter(reminders_sent__lt=2, due_payment_date__lte=reminder_date, trial=False)
         for transaction in q:
@@ -430,6 +510,7 @@ class SubscriptionItem(Item):
 
     @staticmethod
     def send_regular_deadline_reminders():
+        """Internal."""
         reminder_date = datetime.date.today()
         q = SubscriptionItem.objects.filter(reminders_sent__lt=1, payment_deadline__lte=reminder_date, trial=False)
         for transaction in q:
@@ -444,6 +525,7 @@ class SubscriptionItem(Item):
 
     @staticmethod
     def send_trial_reminders():
+        """Internal."""
         # start with the last
         SubscriptionItem.send_trial_before_due_reminders()
         SubscriptionItem.send_trial_due_reminders()
@@ -451,6 +533,7 @@ class SubscriptionItem(Item):
 
     @staticmethod
     def send_trial_before_due_reminders():
+        """Internal."""
         days_before = settings.PAYMENTS_DAYS_BEFORE_TRIAL_END_REMIND
         reminder_date = datetime.date.today() + datetime.timedelta(days=days_before)
         q = SubscriptionItem.objects.filter(reminders_sent__lt=3, due_payment_date__lte=reminder_date, trial=True)
@@ -467,6 +550,7 @@ class SubscriptionItem(Item):
 
     @staticmethod
     def send_trial_due_reminders():
+        """Internal."""
         reminder_date = datetime.date.today()
         q = SubscriptionItem.objects.filter(reminders_sent__lt=2, due_payment_date__lte=reminder_date, trial=True)
         for transaction in q:
@@ -481,6 +565,7 @@ class SubscriptionItem(Item):
 
     @staticmethod
     def send_trial_deadline_reminders():
+        """Internal."""
         reminder_date = datetime.date.today()
         q = SubscriptionItem.objects.filter(reminders_sent__lt=1, payment_deadline__lte=reminder_date, trial=True)
         for transaction in q:
@@ -505,11 +590,23 @@ class SubscriptionItem(Item):
 
 
 class ProlongItem(SimpleItem):
+    """Prolong :attr:`parent` item.
+
+    This is meant to be a one-time payment which prolongs a manual subscription item."""
+
     # item = models.OneToOneField('SimpleItem', related_name='prolongitem', parent_link=True)
     parent = models.ForeignKey('SubscriptionItem', related_name='child', parent_link=False, on_delete=models.CASCADE)
-    prolong = Period(unit=Period.UNIT_MONTHS, count=0)  # TODO: rename
+    """Which subscription item to prolong."""
+
+    prolong = Period(unit=Period.UNIT_MONTHS, count=0)
+    """The amount of days (or weeks, months, etc.) how much to prolong.
+    
+    TODO: rename."""
 
     def refund_payment(self):
+        """Handle payment refund.
+
+        For :class:`ProlongItem` we subtract the prolong days back from the :attr:`parent` item."""
         prolong2 = self.prolong
         prolong2.count *= -1
         self.parent.set_payment_date(PayPalUtils.calculate_date(self.parent.due_payment_date, prolong2))
@@ -517,22 +614,31 @@ class ProlongItem(SimpleItem):
 
 
 class Subscription(models.Model):
-    """
-    When the user subscribes for automatic payment.
-    """
+    """Created when the user subscribes for automatic payment.
+
+    This is created by an IPN."""
 
     transaction = models.OneToOneField('SubscriptionTransaction', on_delete=models.CASCADE)
+    """The transaction we accepted."""
 
-    # Avangate has it for every product, but PayPal for transaction as a whole.
-    # So have it both in AutomaticPayment and Subscription
-    subscription_reference = models.CharField(max_length=255, null=True)  # as recurring_payment_id in PayPal
+    subscription_reference = models.CharField(max_length=255, null=True)  #
+    """As `recurring_payment_id` in PayPal.
+    
+    Avangate has it for every product, but PayPal for transaction as a whole.
+    So have it both in :class:`AutomaticPayment` and :class:`Subscription`.
+    """
 
-    # duplicates email in Payment
-    email = models.EmailField(null=True)  # DalPay requires to notify the customer 10 days before every payment
+    email = models.EmailField(null=True)
+    """User's email.
+    
+    Duplicates email in :class:`Payment`.
+    
+    DalPay requires to notify the customer 10 days before every payment."""
 
     # TODO: The same as in do_upgrade_subscription()
     #@shared_task  # PayPal tormoz, so run in a separate thread # TODO: celery (with `TypeError: force_cancel() missing 1 required positional argument: 'self'`)
     def force_cancel(self, is_upgrade=False):
+        """Cancels the :attr:`transaction`."""
         if self.subscription_reference:
             klass = model_from_ref(self.transaction.processor.api)
             api = klass()
@@ -546,9 +652,19 @@ class Subscription(models.Model):
 
 
 class Payment(models.Model):
-    email = models.EmailField(null=True)  # DalPay requires to notify the customer 10 days before every payment
+    """Base class describing a particular payment.
+
+    It generated by our IPN handler."""
+
+    email = models.EmailField(null=True)
+    """User's email.
+
+    Duplicates email in :class:`Subscription`.
+
+    DalPay requires to notify the customer 10 days before every payment."""
 
     def refund_payment(self):
+        """Handles payment refund."""
         try:
             self.transaction.item.prolongitem.refund_payment()
         except ObjectDoesNotExist:
@@ -556,17 +672,17 @@ class Payment(models.Model):
 
 
 class SimplePayment(Payment):
+    """Non-recurring payment."""
+
     transaction = models.OneToOneField('SimpleTransaction', on_delete=models.CASCADE)
+    """The transaction in response to which the payment happened."""
 
 
 class AutomaticPayment(Payment):
-    """
-    This class models automatic payment.
-    """
+    """Automatic (recurring) payment."""
 
-    # The transaction which corresponds to the starting
-    # process of purchase.
     transaction = models.ForeignKey('SubscriptionTransaction', on_delete=models.CASCADE)
+    """The transaction in response to which the payment happened."""
 
     # subscription = models.ForeignKey('Subscription')
 
@@ -577,7 +693,9 @@ class AutomaticPayment(Payment):
 
 
 class CannotCancelSubscription(Exception):
+    """Canceling subscription failed."""
     pass
 
 class CannotRefundSubscription(Exception):
+    """Refunding subscription failed."""
     pass
