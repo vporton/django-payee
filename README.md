@@ -22,6 +22,16 @@ Copy `debits/debits_base` and `debits/paypal` into your Django application.
 
 Add `'debits.debits_base'` and `'debits.paypal'` to your `INSTALLED_APPS`.
 
+## Last steps
+
+After manual or automatic install chdir to the project directory and run:
+
+```
+python manage.py makemigrations
+python manage.py migrate
+python manage.py loaddata debits/debits_base/fixtures/*.json
+```
+
 # Usage
 
 See
