@@ -12,16 +12,19 @@ from django.utils.translation import ugettext_lazy as _
 from debits.debits_base.models import logger, CannotCancelSubscription, CannotRefundSubscription
 
 
-# This code only provides a subset of the possible functionality, for
-# something more comprehensive see https://github.com/paypal/PayPal-Python-SDK
-# To login into PayPal we use a Bearer from https://api.paypal.com/v1/oauth2/token
-# with secret from https://developer.paypal.com/developer/applications
 class PayPalAPI(models.Model):
-    # Don't save it in the DB (use only for get_model())
+    """PayPal API.
+
+    This code only provides a subset of the possible functionality, for
+    something more comprehensive see https://github.com/paypal/PayPal-Python-SDK
+    To login into PayPal we use a Bearer from https://api.paypal.com/v1/oauth2/token
+    with secret from https://developer.paypal.com/developer/applications"""
     class Meta:
+        """Don't save it in the DB (use only for get_model())"""
         managed = False
 
     def __init__(self):
+        """Creates a HTTP session to access PayPal API."""
         debug = settings.PAYPAL_DEBUG
         self.server = 'https://api.sandbox.paypal.com' if debug else 'https://api.paypal.com'
         s = requests.Session()
@@ -35,6 +38,7 @@ class PayPalAPI(models.Model):
         self.session = s
 
     def cancel_agreement(self, agreement_id, is_upgrade=False):
+        """Cancels a PayPal recurring payment."""
         note = _("Upgrading billing plan") if is_upgrade else _("Canceling a service")
         # https://developer.paypal.com/docs/api/#agreement_cancel
         # https://developer.paypal.com/docs/api/payments.billing-agreements#agreement_cancel
@@ -48,6 +52,7 @@ class PayPalAPI(models.Model):
             # raise RuntimeError(_("Cannot cancel a billing agreement at PayPal. Please contact support:\n" + r.json()["message"]))
 
     def refund(self, transaction_id, sum=None, currency='USD'):
+        """Refunds a PayPal payment."""
         logger.debug("PayPal: now refunding transaction %s" % escape(transaction_id))
         data = {}
         if sum is not None:

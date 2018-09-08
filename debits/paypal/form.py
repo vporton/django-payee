@@ -7,16 +7,19 @@ from debits.debits_base.models import BaseTransaction
 from django.conf import settings
 
 
+# TODO:
 # https://developer.paypal.com/docs/classic/express-checkout/integration-guide/ECRecurringPayments/
 # You can increase the profile amount by only 20% in each 180-day interval after you create the profile.
 
 class PayPalForm(BasePaymentProcessor):
+    """Base class for processing submit of a PayPal form."""
     @classmethod
     def ipn_url(cls):
         return settings.IPN_HOST + reverse(cls.ipn_name())
 
     @abc.abstractclassmethod
     def ipn_name(cls):
+        """Django view name for PayPal IPN."""
         pass
 
     def amend_hash_new_purchase(self, transaction, hash):

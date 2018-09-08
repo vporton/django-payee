@@ -61,33 +61,37 @@ MONTHS = [
 ]
 
 
-# Internal.
 # Based on https://github.com/spookylukey/django-paypal/blob/master/paypal/standard/forms.py
 def parse_date(value):
-        value = value.strip()  # needed?
+    """Internal."""
+    value = value.strip()  # needed?
 
-        time_part, month_part, day_part, year_part, zone_part = value.split()
-        month_part = month_part.strip(".")
-        day_part = day_part.strip(",")
-        month = MONTHS.index(month_part) + 1
-        day = int(day_part)
-        year = int(year_part)
-        hour, minute, second = map(int, time_part.split(":"))
-        dt = datetime(year, month, day, hour, minute, second)
+    time_part, month_part, day_part, year_part, zone_part = value.split()
+    month_part = month_part.strip(".")
+    day_part = day_part.strip(",")
+    month = MONTHS.index(month_part) + 1
+    day = int(day_part)
+    year = int(year_part)
+    hour, minute, second = map(int, time_part.split(":"))
+    dt = datetime(year, month, day, hour, minute, second)
 
-        if zone_part in ["PDT", "PST"]:
-            # PST/PDT is 'US/Pacific'
-            dt = timezone.pytz.timezone('US/Pacific').localize(
-                dt, is_dst=zone_part == 'PDT')
-            if not settings.USE_TZ:
-                dt = timezone.make_naive(dt, timezone=timezone.utc)
-        return dt
+    if zone_part in ["PDT", "PST"]:
+        # PST/PDT is 'US/Pacific'
+        dt = timezone.pytz.timezone('US/Pacific').localize(
+            dt, is_dst=zone_part == 'PDT')
+        if not settings.USE_TZ:
+            dt = timezone.make_naive(dt, timezone=timezone.utc)
+    return dt
 
 
 # FIXME: Refund fails for coupon or gift certificates, because they support only full refunds
 
 @method_decorator(csrf_exempt, name='dispatch')
 class PayPalIPN(PaymentCallback, View):
+    """This class processes all kinds of PayPal IPNs.
+
+    All its methods are considered internal."""
+
     # See https://developer.paypal.com/docs/classic/express-checkout/integration-guide/ECRecurringPayments/
     # for all kinds of IPN for recurring payments.
     def post(self, request):

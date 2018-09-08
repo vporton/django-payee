@@ -6,6 +6,7 @@ from debits.debits_base.base import Period
 class PayPalUtils(object):
     @staticmethod
     def calculate_date(date, offset):
+        """Used to calculate the next recurring payment date."""
         delta = {
             Period.UNIT_DAYS: lambda: relativedelta(days=offset.count),
             Period.UNIT_WEEKS: lambda: relativedelta(weeks=offset.count),
