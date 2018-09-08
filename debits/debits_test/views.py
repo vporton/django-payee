@@ -13,6 +13,7 @@ from .processors import MyPayPalForm
 
 
 def transaction_payment_view(request, transaction_id):
+    """A view initiated from a transaction."""
     transaction = SubscriptionTransaction.objects.get(pk=int(transaction_id))
     purchase = transaction.purchase
     organization = purchase.organization
@@ -20,12 +21,14 @@ def transaction_payment_view(request, transaction_id):
 
 
 def organization_payment_view(request, organization_id):
+    """A view initiated for an organization."""
     organization = Organization.objects.get(pk=int(organization_id))
     purchase = organization.purchase
     return do_organization_payment_view(request, purchase, organization)
 
 
 def do_organization_payment_view(request, purchase, organization):
+    """The common pars of views for :func:`transaction_payment_view` and :func:`organization_payment_view`."""
     plan_form = SwitchPricingPlanForm({'pricing_plan': purchase.plan.pk})
     pp = MyPayPalForm(request)
     return render(request, 'debits_test/organization-payment-view.html',
@@ -54,6 +57,7 @@ def do_organization_payment_view(request, purchase, organization):
 
 
 def create_organization_view(request):
+    """The view to create an example organization."""
     if request.method == 'POST':
         form = CreateOrganizationForm(request.POST)
         if form.is_valid():
@@ -67,6 +71,7 @@ def create_organization_view(request):
 
 
 def get_processor(request, hash):
+    """Determine the payment processor, from a form."""
     processor_name = hash.pop('arcamens_processor')
     if processor_name == 'PayPal':
         form = MyPayPalForm(request)
@@ -78,11 +83,13 @@ def get_processor(request, hash):
 
 
 def do_subscribe(hash, form, processor, item):
+    """Start subscription to our subscription item."""
     transaction = SubscriptionTransaction.objects.create(processor=processor, item=item.subscriptionitem)
     return form.make_purchase_from_form(hash, transaction)
 
 
 def do_prolong(hash, form, processor, item):
+    """Start prolonging our subscription item."""
     periods = int(hash['periods'])
     subitem = ProlongItem.objects.create(product=item.product,
                                          currency=item.currency,
@@ -94,8 +101,8 @@ def do_prolong(hash, form, processor, item):
     return form.make_purchase_from_form(hash, subtransaction)
 
 
-# New period (in days) after an upgrade
 def upgrade_calculate_new_period(k, item):
+    """New period (in days) after an upgrade."""
     if item.due_payment_date:
         period = (item.due_payment_date - datetime.date.today()).days
     else:
@@ -104,6 +111,7 @@ def upgrade_calculate_new_period(k, item):
 
 
 def upgrade_create_new_item(old_purchase, plan, new_period, organization):
+    """Create new item used to upgrade another item (:obj:`old_purchase`)."""
     purchase = Purchase(for_organization=organization,
                         plan=plan,
                         product=plan.product,
@@ -121,6 +129,7 @@ def upgrade_create_new_item(old_purchase, plan, new_period, organization):
 
 
 def do_upgrade(hash, form, processor, item, organization):
+    """Start upgrading a subscription item,"""
     plan = PricingPlan.objects.get(pk=int(hash['pricing_plan']))
     if plan.currency != item.currency:
         raise RuntimeError(_("Cannot upgrade to a payment plan with other currency."))
@@ -143,6 +152,7 @@ def do_upgrade(hash, form, processor, item, organization):
 
 
 def purchase_view(request):
+    """The main test view to make purchases, subscriptions, upgrades."""
     hash = request.POST.dict()
     op = hash.pop('arcamens_op')
     form, processor = get_processor(request, hash)
@@ -186,6 +196,7 @@ def do_unsubscribe(subscription, item):
 
 
 def unsubscribe_organization_view(request, organization_pk):
+    """Django view for the "Unsubscribe" button."""
     organization_pk = int(organization_pk)  # in real code should use user login information
     organization = Organization.objects.get(pk=organization_pk)
     item = organization.purchase.subscriptionitem
@@ -194,6 +205,7 @@ def unsubscribe_organization_view(request, organization_pk):
 
 
 def list_organizations_view(request):
+    """Django view to list all the organizations."""
     list = [{'id': o.id, 'name': o.name} for o in Organization.objects.all()]
     return render(request, 'debits_test/list-organizations.html',
                   {'organizations': list})

@@ -3,7 +3,12 @@ from debits.paypal.views import PayPalIPN
 
 
 class MyPayPalIPN(PayPalIPN):
-    # Two subscription IPNs may call both below methods. It is not a problem (if not to count a tiny performance lag).
+    """Mixin to handle purchase events.
+
+    Two subscription IPNs may call both :meth:`on_subscription_created` and :meth:`on_payment`.
+    It is not a problem (if not to count a tiny performance lag).
+
+    TODO: Generalize it for non PayPal processors."""
     def on_subscription_created(self, POST, subscription):
         item = subscription.transaction.item
         self.do_purchase(item)
@@ -14,6 +19,7 @@ class MyPayPalIPN(PayPalIPN):
             self.do_purchase(item)
 
     def do_purchase(self, item):
+        """Set the :class:`~debits.debits_test.models.Purchase` for an :class:`~debits.debits_test.models.Organization`."""
         organization = item.purchase.for_organization
         if organization is not None:
             organization.purchase = item.purchase

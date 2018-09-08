@@ -86,7 +86,7 @@ class BasePaymentProcessor(abc.ABC):
 
         If we are in manual recurring mode, we can be not ready for subscription,
         because some payment processors (PayPal) don't allow to delay the first
-        payment of a subscription for more than :meth:`self.subscription_allowed_date`() days."""
+        payment of a subscription for more than :meth:`self.subscription_allowed_date` days."""
         return datetime.date.today() >= self.subscription_allowed_date(transaction)
 
     @abc.abstractmethod

@@ -4,6 +4,7 @@ from .models import PricingPlan
 from .products import PRODUCT_ITEM_1
 
 class CreateOrganizationForm(forms.Form):
+    """Django form to create a new example organization."""
     name = forms.CharField(label=_('Organization name'))
     pricing_plan = forms.ModelChoiceField(PricingPlan.objects.filter(product=PRODUCT_ITEM_1),
                                           label=_('Pricing plan'))
@@ -11,4 +12,5 @@ class CreateOrganizationForm(forms.Form):
 
 
 class SwitchPricingPlanForm(forms.Form):
+    """Django form to switch pricing plan."""
     pricing_plan = forms.ModelChoiceField(PricingPlan.objects.filter(product=PRODUCT_ITEM_1))
