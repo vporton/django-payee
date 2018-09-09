@@ -40,7 +40,7 @@ and example code in `debits/debits_test`.
 
 # Documentation & Features
 
-* [the wiki at GitHub.com](https://github.com/vporton/django-debits/wiki)
+* [The wiki](https://github.com/vporton/django-debits/wiki)
 * [API docs](https://django-debits.readthedocs.io/en/latest/)
 
 # Commercial version
