@@ -17,7 +17,6 @@ from composite_field import CompositeField
 from django.conf import settings
 
 from debits.debits_base.base import logger, Period
-from debits.paypal.utils import PayPalUtils
 
 
 class ModelRef(CompositeField):
