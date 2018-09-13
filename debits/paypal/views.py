@@ -52,7 +52,6 @@ from django.conf import settings
 
 # Internal.
 from debits.paypal.models import PayPalAPI, PayPalProcessorInfo
-from debits.paypal.utils import PayPalUtils
 
 MONTHS = [
     'Jan', 'Feb', 'Mar', 'Apr',
