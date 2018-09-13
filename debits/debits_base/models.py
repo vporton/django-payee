@@ -55,7 +55,7 @@ class PaymentProcessor(models.Model):
     """The site of the payment processor."""
 
     klass = ModelRef()
-    """The Django model which handles API for payments adn similar stuff."""
+    """The Django model which handles API for payments and similar stuff."""
 
     def __str__(self):
         return self.name
@@ -207,7 +207,8 @@ class SimpleTransaction(BaseTransaction):
             pk=prolongitem.parent_id)  # must be inside transaction
         # parent.email = transaction.email
         base_date = max(datetime.date.today(), parent_item.due_payment_date)
-        parent_item.set_payment_date(PayPalUtils.calculate_date(base_date, prolongitem.prolong))
+        klass = model_from_ref(prolongitem.transaction.processor.klass)
+        parent_item.set_payment_date(klass.offset_date(base_date, prolongitem.prolong))
         parent_item.save()
 
 
@@ -431,7 +432,8 @@ class SubscriptionItem(Item):
     def set_payment_date(self, date):
         """Sets both :attr:`due_payment_date` and :attr:`payment_deadline`."""
         self.due_payment_date = date
-        self.payment_deadline = PayPalUtils.calculate_date(self.due_payment_date, self.grace_period)
+        klass = model_from_ref(self.transaction.processor.klass)
+        self.payment_deadline = klass.offset_date(self.due_payment_date, self.grace_period)
 
     def start_trial(self):
         """Start trial period.
@@ -439,7 +441,8 @@ class SubscriptionItem(Item):
         This should be called after setting non-zero :attr:`trial_period`."""
         if self.trial_period.count != 0:
             self.trial = True
-            self.set_payment_date(PayPalUtils.calculate_date(datetime.date.today(), self.trial_period))
+            klass = model_from_ref(self.transaction.processor.klass)
+            self.set_payment_date(klass.offset_date(datetime.date.today(), self.trial_period))
 
     def cancel_subscription(self):
         """Called when we detect that the subscription was canceled."""
@@ -609,7 +612,8 @@ class ProlongItem(SimpleItem):
         For :class:`ProlongItem` we subtract the prolong days back from the :attr:`parent` item."""
         prolong2 = self.prolong
         prolong2.count *= -1
-        self.parent.set_payment_date(PayPalUtils.calculate_date(self.parent.due_payment_date, prolong2))
+        klass = model_from_ref(self.transaction.processor.klass)
+        self.parent.set_payment_date(klass.offset_date(self.parent.due_payment_date, prolong2))
         self.parent.save()
 
 
