@@ -1,6 +1,9 @@
 import json
 
 import requests
+from dateutil.relativedelta import relativedelta
+
+from debits.debits_base.base import Period
 
 try:
     from html import escape  # python 3.x
@@ -12,16 +15,36 @@ from django.utils.translation import ugettext_lazy as _
 from debits.debits_base.models import logger, CannotCancelSubscription, CannotRefundSubscription
 
 
-class PayPalAPI(models.Model):
+class PayPalProcessorInfo(models.Model):
+    class Meta:
+        """Don't save it in the DB (use only for get_model())"""
+        managed = False
+
+    def api(self):
+        return PayPalAPI()
+
+    @classmethod
+    def offset_date(date, offset):
+        """Used to calculate the next recurring payment date."""
+        delta = {
+            Period.UNIT_DAYS: lambda: relativedelta(days=offset.count),
+            Period.UNIT_WEEKS: lambda: relativedelta(weeks=offset.count),
+            Period.UNIT_MONTHS: lambda: relativedelta(months=offset.count),
+            Period.UNIT_YEARS: lambda: relativedelta(years=offset.count),
+        }[offset.unit]()
+        new_date = date + delta
+        if new_date.day != date.day:
+            new_date += relativedelta(days=1)
+        return new_date
+
+
+class PayPalAPI(object):
     """PayPal API.
 
     This code only provides a subset of the possible functionality, for
     something more comprehensive see https://github.com/paypal/PayPal-Python-SDK
     To login into PayPal we use a Bearer from https://api.paypal.com/v1/oauth2/token
     with secret from https://developer.paypal.com/developer/applications"""
-    class Meta:
-        """Don't save it in the DB (use only for get_model())"""
-        managed = False
 
     def __init__(self):
         """Creates a HTTP session to access PayPal API."""

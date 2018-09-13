@@ -16,7 +16,7 @@
       "name": "PayPal",
       "url": "http://www.paypal.com/",
       "api_app_label": "paypal",
-      "api_model": "PayPalAPI"
+      "api_model": "PayPalProcessorInfo"
     }
   },
   {

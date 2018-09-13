@@ -51,7 +51,7 @@ from django.conf import settings
 
 
 # Internal.
-from debits.paypal.models import PayPalAPI
+from debits.paypal.models import PayPalAPI, PayPalProcessorInfo
 from debits.paypal.utils import PayPalUtils
 
 MONTHS = [
@@ -242,7 +242,7 @@ class PayPalIPN(PaymentCallback, View):
         item.save()
 
     def advance_item_date(self, date, item):
-        date = PayPalUtils.calculate_date(date, item.payment_period)  # FIXME: Eliminate (here and in other places) hardcoded PayPal
+        date = PayPalProcessorInfo.offset_date(date, item.payment_period)
         item.set_payment_date(date)
         item.last_payment = datetime.date.today()
         item.reminders_sent = 0
