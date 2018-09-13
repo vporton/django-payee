@@ -54,8 +54,8 @@ class PaymentProcessor(models.Model):
     url = models.URLField(max_length=255)
     """The site of the payment processor."""
 
-    api = ModelRef()
-    """The Django model which handles API for payments."""
+    klass = ModelRef()
+    """The Django model which handles API for payments adn similar stuff."""
 
     def __str__(self):
         return self.name
@@ -640,8 +640,8 @@ class Subscription(models.Model):
     def force_cancel(self, is_upgrade=False):
         """Cancels the :attr:`transaction`."""
         if self.subscription_reference:
-            klass = model_from_ref(self.transaction.processor.api)
-            api = klass()
+            klass = model_from_ref(self.transaction.processor.klass)
+            api = klass().api()
             try:
                 api.cancel_agreement(self.subscription_reference, is_upgrade=is_upgrade)  # may raise an exception
             except CannotCancelSubscription:
