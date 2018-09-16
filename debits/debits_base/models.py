@@ -167,6 +167,7 @@ class BaseTransaction(models.Model):
         Used internally to prevent more than one payment for the same transaction."""
         pass
 
+
 class SimpleTransaction(BaseTransaction):
     """A one-time (non-recurring) transaction."""
 
