@@ -183,12 +183,12 @@ class SimpleTransaction(BaseTransaction):
     def on_accept_regular_payment(self, email):
         """Handles confirmation of a (non-recurring) payment."""
         payment = SimplePayment.objects.create(transaction=self, email=email)
-        self.item.paid = True
+        self.item.simple.item.paid = True
         self.item.last_payment = datetime.date.today()
         self.item.upgrade_subscription()
         self.item.save()
         try:
-            self.advance_parent(self.item.prolongitem)
+            self.advance_parent(self.item.simpleitem.prolongitem)
         except AttributeError:
             pass
         return payment
@@ -230,17 +230,18 @@ class SubscriptionTransaction(BaseTransaction):
 
     def create_active_subscription(self, ref, email):
         """Internal."""
-        self.item.active_subscription = AutomaticPayment.objects.create(transaction=self,
-                                                                        subscription_reference=ref,
-                                                                        email=email)
-        self.item.save()
-        return self.item.active_subscription
+        self.item.subscriptionitem.active_subscription = AutomaticPayment.objects.create(transaction=self,
+                                                                                         subscription_reference=ref,
+                                                                                         email=email)
+        self.item.subscriptionitem.save()
+        return self.item.subscriptionitem.active_subscription
 
     @django.db.transaction.atomic
     def obtain_active_subscription(self, ref, email):
         """Internal."""
-        if self.item.active_subscription and self.item.active_subscription.subscription_reference == ref:
-            return self.item.active_subscription
+        if self.item.subscriptionitem.active_subscription and \
+                self.item.subscriptionitem.active_subscription.subscription_reference == ref:
+            return self.item.subscriptionitem.active_subscription
         else:
             return self.create_active_subscription(ref, email)
 

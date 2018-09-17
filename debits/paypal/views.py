@@ -180,7 +180,7 @@ class PayPalIPN(PaymentCallback, View):
         if Decimal(POST['mc_gross']) == transaction.item.price and \
                         Decimal(POST['shipping']) == transaction.item.shipping and \
                         POST['mc_currency'] == transaction.item.currency:
-            if self.auto_refund(transaction, transaction.item.prolongitem.parent, POST):
+            if self.auto_refund(transaction, transaction.item.simpleitem.prolongitem.parent, POST):
                 return HttpResponse('')
             payment = transaction.on_accept_regular_payment(POST['payer_email'])
             self.on_payment(payment)
@@ -250,9 +250,9 @@ class PayPalIPN(PaymentCallback, View):
     def do_subscription_or_recurring_created(self, transaction, POST, ref):
         subscription = transaction.obtain_active_subscription(ref, POST['payer_email'])
         # transaction.processor = PaymentProcessor.objects.get(pk=PAYMENT_PROCESSOR_PAYPAL)
-        transaction.item.trial = False
-        transaction.item.save()
-        transaction.item.upgrade_subscription()
+        transaction.item.subscriptionitem.trial = False
+        transaction.item.subscriptionitem.save()
+        transaction.item.subscriptionitem.upgrade_subscription()
         self.on_subscription_created(POST, subscription)
 
     def accept_subscription_signup(self, POST, transaction_id):
@@ -263,7 +263,7 @@ class PayPalIPN(PaymentCallback, View):
 
     def do_accept_subscription_signup(self, POST, transaction_id):
         transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
-        item = transaction.item
+        item = transaction.item.subscriptionitem
         m = {
             Period.UNIT_DAYS: 'D',
             Period.UNIT_WEEKS: 'W',
@@ -302,7 +302,7 @@ class PayPalIPN(PaymentCallback, View):
 
     def do_accept_recurring_canceled(self, POST, transaction_id):
         transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
-        transaction.item.cancel_subscription()
+        transaction.item.subscriptionitem.cancel_subscription()
         self.on_subscription_canceled(POST, transaction.item)
 
     def auto_refund(self, transaction, item, POST):
