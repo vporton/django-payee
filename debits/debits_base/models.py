@@ -618,6 +618,7 @@ class ProlongItem(SimpleItem):
         self.parent.save()
 
 
+# FIXME: Not necessary? Move all fields to Payment/SubscriptionPayment?
 class Subscription(models.Model):
     """Created when the user subscribes for automatic payment.
 
