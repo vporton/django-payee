@@ -208,7 +208,7 @@ class SimpleTransaction(BaseTransaction):
             pk=prolongitem.parent_id)  # must be inside transaction
         # parent.email = transaction.email
         base_date = max(datetime.date.today(), parent_item.due_payment_date)
-        klass = model_from_ref(prolongitem.transaction.processor.klass)  # FIXME: Here and in other places check correct model usage
+        klass = model_from_ref(prolongitem.payment.transaction.processor.klass)  # FIXME: Here and in other places check correct model usage
         parent_item.set_payment_date(klass.offset_date(base_date, prolongitem.prolong))
         parent_item.save()
 
@@ -262,6 +262,10 @@ class Item(models.Model):
     TODO:
         Use time with seconds precision?
     """
+
+    # FIXME: Set this when appropriate
+    payment = models.OneToOneField('Payment', null=True, on_delete=models.CASCADE)
+    """Payment accomplished for this item or `None`."""
 
     product = models.ForeignKey('Product', null=True, on_delete=models.CASCADE)
     """The sold product."""
@@ -432,7 +436,7 @@ class SubscriptionItem(Item):
     def set_payment_date(self, date):
         """Sets both :attr:`due_payment_date` and :attr:`payment_deadline`."""
         self.due_payment_date = date
-        klass = model_from_ref(self.transaction.processor.klass)
+        klass = model_from_ref(self.payment.transaction.processor.klass)
         self.payment_deadline = klass.offset_date(self.due_payment_date, self.grace_period)
 
     def start_trial(self):
@@ -441,7 +445,7 @@ class SubscriptionItem(Item):
         This should be called after setting non-zero :attr:`trial_period`."""
         if self.trial_period.count != 0:
             self.trial = True
-            klass = model_from_ref(self.transaction.processor.klass)
+            klass = model_from_ref(self.payment.transaction.processor.klass)
             self.set_payment_date(klass.offset_date(datetime.date.today(), self.trial_period))
 
     def cancel_subscription(self):
@@ -612,7 +616,7 @@ class ProlongItem(SimpleItem):
         For :class:`ProlongItem` we subtract the prolong days back from the :attr:`parent` item."""
         prolong2 = self.prolong
         prolong2.count *= -1
-        klass = model_from_ref(self.transaction.processor.klass)
+        klass = model_from_ref(self.payment.transaction.processor.klass)
         self.parent.set_payment_date(klass.offset_date(self.parent.due_payment_date, prolong2))
         self.parent.save()
 
@@ -661,7 +665,7 @@ class AutomaticPayment(Payment):
     def force_cancel(self, is_upgrade=False):
         """Cancels the :attr:`transaction`."""
         if self.subscription_reference:
-            klass = model_from_ref(self.transaction.processor.klass)
+            klass = model_from_ref(self.payment.transaction.processor.klass)
             api = klass().api()
             try:
                 api.cancel_agreement(self.subscription_reference, is_upgrade=is_upgrade)  # may raise an exception
