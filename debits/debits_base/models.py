@@ -375,7 +375,7 @@ class SubscriptionItem(Item):
     item = models.OneToOneField(Item, related_name='subscriptionitem', parent_link=True, on_delete=models.CASCADE)
 
     active_subscription = models.OneToOneField('SubscriptionPayment', null=True, on_delete=models.CASCADE)
-    """The :class:`Subscription` currently active for this item
+    """The :class:`SubscriptionPayment` currently active for this item
     
     or `None` if the item is not available for the user."""
 
