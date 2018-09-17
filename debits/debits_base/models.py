@@ -230,9 +230,9 @@ class SubscriptionTransaction(BaseTransaction):
 
     def create_active_subscription(self, ref, email):
         """Internal."""
-        self.item.active_subscription = Subscription.objects.create(transaction=self,
-                                                                    subscription_reference=ref,
-                                                                    email=email)
+        self.item.active_subscription = AutomaticPayment.objects.create(transaction=self,
+                                                                        subscription_reference=ref,
+                                                                        email=email)
         self.item.save()
         return self.item.active_subscription
 
@@ -299,7 +299,7 @@ class Item(models.Model):
     * 2 - at due payment sent
     * 3 - day before deadline sent"""
 
-    old_subscription = models.ForeignKey('Subscription', null=True, related_name='new_subscription', on_delete=models.CASCADE)
+    old_subscription = models.ForeignKey('SubscriptionPayment', null=True, related_name='new_subscription', on_delete=models.CASCADE)
     """We remove old_subscription (if not `None`) automatically when new subscription is created.
     
     The new payment may be either one-time (:class:`SimpleItem` (usually :class:`ProlongItem`))
@@ -341,7 +341,7 @@ class Item(models.Model):
     def send_rendered_email(self, template_name, subject, data):
         """Internal."""
         try:
-            self.email = self.subscription.email
+            self.email = self.payment.email
         except AttributeError:
             return
         if self.email is None:  # hack!
@@ -374,7 +374,7 @@ class SubscriptionItem(Item):
 
     item = models.OneToOneField(Item, related_name='subscriptionitem', parent_link=True, on_delete=models.CASCADE)
 
-    active_subscription = models.OneToOneField('Subscription', null=True, on_delete=models.CASCADE)
+    active_subscription = models.OneToOneField('SubscriptionPayment', null=True, on_delete=models.CASCADE)
     """The :class:`Subscription` currently active for this item
     
     or `None` if the item is not available for the user."""
@@ -618,48 +618,6 @@ class ProlongItem(SimpleItem):
         self.parent.save()
 
 
-# FIXME: Not necessary? Move all fields to Payment/SubscriptionPayment?
-class Subscription(models.Model):
-    """Created when the user subscribes for automatic payment.
-
-    This is created by an IPN."""
-
-    # FIXME: Should be Payment, not Transaction
-    transaction = models.OneToOneField('SubscriptionTransaction', on_delete=models.CASCADE)
-    """The transaction we accepted."""
-
-    # FIXME: Move to Payment model?
-    subscription_reference = models.CharField(max_length=255, null=True)  #
-    """As `recurring_payment_id` in PayPal.
-    
-    Avangate has it for every product, but PayPal for transaction as a whole.
-    So have it both in :class:`AutomaticPayment` and :class:`Subscription`.
-    """
-
-    # FIXME: Move to Payment model?
-    email = models.EmailField(null=True)
-    """User's email.
-    
-    Duplicates email in :class:`Payment`.
-    
-    DalPay requires to notify the customer 10 days before every payment."""
-
-    # TODO: The same as in do_upgrade_subscription()
-    #@shared_task  # PayPal tormoz, so run in a separate thread # TODO: celery (with `TypeError: force_cancel() missing 1 required positional argument: 'self'`)
-    def force_cancel(self, is_upgrade=False):
-        """Cancels the :attr:`transaction`."""
-        if self.subscription_reference:
-            klass = model_from_ref(self.transaction.processor.klass)
-            api = klass().api()
-            try:
-                api.cancel_agreement(self.subscription_reference, is_upgrade=is_upgrade)  # may raise an exception
-            except CannotCancelSubscription:
-                # fallback
-                Subscription.objects.filter(pk=self.pk).update(subscription_reference=None)
-                logger.warn("Cannot cancel subscription " + self.subscription_reference)
-            # transaction.cancel_subscription()  # runs in the callback
-
-
 class Payment(models.Model):
     """Base class describing a particular payment.
 
@@ -667,10 +625,11 @@ class Payment(models.Model):
 
     payment_time = models.DateTimeField(_('Payment time'), auto_now_add=True)
 
+    transaction = models.OneToOneField('Transaction', on_delete=models.CASCADE)
+    """The transaction we accepted."""
+
     email = models.EmailField(null=True)
     """User's email.
-
-    Duplicates email in :class:`Subscription`.
 
     DalPay requires to notify the customer 10 days before every payment."""
 
@@ -685,19 +644,33 @@ class Payment(models.Model):
 class SimplePayment(Payment):
     """Non-recurring payment."""
 
-    transaction = models.OneToOneField('SimpleTransaction', on_delete=models.CASCADE)
-    """The transaction in response to which the payment happened."""
+    pass
 
 
 class AutomaticPayment(Payment):
     """Automatic (recurring) payment."""
 
-    transaction = models.ForeignKey('SubscriptionTransaction', on_delete=models.CASCADE)
-    """The transaction in response to which the payment happened."""
+    subscription_reference = models.CharField(max_length=255, null=True)
+    """As `recurring_payment_id` in PayPal.
 
-    # subscription = models.ForeignKey('Subscription')
+    Avangate has it for every product, but PayPal for transaction as a whole.
+    So have it both in :class:`AutomaticPayment` and :class:`Subscription`.
+    """
 
-    # curr = models.CharField(max_length=3, default='USD')
+    # TODO: The same as in do_upgrade_subscription()
+    #@shared_task  # PayPal tormoz, so run in a separate thread # TODO: celery (with `TypeError: force_cancel() missing 1 required positional argument: 'self'`)
+    def force_cancel(self, is_upgrade=False):
+        """Cancels the :attr:`transaction`."""
+        if self.subscription_reference:
+            klass = model_from_ref(self.transaction.processor.klass)
+            api = klass().api()
+            try:
+                api.cancel_agreement(self.subscription_reference, is_upgrade=is_upgrade)  # may raise an exception
+            except CannotCancelSubscription:
+                # fallback
+                AutomaticPayment.objects.filter(pk=self.pk).update(subscription_reference=None)
+                logger.warn("Cannot cancel subscription " + self.subscription_reference)
+            # transaction.cancel_subscription()  # runs in the callback
 
     # A transaction should have a code that identifies it.
     # code = models.CharField(max_length=255)
