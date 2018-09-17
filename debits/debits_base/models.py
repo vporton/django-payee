@@ -208,7 +208,7 @@ class SimpleTransaction(BaseTransaction):
             pk=prolongitem.parent_id)  # must be inside transaction
         # parent.email = transaction.email
         base_date = max(datetime.date.today(), parent_item.due_payment_date)
-        klass = model_from_ref(prolongitem.transaction.processor.klass)
+        klass = model_from_ref(prolongitem.transaction.processor.klass)  # FIXME: Here and in other places check correct model usage
         parent_item.set_payment_date(klass.offset_date(base_date, prolongitem.prolong))
         parent_item.save()
 
