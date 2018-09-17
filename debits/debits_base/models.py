@@ -627,6 +627,7 @@ class Subscription(models.Model):
     transaction = models.OneToOneField('SubscriptionTransaction', on_delete=models.CASCADE)
     """The transaction we accepted."""
 
+    # FIXME: Move to Payment model?
     subscription_reference = models.CharField(max_length=255, null=True)  #
     """As `recurring_payment_id` in PayPal.
     
@@ -634,6 +635,7 @@ class Subscription(models.Model):
     So have it both in :class:`AutomaticPayment` and :class:`Subscription`.
     """
 
+    # FIXME: Move to Payment model?
     email = models.EmailField(null=True)
     """User's email.
     
