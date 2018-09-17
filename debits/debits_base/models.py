@@ -373,8 +373,6 @@ class SubscriptionItem(Item):
 
     To sell a subscription item, create a subclass of this model, describing your sold service."""
 
-    item = models.OneToOneField(Item, related_name='subscriptionitem', parent_link=True, on_delete=models.CASCADE)
-
     active_subscription = models.OneToOneField('SubscriptionPayment', null=True, on_delete=models.CASCADE)
     """The :class:`SubscriptionPayment` currently active for this item
     
