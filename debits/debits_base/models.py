@@ -623,6 +623,7 @@ class Subscription(models.Model):
 
     This is created by an IPN."""
 
+    # FIXME: Should be Payment, not Transaction
     transaction = models.OneToOneField('SubscriptionTransaction', on_delete=models.CASCADE)
     """The transaction we accepted."""
 
