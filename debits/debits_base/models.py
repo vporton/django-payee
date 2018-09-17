@@ -683,6 +683,7 @@ class CannotCancelSubscription(Exception):
     """Canceling subscription failed."""
     pass
 
+
 class CannotRefundSubscription(Exception):
     """Refunding subscription failed."""
     pass
