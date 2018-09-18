@@ -248,6 +248,7 @@ class SubscriptionTransaction(BaseTransaction):
             payment = AutomaticPayment.objects.create(transaction=self, subscription_reference=ref, email=email)
         self.item.payment = payment
         self.item.save()
+        return payment
 
 
 class Item(models.Model):
