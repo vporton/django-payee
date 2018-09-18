@@ -248,7 +248,7 @@ class SubscriptionTransaction(BaseTransaction):
 
     # FIXME: Sometimes `Duplicate entry 'XX' for key 'transaction_id'` (how to reprise?!)
     # FIXME: Apparently, it is when different active_subscription (for different transactions) are mixed for one item.
-    # It may be caused by retrying transactions.
+    # It may be caused by retrying transactions. (WRONG: It is single transaction!)
     @django.db.transaction.atomic
     def obtain_active_subscription(self, ref, email):
         """Internal."""
