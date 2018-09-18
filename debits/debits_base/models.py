@@ -639,7 +639,7 @@ class Payment(models.Model):
 
     payment_time = models.DateTimeField(_('Payment time'), auto_now_add=True)
 
-    transaction = models.OneToOneField('Transaction', on_delete=models.CASCADE)
+    transaction = models.OneToOneField('BaseTransaction', on_delete=models.CASCADE)
     """The transaction we accepted."""
 
     email = models.EmailField(null=True)
