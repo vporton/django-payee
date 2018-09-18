@@ -160,7 +160,7 @@ class PayPalIPN(PaymentCallback, View):
     def do_appect_refund(self, POST, transaction_id):
         transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
         if POST['mc_currency'] == transaction.item.currency:
-            transaction.payment.refund_payment()
+            transaction.payment.automaticpayment.refund_payment()
         else:
             logger.warning("Wrong refund currency.")
 
