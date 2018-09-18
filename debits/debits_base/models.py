@@ -357,7 +357,7 @@ class Item(models.Model):
             return
         self.save()
         html = render_to_string(template_name, data, request=None, using=None)
-        text = html2text.HTML2Text(html)
+        text = html2text.html2text(html)
         send_mail(subject, text, settings.FROM_EMAIL, [self.email], html_message=html)
 
 class SimpleItem(Item):
