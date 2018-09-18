@@ -394,6 +394,7 @@ class SubscriptionItem(Item):
 
     To sell a subscription item, create a subclass of this model, describing your sold service."""
 
+    # FIXME: Remove this field. (There is `payment` in the base model.)
     active_subscription = models.OneToOneField('AutomaticPayment', null=True, on_delete=models.CASCADE)
     """The :class:`AutomaticPayment` currently active for this item
     
