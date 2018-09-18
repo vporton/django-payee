@@ -246,6 +246,7 @@ class SubscriptionTransaction(BaseTransaction):
         self.item.subscriptionitem.save()
         return self.item.subscriptionitem.active_subscription
 
+    # FIXME
     @django.db.transaction.atomic
     def obtain_active_subscription(self, ref, email):
         """Internal."""
