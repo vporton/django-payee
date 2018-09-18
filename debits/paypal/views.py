@@ -216,6 +216,7 @@ class PayPalIPN(PaymentCallback, View):
         if self.auto_refund(transaction, item, POST):
             return HttpResponse('')
         transaction.obtain_active_subscription(ref, POST['payer_email'])
+        # FIXME: Here transaction_id is duplicate (due to both recurring profile created and first payment IPNs with the same transaction? It seems not)
         payment = AutomaticPayment.objects.create(transaction=transaction,
                                                   email=POST['payer_email'])
         self.do_subscription_or_recurring_payment(item)
