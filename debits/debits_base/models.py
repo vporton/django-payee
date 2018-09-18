@@ -246,9 +246,12 @@ class SubscriptionTransaction(BaseTransaction):
         self.item.subscriptionitem.save()
         return self.item.subscriptionitem.active_subscription
 
+    # FIXME: Sometimes `Duplicate entry 'XX' for key 'transaction_id'` (how to reprise?!)
     @django.db.transaction.atomic
     def obtain_active_subscription(self, ref, email):
         """Internal."""
+        print(self.item.subscriptionitem.active_subscription and self.item.subscriptionitem.active_subscription.subscription_reference,
+              ':=', ref)
         if self.item.subscriptionitem.active_subscription and \
                 self.item.subscriptionitem.active_subscription.subscription_reference == ref:
             return self.item.subscriptionitem.active_subscription
