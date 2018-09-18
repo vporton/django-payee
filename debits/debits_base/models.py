@@ -240,12 +240,10 @@ class SubscriptionTransaction(BaseTransaction):
 
     def create_active_subscription(self, ref, email):
         """Internal."""
-        print("create_active_subscription(%s, %s)" % (self.pk, ref))
         self.item.subscriptionitem.active_subscription = AutomaticPayment.objects.create(transaction=self,
                                                                                          subscription_reference=ref,
                                                                                          email=email)
         self.item.subscriptionitem.save()
-        print("self.item.subscriptionitem.active_subscription", self.item.subscriptionitem.active_subscription.subscription_reference)
         return self.item.subscriptionitem.active_subscription
 
     # FIXME: Sometimes `Duplicate entry 'XX' for key 'transaction_id'` (how to reprise?!)
@@ -254,8 +252,6 @@ class SubscriptionTransaction(BaseTransaction):
     @django.db.transaction.atomic
     def obtain_active_subscription(self, ref, email):
         """Internal."""
-        print(self.item.subscriptionitem.active_subscription and self.item.subscriptionitem.active_subscription.subscription_reference,
-              ':=', ref)
         if self.item.subscriptionitem.active_subscription and \
                 self.item.subscriptionitem.active_subscription.subscription_reference == ref:
             return self.item.subscriptionitem.active_subscription
