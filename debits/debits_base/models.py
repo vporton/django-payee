@@ -365,6 +365,7 @@ class SimpleItem(Item):
 
     To sell a non-subscription item, create a subclass of this model, describing your sold good."""
 
+    # FIXME: Consider if remove this in regard of `.payment` field
     paid = models.BooleanField(default=False)
     """It was paid by the user."""
 
