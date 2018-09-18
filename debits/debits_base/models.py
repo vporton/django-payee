@@ -238,25 +238,16 @@ class SubscriptionTransaction(BaseTransaction):
         else:
             return settings.PAYMENTS_REALM + ' %d-%d' % (self.item.pk, self.subinvoice())
 
-    def create_active_subscription(self, ref, email):
-        """Internal."""
-        self.item.subscriptionitem.active_subscription = AutomaticPayment.objects.create(transaction=self,
-                                                                                         subscription_reference=ref,
-                                                                                         email=email)
-        self.item.subscriptionitem.save()
-        return self.item.subscriptionitem.active_subscription
-
-    # FIXME: Sometimes `Duplicate entry 'XX' for key 'transaction_id'` (how to reprise?!)
-    # FIXME: Apparently, it is when different active_subscription (for different transactions) are mixed for one item.
-    # It may be caused by retrying transactions.
     @django.db.transaction.atomic
     def obtain_active_subscription(self, ref, email):
         """Internal."""
-        if self.item.subscriptionitem.active_subscription and \
-                self.item.subscriptionitem.active_subscription.subscription_reference == ref:
-            return self.item.subscriptionitem.active_subscription
+        payments = AutomaticPayment.objects.filter(transaction__processor=self.processor, subscription_reference=ref)
+        if payments:
+            payment = payments.get()
         else:
-            return self.create_active_subscription(ref, email)
+            payment = AutomaticPayment.objects.create(transaction=self, subscription_reference=ref, email=email)
+        self.item.payment = payment
+        self.item.save()
 
 
 class Item(models.Model):
@@ -668,12 +659,11 @@ class SimplePayment(Payment):
 class AutomaticPayment(Payment):
     """Automatic (recurring) payment."""
 
-    subscription_reference = models.CharField(max_length=255, null=True)
+    subscription_reference = models.CharField(max_length=255, null=True, unique=True)
     """As `recurring_payment_id` in PayPal.
 
     Avangate has it for every product, but PayPal for transaction as a whole.
-    So have it both in :class:`AutomaticPayment` and :class:`Subscription`.
-    """
+    So have it both in :class:`AutomaticPayment` and :class:`Subscription`."""
 
     # TODO: The same as in do_upgrade_subscription()
     #@shared_task  # PayPal tormoz, so run in a separate thread # TODO: celery (with `TypeError: force_cancel() missing 1 required positional argument: 'self'`)
