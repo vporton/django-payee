@@ -23,7 +23,7 @@ class PayPalProcessorInfo(models.Model):
     def api(self):
         return PayPalAPI()
 
-    @classmethod
+    @staticmethod
     def offset_date(date, offset):
         """Used to calculate the next recurring payment date."""
         delta = {
