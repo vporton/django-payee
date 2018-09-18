@@ -53,7 +53,6 @@ class PaymentProcessor(models.Model):
     url = models.URLField(max_length=255)
     """The site of the payment processor."""
 
-    # FIXME: Correct usage of this (in several places in the code)
     klass = ModelRef()
     """The Django model which handles API for payments and similar stuff."""
 
