@@ -246,13 +246,11 @@ class SubscriptionTransaction(BaseTransaction):
         self.item.subscriptionitem.save()
         return self.item.subscriptionitem.active_subscription
 
-    # FIXME
-    # FIXME: It is called twice leading to duplicate transaction_id
     @django.db.transaction.atomic
     def obtain_active_subscription(self, ref, email):
         """Internal."""
         # FIXME: AttributeError: 'NoneType' object has no attribute 'subscription_reference'
-        print(self.item.subscriptionitem.active_subscription.subscription_reference, ':=', ref)
+        print(self.item.subscriptionitem.active_subscription.subscription_reference, ':=', ref)  # FIXME: Remove
         if self.item.subscriptionitem.active_subscription and \
                 self.item.subscriptionitem.active_subscription.subscription_reference == ref:
             return self.item.subscriptionitem.active_subscription
