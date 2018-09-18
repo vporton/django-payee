@@ -251,6 +251,7 @@ class SubscriptionTransaction(BaseTransaction):
     @django.db.transaction.atomic
     def obtain_active_subscription(self, ref, email):
         """Internal."""
+        # FIXME: AttributeError: 'NoneType' object has no attribute 'subscription_reference'
         print(self.item.subscriptionitem.active_subscription.subscription_reference, ':=', ref)
         if self.item.subscriptionitem.active_subscription and \
                 self.item.subscriptionitem.active_subscription.subscription_reference == ref:
