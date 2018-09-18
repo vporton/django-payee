@@ -267,7 +267,6 @@ class Item(models.Model):
         Use time with seconds precision?
     """
 
-    # FIXME: Set this when appropriate
     payment = models.OneToOneField('Payment', null=True, on_delete=models.CASCADE)
     """Payment accomplished for this item or `None`."""
 
@@ -381,12 +380,6 @@ class SubscriptionItem(Item):
 
     To sell a subscription item, create a subclass of this model, describing your sold service."""
 
-    # FIXME: Remove this field. (There is `payment` in the base model.)
-    active_subscription = models.OneToOneField('AutomaticPayment', null=True, on_delete=models.CASCADE)
-    """The :class:`AutomaticPayment` currently active for this item
-    
-    or `None` if the item is not available for the user."""
-
     due_payment_date = models.DateField(default=datetime.date.today, db_index=True)
     """The reference payment date."""
 
@@ -457,8 +450,7 @@ class SubscriptionItem(Item):
     def cancel_subscription(self):
         """Called when we detect that the subscription was canceled."""
         # atomic operation
-        SubscriptionItem.objects.filter(pk=self.pk).update(active_subscription=None,
-                                                           subinvoice=F('subinvoice') + 1)
+        SubscriptionItem.objects.filter(pk=self.pk).update(payment=None, subinvoice=F('subinvoice') + 1)
         if not self.old_subscription:  # don't send this email on plan upgrade
             self.cancel_subscription_email()
 
