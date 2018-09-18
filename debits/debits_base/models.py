@@ -651,7 +651,7 @@ class SimplePayment(Payment):
 class AutomaticPayment(Payment):
     """Automatic (recurring) payment."""
 
-    subscription_reference = models.CharField(max_length=255, null=True, unique=True)
+    subscription_reference = models.CharField(max_length=255, null=True)
     """As `recurring_payment_id` in PayPal.
 
     Avangate has it for every product, but PayPal for transaction as a whole.
