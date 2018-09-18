@@ -3,6 +3,7 @@ import hmac
 import datetime
 
 import html2text
+from dateutil.relativedelta import relativedelta
 from django.apps import apps
 from django.urls import reverse
 from django.db import models
@@ -68,7 +69,7 @@ class Product(models.Model):
         return self.name
 
 
-# The following function does not work as a method, because
+# The following functions do not work as a method, because
 # CompositeField is replaced with composite_field.base.CompositeField.Proxy:
 
 def period_to_string(period):
@@ -85,6 +86,16 @@ def period_to_string(period):
     """
     hash = {e[0]: e[1] for e in Period.period_choices}
     return "%d %s" % (period.count, hash[period.unit])
+
+
+def period_to_delta(period):
+    """Convert :class:`Period` to :class:`relativedelta`."""
+    return {
+        Period.UNIT_DAYS: lambda: relativedelta(days=period.count),
+        Period.UNIT_WEEKS: lambda: relativedelta(weeks=period.count),
+        Period.UNIT_MONTHS: lambda: relativedelta(months=period.count),
+        Period.UNIT_YEARS: lambda: relativedelta(years=period.count),
+    }[period.unit]()
 
 
 class BaseTransaction(models.Model):
@@ -207,7 +218,7 @@ class SimpleTransaction(BaseTransaction):
             pk=prolongitem.parent_id)  # must be inside transaction
         # parent.email = transaction.email
         base_date = max(datetime.date.today(), parent_item.due_payment_date)
-        klass = model_from_ref(prolongitem.payment.transaction.processor.klass)  # FIXME: Here and in other places check correct model usage
+        klass = model_from_ref(prolongitem.payment.transaction.processor.klass)
         parent_item.set_payment_date(klass.offset_date(base_date, prolongitem.prolong))
         parent_item.save()
 
@@ -435,9 +446,9 @@ class SubscriptionItem(Item):
     def set_payment_date(self, date):
         """Sets both :attr:`due_payment_date` and :attr:`payment_deadline`."""
         self.due_payment_date = date
-        # FIXME: No need for klass.offset_date() here, use just regular relativedelta
-        klass = model_from_ref(self.payment.transaction.processor.klass)
-        self.payment_deadline = klass.offset_date(self.due_payment_date, self.grace_period)
+        # klass = model_from_ref(self.payment.transaction.processor.klass)
+        # self.payment_deadline = klass.offset_date(self.due_payment_date, self.grace_period)
+        self.payment_deadline = self.due_payment_date + period_to_delta(self.grace_period)
 
     def start_trial(self):
         """Start trial period.
@@ -616,7 +627,6 @@ class ProlongItem(SimpleItem):
         For :class:`ProlongItem` we subtract the prolong days back from the :attr:`parent` item."""
         prolong2 = self.prolong
         prolong2.count *= -1
-        # FIXME: Maybe eliminate klass.offset_date() here and use just regular relativedelta?
         klass = model_from_ref(self.payment.transaction.processor.klass)
         self.parent.set_payment_date(klass.offset_date(self.parent.due_payment_date, prolong2))
         self.parent.save()
