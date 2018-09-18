@@ -231,6 +231,7 @@ class PayPalIPN(PaymentCallback, View):
         else:
             logger.warning("Wrong subscription payment data")
 
+    # FIXME: After subscription without trial period shows today as the due payment date (should advance it one payment period)
     def do_subscription_or_recurring_payment(self, item):
         # transaction.processor = PaymentProcessor.objects.get(pk=PAYMENT_PROCESSOR_PAYPAL)
         item.trial = False
