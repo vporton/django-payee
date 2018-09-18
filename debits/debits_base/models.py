@@ -670,6 +670,7 @@ class AutomaticPayment(Payment):
                 api.cancel_agreement(self.subscription_reference, is_upgrade=is_upgrade)  # may raise an exception
             except CannotCancelSubscription:
                 # fallback
+                # FIXME: This is not run if not self.subscription_reference
                 Item.objects.filter(payment=self.pk).update(payment=None)
                 logger.warn("Cannot cancel subscription " + self.subscription_reference)
             # transaction.cancel_subscription()  # runs in the callback
