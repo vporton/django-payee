@@ -314,7 +314,7 @@ class Item(models.Model):
     * 2 - at due payment sent
     * 3 - day before deadline sent"""
 
-    old_subscription = models.ForeignKey('SubscriptionPayment', null=True, related_name='new_subscription', on_delete=models.CASCADE)
+    old_subscription = models.ForeignKey('AutomaticPayment', null=True, related_name='new_subscription', on_delete=models.CASCADE)
     """We remove old_subscription (if not `None`) automatically when new subscription is created.
     
     The new payment may be either one-time (:class:`SimpleItem` (usually :class:`ProlongItem`))
@@ -387,8 +387,8 @@ class SubscriptionItem(Item):
 
     To sell a subscription item, create a subclass of this model, describing your sold service."""
 
-    active_subscription = models.OneToOneField('SubscriptionPayment', null=True, on_delete=models.CASCADE)
-    """The :class:`SubscriptionPayment` currently active for this item
+    active_subscription = models.OneToOneField('AutomaticPayment', null=True, on_delete=models.CASCADE)
+    """The :class:`AutomaticPayment` currently active for this item
     
     or `None` if the item is not available for the user."""
 
