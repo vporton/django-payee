@@ -436,6 +436,7 @@ class SubscriptionItem(Item):
     def set_payment_date(self, date):
         """Sets both :attr:`due_payment_date` and :attr:`payment_deadline`."""
         self.due_payment_date = date
+        # FIXME: No need for klass.offset_date() here, use just regular relativedelta
         klass = model_from_ref(self.payment.transaction.processor.klass)
         self.payment_deadline = klass.offset_date(self.due_payment_date, self.grace_period)
 
@@ -616,6 +617,7 @@ class ProlongItem(SimpleItem):
         For :class:`ProlongItem` we subtract the prolong days back from the :attr:`parent` item."""
         prolong2 = self.prolong
         prolong2.count *= -1
+        # FIXME: Maybe eliminate klass.offset_date() here and use just regular relativedelta?
         klass = model_from_ref(self.payment.transaction.processor.klass)
         self.parent.set_payment_date(klass.offset_date(self.parent.due_payment_date, prolong2))
         self.parent.save()
@@ -665,7 +667,7 @@ class AutomaticPayment(Payment):
     def force_cancel(self, is_upgrade=False):
         """Cancels the :attr:`transaction`."""
         if self.subscription_reference:
-            klass = model_from_ref(self.payment.transaction.processor.klass)
+            klass = model_from_ref(self.transaction.processor.klass)
             api = klass().api()
             try:
                 api.cancel_agreement(self.subscription_reference, is_upgrade=is_upgrade)  # may raise an exception
