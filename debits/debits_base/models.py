@@ -247,6 +247,7 @@ class SubscriptionTransaction(BaseTransaction):
         return self.item.subscriptionitem.active_subscription
 
     # FIXME
+    # FIXME: It is called twice leading to duplicate transaction_id
     @django.db.transaction.atomic
     def obtain_active_subscription(self, ref, email):
         """Internal."""
