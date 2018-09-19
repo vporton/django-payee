@@ -193,7 +193,7 @@ class SimpleTransaction(BaseTransaction):
     def on_accept_regular_payment(self, email):
         """Handles confirmation of a (non-recurring) payment."""
         payment = SimplePayment.objects.create(transaction=self, email=email)
-        self.item.simple.item.paid = True
+        self.item.paid = True
         self.item.last_payment = datetime.date.today()
         self.item.upgrade_subscription()
         self.item.save()
