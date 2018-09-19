@@ -168,7 +168,7 @@ class BaseTransaction(models.Model):
         """Internal."""
         # FIXME: check
         return self.payment.item.old_subscription.transaction.item \
-            if self.payment.item and self.payment.item.old_subscription \
+            if self.payment and self.payment.item and self.payment.item.old_subscription \
             else self.item
 
     @abc.abstractmethod
