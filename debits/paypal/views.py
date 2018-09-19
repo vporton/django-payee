@@ -249,6 +249,7 @@ class PayPalIPN(PaymentCallback, View):
         item.reminders_sent = 0
         return date
 
+    # FIXME: Missing .payment assignment (only in payment accept now)?
     def do_subscription_or_recurring_created(self, transaction, POST, ref):
         subscription = transaction.obtain_active_subscription(ref, POST['payer_email'])
         # transaction.processor = PaymentProcessor.objects.get(pk=PAYMENT_PROCESSOR_PAYPAL)
