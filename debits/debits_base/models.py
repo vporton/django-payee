@@ -195,8 +195,7 @@ class SimpleTransaction(BaseTransaction):
         """Handles confirmation of a (non-recurring) payment."""
         # FIXME: Atomic transaction?
         payment = SimplePayment.objects.create(transaction=self, email=email)
-        self.payment = payment
-        self.save()
+        self.item.payment = payment
         self.item.paid = True
         self.item.last_payment = datetime.date.today()
         self.item.upgrade_subscription()
