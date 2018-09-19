@@ -15,6 +15,9 @@ from debits.debits_base.base import Period
 from django.conf import settings
 
 
+# FIXME: It seems that an item exists manual mode ONLY when there is an immediate payment (not just subscription with future payment)
+
+
 # https://www.angelleye.com/paypal-recurring-payments-reference-transactions-and-preapproved-payments/
 
 # https://developer.paypal.com/docs/classic/ipn/integration-guide/IPNIntro/
