@@ -192,7 +192,10 @@ class SimpleTransaction(BaseTransaction):
 
     def on_accept_regular_payment(self, email):
         """Handles confirmation of a (non-recurring) payment."""
+        # FIXME: Atomic transaction?
         payment = SimplePayment.objects.create(transaction=self, email=email)
+        self.payment = payment
+        self.save()
         self.item.paid = True
         self.item.last_payment = datetime.date.today()
         self.item.upgrade_subscription()
@@ -394,7 +397,9 @@ class SubscriptionItem(Item):
     last_payment = models.DateField(null=True, db_index=True)
     """When the last payment for this item was received.
     
-    May be `None` if there were no payments for this item, yet."""
+    May be `None` if there were no payments for this item, yet.
+    
+    FIXME: Remove this in regard of :attr:`payment`."""
 
     trial = models.BooleanField(default=False, db_index=True)
     """Now in trial period."""
