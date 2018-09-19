@@ -16,6 +16,7 @@ from django.conf import settings
 
 
 # FIXME: It seems that an item exists manual mode ONLY when there is an immediate payment (not just subscription with future payment)
+# Also termination of subscription does not work.
 
 
 # https://www.angelleye.com/paypal-recurring-payments-reference-transactions-and-preapproved-payments/
