@@ -166,8 +166,9 @@ class BaseTransaction(models.Model):
 
     def invoiced_item(self):
         """Internal."""
-        return self.item.old_subscription.transaction.item \
-            if self.item and self.item.old_subscription \
+        # FIXME: check
+        return self.payment.item.old_subscription.transaction.item \
+            if self.payment.item and self.payment.item.old_subscription \
             else self.item
 
     @abc.abstractmethod
