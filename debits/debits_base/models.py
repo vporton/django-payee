@@ -241,7 +241,7 @@ class SubscriptionTransaction(BaseTransaction):
     @django.db.transaction.atomic
     def obtain_active_subscription(self, ref, email):
         """Internal."""
-        # FIXME: It seems to "conflict" with creating Payment objects for both automatic and manual objects
+        # FIXME: It seems to "conflict" with creating Payment objects for both automatic and manual objects.
         payments = AutomaticPayment.objects.filter(transaction__processor=self.processor, subscription_reference=ref)
         if payments:
             payment = payments.get()
