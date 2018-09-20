@@ -171,7 +171,7 @@ class BaseTransaction(models.Model):
         """Internal."""
         try:
             return self.payment.item.old_subscription.transaction.item
-        except (ObjectDoesNotExist, AttributeError):
+        except ObjectDoesNotExist:
             return self.payment.item
 
     @abc.abstractmethod
