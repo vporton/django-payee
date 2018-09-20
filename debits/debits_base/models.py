@@ -170,9 +170,9 @@ class BaseTransaction(models.Model):
     def invoiced_item(self):
         """Internal."""
         try:
-            return self.payment.item.old_subscription.transaction.item
+            return self.item.old_subscription.transaction.item
         except ObjectDoesNotExist:
-            return self.payment.item
+            return self.item
 
     @abc.abstractmethod
     def subinvoice(self):
