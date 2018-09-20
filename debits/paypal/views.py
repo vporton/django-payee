@@ -219,7 +219,7 @@ class PayPalIPN(PaymentCallback, View):
     def do_do_accept_subscription_or_recurring_payment(self, transaction, item, POST, ref):
         if self.auto_refund(transaction, item, POST):
             return HttpResponse('')
-        transaction.obtain_active_subscription(ref, POST['payer_email'])
+        item.subscriptionitem.obtain_active_subscription(transaction, ref, POST['payer_email'])
         # This is already done in obtain_active_subscription():
         # payment = AutomaticPayment.objects.create(transaction=transaction,
         #                                           email=POST['payer_email'])
@@ -253,13 +253,13 @@ class PayPalIPN(PaymentCallback, View):
         item.reminders_sent = 0
         return date
 
-    # FIXME: Missing .payment assignment (only in payment accept now)?
     def do_subscription_or_recurring_created(self, transaction, POST, ref):
-        subscription = transaction.obtain_active_subscription(ref, POST['payer_email'])
+        item = transaction.item.subscriptionitem
+        subscription = item.obtain_active_subscription(transaction, ref, POST['payer_email'])
         # transaction.processor = PaymentProcessor.objects.get(pk=PAYMENT_PROCESSOR_PAYPAL)
-        transaction.item.subscriptionitem.trial = False
-        transaction.item.subscriptionitem.save()  # FIXME: This overwrites transaction.item.payment (previously assigned by obtain_active_subscription)!
-        transaction.item.subscriptionitem.upgrade_subscription()
+        item.trial = False
+        item.save()  # FIXME: This overwrites transaction.item.payment (previously assigned by obtain_active_subscription) (Fixed?)
+        item.upgrade_subscription()
         self.on_subscription_created(POST, subscription)
 
     def accept_subscription_signup(self, POST, transaction_id):

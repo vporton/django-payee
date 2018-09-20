@@ -241,20 +241,6 @@ class SubscriptionTransaction(BaseTransaction):
         else:
             return settings.PAYMENTS_REALM + ' %d-%d' % (self.item.pk, self.subinvoice())
 
-    @django.db.transaction.atomic
-    def obtain_active_subscription(self, ref, email):
-        """Internal.
-
-        "Competes" with :meth:`on_accept_regular_payment`."""
-        payments = list(AutomaticPayment.objects.filter(transaction__processor=self.processor, subscription_reference=ref))
-        if payments:
-            payment = payments[0]
-        else:
-            payment = AutomaticPayment.objects.create(transaction=self, subscription_reference=ref, email=email)
-        self.item.payment = payment
-        self.item.save()
-        return payment
-
 
 class Item(models.Model):
     """Anything sold or rent.
@@ -455,6 +441,20 @@ class SubscriptionItem(Item):
             self.trial = True
             klass = model_from_ref(self.payment.transaction.processor.klass)
             self.set_payment_date(klass.offset_date(datetime.date.today(), self.trial_period))
+
+    @django.db.transaction.atomic
+    def obtain_active_subscription(self, transaction, ref, email):
+        """Internal.
+
+        "Competes" with :meth:`on_accept_regular_payment`."""
+        payments = list(AutomaticPayment.objects.filter(transaction__processor=transaction.processor, subscription_reference=ref))
+        if payments:
+            payment = payments[0]
+        else:
+            payment = AutomaticPayment.objects.create(transaction=transaction, subscription_reference=ref, email=email)
+        self.payment = payment
+        self.save()
+        return payment
 
     def cancel_subscription(self):
         """Called when we detect that the subscription was canceled."""
