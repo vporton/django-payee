@@ -253,7 +253,7 @@ class SubscriptionTransaction(BaseTransaction):
             payment = AutomaticPayment.objects.create(transaction=self, subscription_reference=ref, email=email)
         self.item.payment = payment
         self.item.save()
-        print("XXX", self.item.pk)  # FIXME: remove
+        print("AAA", self.item.pk, self.item.payment)  # FIXME: remove
         return payment
 
 
