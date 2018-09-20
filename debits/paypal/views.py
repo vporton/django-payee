@@ -220,7 +220,7 @@ class PayPalIPN(PaymentCallback, View):
         # payment = AutomaticPayment.objects.create(transaction=transaction,
         #                                           email=POST['payer_email'])
         self.do_subscription_or_recurring_payment(item.subscriptionitem)
-        self.on_payment(transaction.payment)
+        self.on_payment(transaction.payment.automaticpayment)
 
     def do_accept_subscription_payment(self, POST, transaction_id):
         # transaction = BaseTransaction.objects.select_for_update().get(pk=transaction_id)  # only inside transaction
