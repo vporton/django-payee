@@ -197,7 +197,6 @@ class SimpleTransaction(BaseTransaction):
         payment = SimplePayment.objects.create(transaction=self, email=email)
         self.item.payment = payment
         self.item.paid = True
-        self.item.last_payment = datetime.date.today()
         self.item.upgrade_subscription()
         self.item.save()
         try:
@@ -381,13 +380,6 @@ class SubscriptionItem(Item):
     """The dealine payment date.
     
     After it is reached, the item is considered inactive."""
-
-    last_payment = models.DateField(null=True, db_index=True)
-    """When the last payment for this item was received.
-    
-    May be `None` if there were no payments for this item, yet.
-    
-    FIXME: Remove this in regard of :attr:`payment`."""
 
     trial = models.BooleanField(default=False, db_index=True)
     """Now in trial period."""

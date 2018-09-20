@@ -245,7 +245,6 @@ class PayPalIPN(PaymentCallback, View):
     def advance_item_date(self, date, item):
         date = PayPalProcessorInfo.offset_date(date, item.payment_period)
         item.set_payment_date(date)
-        item.last_payment = datetime.date.today()
         item.reminders_sent = 0
         return date
 
