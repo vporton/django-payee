@@ -116,6 +116,9 @@ class BaseTransaction(models.Model):
         Use time with seconds precision?
     """
 
+    item = models.ForeignKey('SimpleItem', related_name='transactions', null=False, on_delete=models.CASCADE)
+    """The stuff sold by this transaction."""
+
     def __repr__(self):
         return "<BaseTransaction: %s>" % (("pk=%d" % self.pk) if self.pk else "no pk")
 
@@ -169,7 +172,7 @@ class BaseTransaction(models.Model):
         try:
             return self.payment.item.old_subscription.transaction.item
         except AttributeError:
-            return self.item
+            return self.payment.item
 
     @abc.abstractmethod
     def subinvoice(self):
@@ -182,9 +185,6 @@ class BaseTransaction(models.Model):
 class SimpleTransaction(BaseTransaction):
     """A one-time (non-recurring) transaction."""
 
-    item = models.ForeignKey('SimpleItem', related_name='transactions', null=False, on_delete=models.CASCADE)
-    """The stuff sold by this transaction."""
-
     def subinvoice(self):
         return 1
 
@@ -196,9 +196,9 @@ class SimpleTransaction(BaseTransaction):
         # FIXME: Atomic transaction?
         payment = SimplePayment.objects.create(transaction=self, email=email)
         self.item.payment = payment
-        self.item.paid = True
+        self.item.simpleitem.paid = True
         self.item.upgrade_subscription()
-        self.item.save()
+        self.item.simpleitem.save()
         try:
             self.advance_parent(self.item.simpleitem.prolongitem)
         except AttributeError:
@@ -227,9 +227,6 @@ class SimpleTransaction(BaseTransaction):
 
 class SubscriptionTransaction(BaseTransaction):
     """A transaction for a subscription service."""
-
-    item = models.ForeignKey('SubscriptionItem', related_name='transactions', null=False, on_delete=models.CASCADE)
-    """The stuff sold by this transaction information."""
 
     def subinvoice(self):
         return self.invoiced_item().subinvoice
