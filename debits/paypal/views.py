@@ -311,7 +311,7 @@ class PayPalIPN(PaymentCallback, View):
     def do_accept_recurring_canceled(self, POST, transaction_id):
         transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
         transaction.item.subscriptionitem.cancel_subscription()
-        self.on_subscription_canceled(POST, transaction.item)
+        # self.on_subscription_canceled(POST, transaction.item)  # FIXME: Uncomment back
 
     def auto_refund(self, transaction, item, POST):
         # "item" is SubscriptionItem
