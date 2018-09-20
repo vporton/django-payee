@@ -342,17 +342,15 @@ class Item(models.Model):
     # TODO: Move to Payment class?
     def send_rendered_email(self, template_name, subject, data):
         """Internal."""
-        email = self.email
         try:
             email = self.payment.email
-            Item.objects.filter(pk=self.pk).update(email=email)
-        except AttributeError:
+            # Item.objects.filter(pk=self.pk).update(email=email)
+        except AttributeError:  # no .payment
             return
-        if email is None:  # hack!
-            return
-        html = render_to_string(template_name, data, request=None, using=None)
-        text = html2text.html2text(html)
-        send_mail(subject, text, settings.FROM_EMAIL, [self.email], html_message=html)
+        if email is not None:
+            html = render_to_string(template_name, data, request=None, using=None)
+            text = html2text.html2text(html)
+            send_mail(subject, text, settings.FROM_EMAIL, [email], html_message=html)
 
 class SimpleItem(Item):
     """Non-subscription item.
