@@ -307,10 +307,9 @@ class PayPalIPN(PaymentCallback, View):
         except BaseTransaction.DoesNotExist:
             pass
 
-    # FIXME: The cancel IPN does not reset .payment
     def do_accept_recurring_canceled(self, POST, transaction_id):
         transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
-        # transaction.item.subscriptionitem.cancel_subscription()  # FIXME: uncomment
+        transaction.item.subscriptionitem.cancel_subscription()  # FIXME: error happens here
         self.on_subscription_canceled(POST, transaction.item)  # FIXME: Commenting out this line does not help against FIXME above
 
     def auto_refund(self, transaction, item, POST):
