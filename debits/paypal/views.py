@@ -1,4 +1,4 @@
-from decimal import Decimal 
+from decimal import Decimal
 import datetime
 import requests
 from django.utils import timezone
@@ -302,6 +302,7 @@ class PayPalIPN(PaymentCallback, View):
             logger.warning("SubscriptionTransaction %d does not exist" % transaction_id)
 
     def accept_recurring_canceled(self, POST, transaction_id):
+        return  # FIXME: remove
         try:
             self.do_accept_recurring_canceled(POST, transaction_id)
         except BaseTransaction.DoesNotExist:
