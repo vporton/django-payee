@@ -339,15 +339,17 @@ class Item(models.Model):
         # self.on_upgrade_subscription(transaction, item.old_subscription)  # TODO: Needed?
         Item.objects.filter(pk=self.pk).update(old_subscription=None)
 
+    # TODO: Move to Payment class?
     def send_rendered_email(self, template_name, subject, data):
         """Internal."""
+        email = self.email
         try:
-            self.email = self.payment.email
+            email = self.payment.email
+            Item.objects.filter(pk=self.pk).update(email=email)
         except AttributeError:
             return
-        if self.email is None:  # hack!
+        if email is None:  # hack!
             return
-        self.save()
         html = render_to_string(template_name, data, request=None, using=None)
         text = html2text.html2text(html)
         send_mail(subject, text, settings.FROM_EMAIL, [self.email], html_message=html)
