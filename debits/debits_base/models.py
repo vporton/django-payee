@@ -166,10 +166,10 @@ class BaseTransaction(models.Model):
 
     def invoiced_item(self):
         """Internal."""
-        # FIXME: check
-        return self.payment.item.old_subscription.transaction.item \
-            if getattr(self, 'payment', None) and self.payment.item and self.payment.item.old_subscription \
-            else self.item
+        try:
+            return self.payment.item.old_subscription.transaction.item
+        except AttributeError:
+            return self.item
 
     @abc.abstractmethod
     def subinvoice(self):
