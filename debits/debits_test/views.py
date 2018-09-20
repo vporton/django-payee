@@ -31,7 +31,7 @@ def do_organization_payment_view(request, purchase, organization):
     """The common pars of views for :func:`transaction_payment_view` and :func:`organization_payment_view`."""
     plan_form = SwitchPricingPlanForm({'pricing_plan': purchase.plan.pk})
     pp = MyPayPalForm(request)
-    print("YYY", purchase.pk, purchase.payment)
+    print("YYY", purchase.pk, purchase.payment)  # FIXME: Remove
     return render(request, 'debits_test/organization-payment-view.html',
                   {'organization_id': organization.pk,
                    'organization': organization.name,
