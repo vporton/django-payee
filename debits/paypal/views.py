@@ -15,10 +15,6 @@ from debits.debits_base.base import Period
 from django.conf import settings
 
 
-# FIXME: It seems that an item exists manual mode ONLY when there is an immediate payment (not just subscription with future payment)
-# Also termination of subscription does not work.
-
-
 # https://www.angelleye.com/paypal-recurring-payments-reference-transactions-and-preapproved-payments/
 
 # https://developer.paypal.com/docs/classic/ipn/integration-guide/IPNIntro/
@@ -309,8 +305,8 @@ class PayPalIPN(PaymentCallback, View):
 
     def do_accept_recurring_canceled(self, POST, transaction_id):
         transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
-        transaction.item.subscriptionitem.cancel_subscription()  # FIXME: error happens here
-        self.on_subscription_canceled(POST, transaction.item)  # FIXME: Commenting out this line does not help against FIXME above
+        transaction.item.subscriptionitem.cancel_subscription()
+        self.on_subscription_canceled(POST, transaction.item)
 
     def auto_refund(self, transaction, item, POST):
         # "item" is SubscriptionItem
