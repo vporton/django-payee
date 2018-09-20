@@ -337,8 +337,7 @@ class Item(models.Model):
         except CannotCancelSubscription:
             pass
         # self.on_upgrade_subscription(transaction, item.old_subscription)  # TODO: Needed?
-        self.old_subscription = None
-        self.save()
+        Item.objects.filter(pk=self.pk).update(old_subscription=None)
 
     def send_rendered_email(self, template_name, subject, data):
         """Internal."""
