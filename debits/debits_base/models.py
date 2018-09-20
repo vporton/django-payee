@@ -246,9 +246,9 @@ class SubscriptionTransaction(BaseTransaction):
         """Internal.
 
         "Competes" with :meth:`on_accept_regular_payment`."""
-        payments = AutomaticPayment.objects.filter(transaction__processor=self.processor, subscription_reference=ref)
+        payments = list(AutomaticPayment.objects.filter(transaction__processor=self.processor, subscription_reference=ref))
         if payments:
-            payment = payments.get()
+            payment = payments[0]
         else:
             payment = AutomaticPayment.objects.create(transaction=self, subscription_reference=ref, email=email)
         self.item.payment = payment
