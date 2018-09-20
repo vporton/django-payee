@@ -229,7 +229,7 @@ class SubscriptionTransaction(BaseTransaction):
     """A transaction for a subscription service."""
 
     def subinvoice(self):
-        return self.invoiced_item().subinvoice
+        return self.invoiced_item().subscriptionitem.subinvoice
 
     def invoice_id(self):
         if self.item.old_subscription:
