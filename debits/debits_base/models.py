@@ -116,7 +116,7 @@ class BaseTransaction(models.Model):
         Use time with seconds precision?
     """
 
-    item = models.ForeignKey('SimpleItem', related_name='transactions', null=False, on_delete=models.CASCADE)
+    item = models.ForeignKey('Item', related_name='transactions', null=False, on_delete=models.CASCADE)
     """The stuff sold by this transaction."""
 
     def __repr__(self):
