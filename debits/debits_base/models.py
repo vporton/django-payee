@@ -297,7 +297,9 @@ class Item(models.Model):
     * 0 - no reminder sent
     * 1 - before due payment sent
     * 2 - at due payment sent
-    * 3 - day before deadline sent"""
+    * 3 - day before deadline sent
+    
+    TODO: Move to :class:`SubscriptionItem`?"""
 
     old_subscription = models.ForeignKey('AutomaticPayment', null=True, related_name='new_subscription', on_delete=models.CASCADE)
     """We remove old_subscription (if not `None`) automatically when new subscription is created.
@@ -460,7 +462,6 @@ class SubscriptionItem(Item):
         """Called when we detect that the subscription was canceled."""
         # atomic operation
         SubscriptionItem.objects.filter(pk=self.pk).update(payment=None, subinvoice=F('subinvoice') + 1)
-        # FIXME: self.cancel_subscription_email() calls .save and overwrites the above change
         if not self.old_subscription:  # don't send this email on plan upgrade
             self.cancel_subscription_email()
 
@@ -497,46 +498,43 @@ class SubscriptionItem(Item):
         days_before = settings.PAYMENTS_DAYS_BEFORE_DUE_REMIND
         reminder_date = datetime.date.today() + datetime.timedelta(days=days_before)
         q = SubscriptionItem.objects.filter(reminders_sent__lt=3, due_payment_date__lte=reminder_date, trial=False)
-        for transaction in q:
-            transaction.reminders_set = 3
-            transaction.save()
-            url = reverse(settings.PROLONG_PAYMENT_VIEW, args=[transaction.pk])
-            transaction.send_rendered_email('debits/email/before-due-remind.html',
-                                            _("You need to pay for %s") % transaction.product.name,
-                                            {'transaction': transaction,
-                                             'product': transaction.product.name,
-                                             'url': url,
-                                             'days_before': days_before})
+        for item in q:
+            Item.objects.filter(pk=item.pk).update(reminders_sent=3)
+            url = reverse(settings.PROLONG_PAYMENT_VIEW, args=[item.pk])
+            item.send_rendered_email('debits/email/before-due-remind.html',
+                                     _("You need to pay for %s") % item.product.name,
+                                     {'transaction': item,
+                                      'product': item.product.name,
+                                      'url': url,
+                                      'days_before': days_before})
 
     @staticmethod
     def send_regular_due_reminders():
         """Internal."""
         reminder_date = datetime.date.today()
         q = SubscriptionItem.objects.filter(reminders_sent__lt=2, due_payment_date__lte=reminder_date, trial=False)
-        for transaction in q:
-            transaction.reminders_set = 2
-            transaction.save()
-            url = reverse(settings.PROLONG_PAYMENT_VIEW, args=[transaction.pk])
-            transaction.send_rendered_email('debits/email/due-remind.html',
-                                            _("You need to pay for %s") % transaction.product.name,
-                                            {'transaction': transaction,
-                                             'product': transaction.product.name,
-                                             'url': url})
+        for item in q:
+            Item.objects.filter(pk=item.pk).update(reminders_sent=2)
+            url = reverse(settings.PROLONG_PAYMENT_VIEW, args=[item.pk])
+            item.send_rendered_email('debits/email/due-remind.html',
+                                     _("You need to pay for %s") % item.product.name,
+                                     {'transaction': item,
+                                      'product': item.product.name,
+                                      'url': url})
 
     @staticmethod
     def send_regular_deadline_reminders():
         """Internal."""
         reminder_date = datetime.date.today()
         q = SubscriptionItem.objects.filter(reminders_sent__lt=1, payment_deadline__lte=reminder_date, trial=False)
-        for transaction in q:
-            transaction.reminders_set = 1
-            transaction.save()
-            url = reverse(settings.PROLONG_PAYMENT_VIEW, args=[transaction.pk])
-            transaction.send_rendered_email('debits/email/deadline-remind.html',
-                                            _("You need to pay for %s") % transaction.product.name,
-                                            {'transaction': transaction,
-                                             'product': transaction.product.name,
-                                             'url': url})
+        for item in q:
+            Item.objects.filter(pk=item.pk).update(reminders_sent=1)
+            url = reverse(settings.PROLONG_PAYMENT_VIEW, args=[item.pk])
+            item.send_rendered_email('debits/email/deadline-remind.html',
+                                     _("You need to pay for %s") % item.product.name,
+                                     {'transaction': item,
+                                      'product': item.product.name,
+                                      'url': url})
 
     @staticmethod
     def send_trial_reminders():
@@ -552,46 +550,43 @@ class SubscriptionItem(Item):
         days_before = settings.PAYMENTS_DAYS_BEFORE_TRIAL_END_REMIND
         reminder_date = datetime.date.today() + datetime.timedelta(days=days_before)
         q = SubscriptionItem.objects.filter(reminders_sent__lt=3, due_payment_date__lte=reminder_date, trial=True)
-        for transaction in q:
-            transaction.reminders_set = 3
-            transaction.save()
-            url = reverse(settings.PROLONG_PAYMENT_VIEW, args=[transaction.pk])
-            transaction.send_rendered_email('debits/email/before-due-remind.html',
-                                            _("You need to pay for %s") % transaction.product.name,
-                                            {'transaction': transaction,
-                                             'product': transaction.product.name,
-                                             'url': url,
-                                             'days_before': days_before})
+        for item in q:
+            Item.objects.filter(pk=item.pk).update(reminders_sent=3)
+            url = reverse(settings.PROLONG_PAYMENT_VIEW, args=[item.pk])
+            item.send_rendered_email('debits/email/before-due-remind.html',
+                                     _("You need to pay for %s") % item.product.name,
+                                     {'transaction': item,
+                                      'product': item.product.name,
+                                      'url': url,
+                                      'days_before': days_before})
 
     @staticmethod
     def send_trial_due_reminders():
         """Internal."""
         reminder_date = datetime.date.today()
         q = SubscriptionItem.objects.filter(reminders_sent__lt=2, due_payment_date__lte=reminder_date, trial=True)
-        for transaction in q:
-            transaction.reminders_set = 2
-            transaction.save()
-            url = reverse(settings.PROLONG_PAYMENT_VIEW, args=[transaction.pk])
-            transaction.send_rendered_email('debits/email/due-remind.html',
-                                            _("You need to pay for %s") % transaction.product.name,
-                                            {'transaction': transaction,
-                                             'product': transaction.product.name,
-                                             'url': url})
+        for item in q:
+            Item.objects.filter(pk=item.pk).update(reminders_sent=2)
+            url = reverse(settings.PROLONG_PAYMENT_VIEW, args=[item.pk])
+            item.send_rendered_email('debits/email/due-remind.html',
+                                     _("You need to pay for %s") % item.product.name,
+                                     {'transaction': item,
+                                      'product': item.product.name,
+                                      'url': url})
 
     @staticmethod
     def send_trial_deadline_reminders():
         """Internal."""
         reminder_date = datetime.date.today()
         q = SubscriptionItem.objects.filter(reminders_sent__lt=1, payment_deadline__lte=reminder_date, trial=True)
-        for transaction in q:
-            transaction.reminders_set = 1
-            transaction.save()
-            url = reverse(settings.PROLONG_PAYMENT_VIEW, args=[transaction.pk])
-            transaction.send_rendered_email('debits/email/deadline-remind.html',
-                                            _("You need to pay for %s") % transaction.product.name,
-                                            {'transaction': transaction,
-                                             'product': transaction.product.name,
-                                             'url': url})
+        for item in q:
+            Item.objects.filter(pk=item.pk).update(reminders_sent=1)
+            url = reverse(settings.PROLONG_PAYMENT_VIEW, args=[item.pk])
+            item.send_rendered_email('debits/email/deadline-remind.html',
+                                     _("You need to pay for %s") % item.product.name,
+                                     {'transaction': item,
+                                      'product': item.product.name,
+                                      'url': url})
 
     # TODO
     # def get_email(self):
