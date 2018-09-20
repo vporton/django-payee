@@ -461,6 +461,7 @@ class SubscriptionItem(Item):
         """Called when we detect that the subscription was canceled."""
         # atomic operation
         SubscriptionItem.objects.filter(pk=self.pk).update(payment=None, subinvoice=F('subinvoice') + 1)
+        return  # FIXME: remove
         if not self.old_subscription:  # don't send this email on plan upgrade
             self.cancel_subscription_email()
 
