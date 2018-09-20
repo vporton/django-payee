@@ -258,7 +258,7 @@ class PayPalIPN(PaymentCallback, View):
         subscription = transaction.obtain_active_subscription(ref, POST['payer_email'])
         # transaction.processor = PaymentProcessor.objects.get(pk=PAYMENT_PROCESSOR_PAYPAL)
         transaction.item.subscriptionitem.trial = False
-        transaction.item.subscriptionitem.save()  # FIXME: This overwrites transaction.item.payment (previously assigned by obtain_active_subscriptionXXX)!
+        transaction.item.subscriptionitem.save()  # FIXME: This overwrites transaction.item.payment (previously assigned by obtain_active_subscription)!
         transaction.item.subscriptionitem.upgrade_subscription()
         self.on_subscription_created(POST, subscription)
 
