@@ -33,7 +33,7 @@ class PayPalProcessorInfo(models.Model):
             Period.UNIT_YEARS: lambda: relativedelta(years=offset.count),
         }[offset.unit]()
         new_date = date + delta
-        if new_date.day != date.day:
+        if offset.unit not in (Period.UNIT_DAYS, Period.UNIT_WEEKS) and new_date.day != date.day:
             new_date += relativedelta(days=1)
         return new_date
 
