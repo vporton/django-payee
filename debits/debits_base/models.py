@@ -613,8 +613,7 @@ class AutomaticPayment(Payment):
     subscription_reference = models.CharField(max_length=255, null=True)
     """As `recurring_payment_id` in PayPal.
 
-    Avangate has it for every product, but PayPal for transaction as a whole.
-    So have it both in :class:`AutomaticPayment` and :class:`Subscription`."""
+    TODO: Avangate has it for every product, but PayPal for transaction as a whole."""
 
     # TODO: The same as in do_upgrade_subscription()
     #@shared_task  # PayPal tormoz, so run in a separate thread # TODO: celery (with `TypeError: force_cancel() missing 1 required positional argument: 'self'`)
