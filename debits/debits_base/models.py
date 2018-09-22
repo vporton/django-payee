@@ -191,9 +191,10 @@ class SimpleTransaction(BaseTransaction):
     def invoice_id(self):
         return settings.PAYMENTS_REALM + ' p-%d' % (self.item.pk,)
 
+    # Make transaction atomic to be sure that simpleitem.save() and advance_parent() do together
+    @transaction.atomic
     def on_accept_regular_payment(self, email):
         """Handles confirmation of a (non-recurring) payment."""
-        # FIXME: Atomic transaction?
         payment = SimplePayment.objects.create(transaction=self, email=email)
         self.item.payment = payment
         self.item.simpleitem.paid = True
