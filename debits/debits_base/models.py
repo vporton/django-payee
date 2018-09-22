@@ -199,10 +199,10 @@ class SimpleTransaction(BaseTransaction):
         self.item.simpleitem.paid = True
         self.item.upgrade_subscription()
         self.item.simpleitem.save()
-        try:
-            self.advance_parent(self.item.simpleitem.prolongitem)
-        except AttributeError:
-            pass
+        # try:
+        self.advance_parent(self.item.simpleitem.prolongitem)
+        # except AttributeError:
+        #     pass
         return payment
 
 
