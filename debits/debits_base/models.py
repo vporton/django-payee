@@ -199,6 +199,7 @@ class SimpleTransaction(BaseTransaction):
         self.item.simpleitem.paid = True
         self.item.upgrade_subscription()
         self.item.simpleitem.save()
+        # FIXME: uncomment
         # try:
         self.advance_parent(self.item.simpleitem.prolongitem)
         # except AttributeError:
