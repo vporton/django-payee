@@ -94,8 +94,8 @@ def do_prolong(hash, form, processor, item):
                                          currency=item.currency,
                                          price=item.price * periods,
                                          parent=item,
-                                         prolong_unit=Period.UNIT_MONTHS,
-                                         prolong_count=periods)
+                                         period_unit=Period.UNIT_MONTHS,
+                                         period_count=periods)
     subtransaction = SimpleTransaction.objects.create(processor=processor, item=subitem)
     return form.make_purchase_from_form(hash, subtransaction)
 
