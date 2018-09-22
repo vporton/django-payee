@@ -1,4 +1,4 @@
-from decimal import Decimal 
+from decimal import Decimal
 import datetime
 import requests
 from django.utils import timezone
@@ -51,8 +51,7 @@ from django.conf import settings
 
 
 # Internal.
-from debits.paypal.models import PayPalAPI
-from debits.paypal.utils import PayPalUtils
+from debits.paypal.models import PayPalAPI, PayPalProcessorInfo
 
 MONTHS = [
     'Jan', 'Feb', 'Mar', 'Apr',
@@ -161,7 +160,7 @@ class PayPalIPN(PaymentCallback, View):
     def do_appect_refund(self, POST, transaction_id):
         transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
         if POST['mc_currency'] == transaction.item.currency:
-            transaction.payment.refund_payment()
+            transaction.payment.automaticpayment.refund_payment()
         else:
             logger.warning("Wrong refund currency.")
 
@@ -181,7 +180,7 @@ class PayPalIPN(PaymentCallback, View):
         if Decimal(POST['mc_gross']) == transaction.item.price and \
                         Decimal(POST['shipping']) == transaction.item.shipping and \
                         POST['mc_currency'] == transaction.item.currency:
-            if self.auto_refund(transaction, transaction.item.prolongitem.parent, POST):
+            if self.auto_refund(transaction, transaction.item.simpleitem.prolongitem.parent, POST):
                 return HttpResponse('')
             payment = transaction.on_accept_regular_payment(POST['payer_email'])
             self.on_payment(payment)
@@ -216,11 +215,12 @@ class PayPalIPN(PaymentCallback, View):
     def do_do_accept_subscription_or_recurring_payment(self, transaction, item, POST, ref):
         if self.auto_refund(transaction, item, POST):
             return HttpResponse('')
-        transaction.obtain_active_subscription(ref, POST['payer_email'])
-        payment = AutomaticPayment.objects.create(transaction=transaction,
-                                                  email=POST['payer_email'])
-        self.do_subscription_or_recurring_payment(item)
-        self.on_payment(payment)
+        item.subscriptionitem.obtain_active_subscription(transaction, ref, POST['payer_email'])
+        # This is already done in obtain_active_subscription():
+        # payment = AutomaticPayment.objects.create(transaction=transaction,
+        #                                           email=POST['payer_email'])
+        self.do_subscription_or_recurring_payment(item.subscriptionitem)
+        self.on_payment(transaction.payment.automaticpayment)
 
     def do_accept_subscription_payment(self, POST, transaction_id):
         # transaction = BaseTransaction.objects.select_for_update().get(pk=transaction_id)  # only inside transaction
@@ -239,21 +239,22 @@ class PayPalIPN(PaymentCallback, View):
         if item.payment_period.count > 0:  # hack to eliminate infinite loop
             while date <= datetime.date.today():
                 date = self.advance_item_date(date, item)
+        item.due_payment_date = date
         item.save()
 
     def advance_item_date(self, date, item):
-        date = PayPalUtils.calculate_date(date, item.payment_period)  # FIXME: Eliminate (here and in other places) hardcoded PayPal
+        date = PayPalProcessorInfo.offset_date(date, item.payment_period)
         item.set_payment_date(date)
-        item.last_payment = datetime.date.today()
         item.reminders_sent = 0
         return date
 
     def do_subscription_or_recurring_created(self, transaction, POST, ref):
-        subscription = transaction.obtain_active_subscription(ref, POST['payer_email'])
+        item = transaction.item.subscriptionitem
+        subscription = item.obtain_active_subscription(transaction, ref, POST['payer_email'])
         # transaction.processor = PaymentProcessor.objects.get(pk=PAYMENT_PROCESSOR_PAYPAL)
-        transaction.item.trial = False
-        transaction.item.save()
-        transaction.item.upgrade_subscription()
+        item.trial = False
+        item.save()  # TODO: Don't save() also in obtain_active_subscription()
+        item.upgrade_subscription()
         self.on_subscription_created(POST, subscription)
 
     def accept_subscription_signup(self, POST, transaction_id):
@@ -264,7 +265,7 @@ class PayPalIPN(PaymentCallback, View):
 
     def do_accept_subscription_signup(self, POST, transaction_id):
         transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
-        item = transaction.item
+        item = transaction.item.subscriptionitem
         m = {
             Period.UNIT_DAYS: 'D',
             Period.UNIT_WEEKS: 'W',
@@ -303,7 +304,7 @@ class PayPalIPN(PaymentCallback, View):
 
     def do_accept_recurring_canceled(self, POST, transaction_id):
         transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
-        transaction.item.cancel_subscription()
+        transaction.item.subscriptionitem.cancel_subscription()
         self.on_subscription_canceled(POST, transaction.item)
 
     def auto_refund(self, transaction, item, POST):

@@ -1,5 +1,6 @@
 import logging
 from composite_field import CompositeField
+from dateutil.relativedelta import relativedelta
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
@@ -37,3 +38,27 @@ class Period(CompositeField):
         if count is not None:
             self['count'].default = count
 
+
+# The following functions do not work as a method, because
+# CompositeField is replaced with composite_field.base.CompositeField.Proxy:
+
+def period_to_string(period):
+    """Human readable description of a period.
+
+    Args:
+        period: `Period` field.
+
+    Returns:
+        A human readable string."""
+    hash = {e[0]: e[1] for e in Period.period_choices}
+    return "%d %s" % (period.count, hash[period.unit])
+
+
+def period_to_delta(period):
+    """Convert :class:`Period` to :class:`relativedelta`."""
+    return {
+        Period.UNIT_DAYS: lambda: relativedelta(days=period.count),
+        Period.UNIT_WEEKS: lambda: relativedelta(weeks=period.count),
+        Period.UNIT_MONTHS: lambda: relativedelta(months=period.count),
+        Period.UNIT_YEARS: lambda: relativedelta(years=period.count),
+    }[period.unit]()

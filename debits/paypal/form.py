@@ -48,9 +48,7 @@ class PayPalForm(BasePaymentProcessor):
                 'invoice': transaction.invoice_id()}
 
     def make_subscription(self, items, transaction, item):
-        """
-        Internal 
-        """
+        """Internal."""
         items['item_name'] = self.product_name(item)
         items['src'] = 1
 
@@ -67,9 +65,7 @@ class PayPalForm(BasePaymentProcessor):
         items['t3'] = unit_map[item.payment_period.unit]
 
     def make_regular(self, items, transaction, item, cart):
-        """
-        Internal 
-        """
+        """Internal."""
         if cart:
             items['item_name_1'] = self.product_name(item)
             items['amount_1'] = item.price

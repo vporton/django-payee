@@ -1,13 +1,12 @@
 import datetime
-from django.db.models import F
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, reverse
 from django.utils.translation import ugettext_lazy as _
 from .models import Organization, Purchase, PricingPlan
 from .forms import CreateOrganizationForm, SwitchPricingPlanForm
 from .business import create_organization
-from debits.debits_base.base import Period
-from debits.debits_base.models import SimpleTransaction, SubscriptionTransaction, ProlongItem, SubscriptionItem, period_to_string, logger, CannotCancelSubscription
+from debits.debits_base.base import Period, period_to_string
+from debits.debits_base.models import SimpleTransaction, SubscriptionTransaction, ProlongItem, SubscriptionItem, logger, CannotCancelSubscription
 import debits
 from .processors import MyPayPalForm
 
@@ -35,12 +34,12 @@ def do_organization_payment_view(request, purchase, organization):
                   {'organization_id': organization.pk,
                    'organization': organization.name,
                    'item_id': purchase.pk,
-                   'email': purchase.active_subscription.email if purchase.active_subscription else None,
+                   'email': purchase.payment.email if purchase.payment else None,
                    'gratis': purchase.gratis,
                    'active': purchase.is_active(),
                    'blocked': purchase.blocked,
-                   'manual_mode': not purchase.active_subscription,
-                   'processor_name': purchase.active_subscription.transaction.processor.name if purchase.active_subscription else None,  # only for automatic recurring payment
+                   'manual_mode': not purchase.payment,
+                   'processor_name': purchase.payment.transaction.processor.name if purchase.payment else None,  # only for automatic recurring payment
                    'plan': purchase.plan.name,
                    'trial': purchase.trial,
                    'trial_period': period_to_string(purchase.trial_period),
@@ -52,7 +51,7 @@ def do_organization_payment_view(request, purchase, organization):
                    'plan_form': plan_form,
                    'can_switch_to_recurring': pp.ready_for_subscription(purchase),
                    'subscription_allowed_date': pp.subscription_allowed_date(purchase),
-                   'subscription_reference': purchase.active_subscription.subscription_reference if purchase.active_subscription else None,
+                   'subscription_reference': purchase.payment.automaticpayment.subscription_reference if purchase.payment else None,
                    'subinvoice': purchase.subinvoice})
 
 
@@ -95,8 +94,8 @@ def do_prolong(hash, form, processor, item):
                                          currency=item.currency,
                                          price=item.price * periods,
                                          parent=item,
-                                         prolong_unit=Period.UNIT_MONTHS,
-                                         prolong_count=periods)
+                                         period_unit=Period.UNIT_MONTHS,
+                                         period_count=periods)
     subtransaction = SimpleTransaction.objects.create(processor=processor, item=subitem)
     return form.make_purchase_from_form(hash, subtransaction)
 
@@ -122,8 +121,8 @@ def upgrade_create_new_item(old_purchase, plan, new_period, organization):
                         trial_period_unit=Period.UNIT_DAYS,
                         trial_period_count=new_period)
     purchase.set_payment_date(datetime.date.today() + datetime.timedelta(days=new_period))
-    if old_purchase.active_subscription:
-        purchase.old_subscription = old_purchase.active_subscription
+    if old_purchase.payment:
+        purchase.old_subscription = old_purchase.payment.automaticpayment
     purchase.save()
     return purchase
 
@@ -141,7 +140,7 @@ def do_upgrade(hash, form, processor, item, organization):
 
     purchase = upgrade_create_new_item(item, plan, new_period, organization)
 
-    if not item.active_subscription:
+    if not item.payment:
         # Simply create a new purchase which can be paid later
         organization.purchase = purchase
         organization.save()
@@ -184,12 +183,9 @@ def purchase_view(request):
 def do_unsubscribe(subscription, item):
     try:
         if not subscription:
-            raise CannotCancelSubscription(_("Subscription was already canceled"))
-        subscription.force_cancel()
+            raise CannotCancelSubscription(_("Subscription was already canceled."))
+        subscription.automaticpayment.force_cancel()
     except CannotCancelSubscription as e:
-        # Without active_subscription=None it may remain in falsely subscribed state without a way to exit
-        SubscriptionItem.objects.filter(pk=item.pk).update(active_subscription=None,
-                                                           subinvoice=F('subinvoice') + 1)
         return HttpResponse(e)
     else:
         return HttpResponse('')  # empty string means success
@@ -200,7 +196,7 @@ def unsubscribe_organization_view(request, organization_pk):
     organization_pk = int(organization_pk)  # in real code should use user login information
     organization = Organization.objects.get(pk=organization_pk)
     item = organization.purchase.subscriptionitem
-    return do_unsubscribe(item.active_subscription, item)
+    return do_unsubscribe(item.payment, item)
     # return HttpResponseRedirect(reverse('organization-prolong-payment', args=[organization.pk]))
 
 

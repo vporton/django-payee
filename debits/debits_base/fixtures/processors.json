@@ -5,8 +5,8 @@
     "fields": {
       "name": "Avangate",
       "url": "http://www.avangate.com/",
-      "api_app_label": "",
-      "api_model": ""
+      "klass_app_label": "",
+      "klass_model": ""
     }
   },
   {
@@ -15,8 +15,8 @@
     "fields": {
       "name": "PayPal",
       "url": "http://www.paypal.com/",
-      "api_app_label": "paypal",
-      "api_model": "PayPalAPI"
+      "klass_app_label": "paypal",
+      "klass_model": "PayPalProcessorInfo"
     }
   },
   {
@@ -25,8 +25,8 @@
     "fields": {
       "name": "BrainTree",
       "url": "https://www.braintreedebits_base.com/",
-      "api_app_label": "",
-      "api_model": ""
+      "klass_app_label": "",
+      "klass_model": ""
     }
   },
   {
@@ -35,8 +35,8 @@
     "fields": {
       "name": "DalPay",
       "url": "https://www.dalpay.com/",
-      "api_app_label": "",
-      "api_model": ""
+      "klass_app_label": "",
+      "klass_model": ""
     }
   },
   {
@@ -45,8 +45,8 @@
     "fields": {
       "name": "Recurly",
       "url": "https://recurly.com/",
-      "api_app_label": "",
-      "api_model": ""
+      "klass_app_label": "",
+      "klass_model": ""
     }
   }
 ]
