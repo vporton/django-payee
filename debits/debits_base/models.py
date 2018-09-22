@@ -179,7 +179,7 @@ class SimpleTransaction(BaseTransaction):
         Args:
             prolongitem: :class:`ProlongItem`.
 
-        `prolongitem.prolong` contains the number of days to advance the parent (:class:`SubscriptionItem`)
+        `prolongitem.period` contains the number of days to advance the parent (:class:`SubscriptionItem`)
         item. The parent transaction is advanced this number of days.
         """
         parent_item = SubscriptionItem.objects.select_for_update().get(
@@ -187,7 +187,7 @@ class SimpleTransaction(BaseTransaction):
         # parent.email = transaction.email
         base_date = max(datetime.date.today(), parent_item.due_payment_date)
         klass = model_from_ref(payment.transaction.processor.klass)  # prolongitem.payment is None, so use payment instead
-        parent_item.set_payment_date(klass.offset_date(base_date, prolongitem.prolong))
+        parent_item.set_payment_date(klass.offset_date(base_date, prolongitem.period))
         parent_item.save()
 
 
@@ -560,16 +560,14 @@ class ProlongItem(SimpleItem):
     parent = models.ForeignKey('SubscriptionItem', related_name='child', parent_link=False, on_delete=models.CASCADE)
     """Which subscription item to prolong."""
 
-    prolong = Period(unit=Period.UNIT_MONTHS, count=0)
-    """The amount of days (or weeks, months, etc.) how much to prolong.
-    
-    TODO: rename."""
+    period = Period(unit=Period.UNIT_MONTHS, count=0)
+    """The amount of days (or weeks, months, etc.) how much to prolong."""
 
     def refund_payment(self):
         """Handle payment refund.
 
         For :class:`ProlongItem` we subtract the prolong days back from the :attr:`parent` item."""
-        prolong2 = self.prolong
+        prolong2 = self.period
         prolong2.count *= -1
         klass = model_from_ref(self.payment.transaction.processor.klass)
         self.parent.set_payment_date(klass.offset_date(self.parent.due_payment_date, prolong2))
