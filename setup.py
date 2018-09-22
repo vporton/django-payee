@@ -14,7 +14,7 @@ here = path.abspath(path.dirname(__file__))
 #     long_description = f.read()
 
 name = 'django-debits'
-version = '0.0.4'
+version = '0.0.6'
 release = version
 
 setup(
