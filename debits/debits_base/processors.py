@@ -33,21 +33,15 @@ class BasePaymentProcessor(abc.ABC):
         """Internal."""
         raise NotImplementedError()
 
-    def real_make_purchase(self, hash, transaction):
-        """Start the process of purchase with given hash and transaction."""
-        hash = self.amend_hash_new_purchase(transaction, hash)
-        return self.redirect_to_processor(hash)
-
     def change_subscription(self, transaction, hash):
         """Start the process of changing a subscription with given hash and transaction."""
         hash = self.amend_hash_change_subscription(transaction, hash)
         return self.redirect_to_processor(hash)
 
     def make_purchase(self, hash, transaction):
-        """Start the process of purchase with given hash and transaction.
-
-        TODO: It does the same as :meth:`real_make_purchase`."""
-        return self.real_make_purchase(hash, transaction)
+        """Start the process of purchase with given hash and transaction."""
+        hash = self.amend_hash_new_purchase(transaction, hash)
+        return self.redirect_to_processor(hash)
 
     def make_purchase_from_form(self, hash, transaction):
         """Start the process of purchase with hash received from a HTML form and transaction."""

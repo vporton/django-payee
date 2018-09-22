@@ -79,12 +79,8 @@ class BaseTransaction(models.Model):
     processor = models.ForeignKey(PaymentProcessor, on_delete=models.CASCADE)
     """Payment processor."""
 
-    creation_date = models.DateField(auto_now_add=True)
-    """Date of the redirect.
-    
-    TODO:
-        Use time with seconds precision?
-    """
+    creation_date = models.DateTimeField(auto_now_add=True)
+    """Date of the redirect."""
 
     item = models.ForeignKey('Item', related_name='transactions', null=False, on_delete=models.CASCADE)
     """The stuff sold by this transaction."""
@@ -218,12 +214,8 @@ class Item(models.Model):
     In a future we may provide an interface for registering new products.
     """
 
-    creation_date = models.DateField(auto_now_add=True)
-    """Date of item creation.
-
-    TODO:
-        Use time with seconds precision?
-    """
+    creation_date = models.DateTimeField(auto_now_add=True)
+    """Date of item creation."""
 
     payment = models.OneToOneField('Payment', null=True, on_delete=models.CASCADE)
     """Payment accomplished for this item or `None`."""
