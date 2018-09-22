@@ -222,7 +222,9 @@ class SimpleTransaction(BaseTransaction):
         base_date = max(datetime.date.today(), parent_item.due_payment_date)
         klass = model_from_ref(prolongitem.payment.transaction.processor.klass)
         # FIXME: advance_parent() does not work
+        print("XX prolong =", prolongitem.prolong)
         parent_item.set_payment_date(klass.offset_date(base_date, prolongitem.prolong))
+        print("YY", base_date, "->", parent_item.due_payment_date)
         parent_item.save()
 
 
