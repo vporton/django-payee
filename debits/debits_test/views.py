@@ -1,5 +1,4 @@
 import datetime
-from django.db.models import F
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, reverse
 from django.utils.translation import ugettext_lazy as _
