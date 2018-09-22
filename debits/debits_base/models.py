@@ -3,7 +3,6 @@ import hmac
 import datetime
 
 import html2text
-from dateutil.relativedelta import relativedelta
 from django.apps import apps
 from django.urls import reverse
 from django.db import models
@@ -17,7 +16,7 @@ from django.utils.translation import ugettext_lazy as _
 from composite_field import CompositeField
 from django.conf import settings
 
-from debits.debits_base.base import logger, Period
+from debits.debits_base.base import logger, Period, period_to_delta
 
 
 class ModelRef(CompositeField):
@@ -67,35 +66,6 @@ class Product(models.Model):
 
     def __str__(self):
         return self.name
-
-
-# The following functions do not work as a method, because
-# CompositeField is replaced with composite_field.base.CompositeField.Proxy:
-
-def period_to_string(period):
-    """Human readable description of a period.
-
-    Args:
-        period: `Period` field.
-
-    Returns:
-        A human readable string.
-
-    TODO:
-        Move to `base.py`.
-    """
-    hash = {e[0]: e[1] for e in Period.period_choices}
-    return "%d %s" % (period.count, hash[period.unit])
-
-
-def period_to_delta(period):
-    """Convert :class:`Period` to :class:`relativedelta`."""
-    return {
-        Period.UNIT_DAYS: lambda: relativedelta(days=period.count),
-        Period.UNIT_WEEKS: lambda: relativedelta(weeks=period.count),
-        Period.UNIT_MONTHS: lambda: relativedelta(months=period.count),
-        Period.UNIT_YEARS: lambda: relativedelta(years=period.count),
-    }[period.unit]()
 
 
 class BaseTransaction(models.Model):
