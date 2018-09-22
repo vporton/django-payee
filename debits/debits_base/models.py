@@ -630,6 +630,7 @@ class Payment(models.Model):
 
     def refund_payment(self):
         """Handles payment refund."""
+        # FIXME: Should reset .paid and/or .payment
         try:
             self.transaction.item.prolongitem.refund_payment()
         except ObjectDoesNotExist:
