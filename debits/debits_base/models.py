@@ -230,7 +230,7 @@ class Item(models.Model):
     """A hacker or misbehavior detected."""
 
     currency = models.CharField(max_length=3, default='USD')
-    """The currenct for which this is sold."""
+    """The currency for which this is sold."""
 
     price = models.DecimalField(max_digits=10, decimal_places=2)
     """Price of the item.
