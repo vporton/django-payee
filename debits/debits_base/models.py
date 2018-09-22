@@ -354,9 +354,10 @@ class SimpleItem(Item):
 
     To sell a non-subscription item, create a subclass of this model, describing your sold good."""
 
-    # FIXME: Consider if remove this in regard of `.payment` field
-    paid = models.BooleanField(default=False)
-    """It was paid by the user."""
+    @property
+    def paid(self):
+        """It was paid by the user (and not refunded)."""
+        return bool(self.payment)
 
     def is_subscription(self):
         return False
@@ -630,7 +631,8 @@ class Payment(models.Model):
 
     def refund_payment(self):
         """Handles payment refund."""
-        # FIXME: Should reset .paid and/or .payment
+        # TODO: Controversial decision to reset payment=None on refund
+        Payment.objects.filter(pk=self.pk).update(payment=None)
         try:
             self.transaction.item.prolongitem.refund_payment()
         except ObjectDoesNotExist:
