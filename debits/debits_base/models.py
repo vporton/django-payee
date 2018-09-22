@@ -300,6 +300,7 @@ class Item(models.Model):
     # TODO: Move to Payment class?
     def send_rendered_email(self, template_name, subject, data):
         """Internal."""
+        email = None
         try:
             email = self.payment.email
             # Item.objects.filter(pk=self.pk).update(email=email)
