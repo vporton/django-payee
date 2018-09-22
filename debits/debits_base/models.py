@@ -201,14 +201,14 @@ class SimpleTransaction(BaseTransaction):
         self.item.simpleitem.save()
         # FIXME: uncomment
         # try:
-        self.advance_parent(self.item.simpleitem.prolongitem)
+        self.advance_parent(self.item.simpleitem.prolongitem, payment)
         # except AttributeError:
         #     pass
         return payment
 
 
     @transaction.atomic
-    def advance_parent(self, prolongitem):
+    def advance_parent(self, prolongitem, payment):
         """Advances the parent transaction on receive of a "prolong" payment.
 
         Args:
@@ -221,11 +221,8 @@ class SimpleTransaction(BaseTransaction):
             pk=prolongitem.parent_id)  # must be inside transaction
         # parent.email = transaction.email
         base_date = max(datetime.date.today(), parent_item.due_payment_date)
-        klass = model_from_ref(prolongitem.payment.transaction.processor.klass)
-        # FIXME: advance_parent() does not work
-        print("XX prolong =", prolongitem.prolong)
+        klass = model_from_ref(payment.transaction.processor.klass)  # prolongitem.payment is None, so use payment instead
         parent_item.set_payment_date(klass.offset_date(base_date, prolongitem.prolong))
-        print("YY", base_date, "->", parent_item.due_payment_date)
         parent_item.save()
 
 
