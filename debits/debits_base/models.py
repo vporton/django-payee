@@ -393,8 +393,9 @@ class SubscriptionItem(Item):
         This should be called after setting non-zero :attr:`trial_period`."""
         if self.trial_period.count != 0:
             self.trial = True
-            klass = model_from_ref(self.payment.transaction.processor.klass)
-            self.set_payment_date(klass.offset_date(datetime.date.today(), self.trial_period))
+            # klass = model_from_ref(self.payment.transaction.processor.klass)  # not yet defined
+            # self.set_payment_date(klass.offset_date(datetime.date.today(), self.trial_period))
+            self.set_payment_date(datetime.date.today() + period_to_delta(self.trial_period))
 
     @django.db.transaction.atomic
     def obtain_active_subscription(self, transaction, ref, email):
