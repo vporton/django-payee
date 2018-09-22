@@ -3,7 +3,7 @@ import json
 import requests
 from dateutil.relativedelta import relativedelta
 
-from debits.debits_base.base import Period
+from debits.debits_base.base import Period, period_to_delta
 
 try:
     from html import escape  # python 3.x
@@ -26,14 +26,9 @@ class PayPalProcessorInfo(models.Model):
     @staticmethod
     def offset_date(date, offset):
         """Used to calculate the next recurring payment date."""
-        delta = {
-            Period.UNIT_DAYS: lambda: relativedelta(days=offset.count),
-            Period.UNIT_WEEKS: lambda: relativedelta(weeks=offset.count),
-            Period.UNIT_MONTHS: lambda: relativedelta(months=offset.count),
-            Period.UNIT_YEARS: lambda: relativedelta(years=offset.count),
-        }[offset.unit]()
+        delta = period_to_delta(offset)
         new_date = date + delta
-        if offset.unit not in (Period.UNIT_DAYS, Period.UNIT_WEEKS) and new_date.day != date.day:
+        if offset.unit in (Period.UNIT_MONTHS, Period.UNIT_YEARS) and new_date.day != date.day:
             new_date += relativedelta(days=1)
         return new_date
 
