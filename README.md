@@ -45,7 +45,8 @@ and example code in `debits/debits_test`.
 
 # Commercial version
 
-This package is available under AGPL (only for free software with published source)
+This package is available under AGPL (you must publish the source of any your
+software which uses this)
 and under a commercial license ($40 currently, for any commercial software).
 
 Pay $40 and you receive the commercial license (for one version of the software).
