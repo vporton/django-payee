@@ -184,11 +184,9 @@ def purchase_view(request):
 def do_unsubscribe(subscription, item):
     try:
         if not subscription:
-            raise CannotCancelSubscription(_("Subscription was already canceled"))
+            raise CannotCancelSubscription(_("Subscription was already canceled."))
         subscription.automaticpayment.force_cancel()
     except CannotCancelSubscription as e:
-        # Without payment=None it may remain in falsely subscribed state without a way to exit
-        SubscriptionItem.objects.filter(pk=item.pk).update(payment=None, subinvoice=F('subinvoice') + 1)
         return HttpResponse(e)
     else:
         return HttpResponse('')  # empty string means success

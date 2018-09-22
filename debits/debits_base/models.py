@@ -627,10 +627,11 @@ class AutomaticPayment(Payment):
             except CannotCancelSubscription:
                 logger.warn("Cannot cancel subscription " + self.subscription_reference)
                 # fallback
-                Item.objects.filter(payment=self.pk).update(payment=None)  # duplicate below
+                Item.objects.filter(payment=self.pk).update(payment=None, subinvoice=F('subinvoice') + 1)  # duplicate below
+                raise
             # transaction.cancel_subscription()  # runs in the callback
         else:
-            Item.objects.filter(payment=self.pk).update(payment=None)  # duplicate above
+            Item.objects.filter(payment=self.pk).update(payment=None, subinvoice=F('subinvoice') + 1)  # duplicate above
 
     # A transaction should have a code that identifies it.
     # code = models.CharField(max_length=255)
