@@ -197,7 +197,6 @@ class SimpleTransaction(BaseTransaction):
         """Handles confirmation of a (non-recurring) payment."""
         payment = SimplePayment.objects.create(transaction=self, email=email)
         self.item.payment = payment
-        self.item.simpleitem.paid = True
         self.item.upgrade_subscription()
         self.item.simpleitem.save()
         try:
