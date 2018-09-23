@@ -318,7 +318,9 @@ class SimpleItem(Item):
 
     @property
     def paid(self):
-        """It was paid by the user (and not refunded)."""
+        """It was paid by the user (and not refunded).
+
+        TODO: Instead use payment states (not paid, paid, refunded)."""
         return bool(self.payment)
 
     def is_subscription(self):
