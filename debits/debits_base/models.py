@@ -285,6 +285,9 @@ class SubscriptionItem(Item):
 class Purchase(models.Model):
     item = models.ForeignKey('Item', null=False, on_delete=models.CASCADE)
 
+    parent = models.ForeignKey('AggregatePurchase', null=True, on_delete=models.SET_NULL, related_name='childs')
+    """This purchase is a part of a composite purchase."""
+
     creation_date = models.DateTimeField(auto_now_add=True)
     """Date of item creation."""
 
@@ -621,11 +624,6 @@ class Payment(models.Model):
     """User's email.
 
     DalPay requires to notify the customer 10 days before every payment."""
-
-    parent = models.ForeignKey('AggregatePayment', null=True, on_delete=models.SET_NULL, related_name='childs')
-    """This payment is a part of a single purchase for several payments.
-    
-    FIXME: Move to another model?"""
 
     def refund_payment(self):
         """Handles payment refund."""
