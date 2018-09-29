@@ -1,6 +1,7 @@
 import abc
 import hmac
 import datetime
+from enum import Enum, auto
 
 import html2text
 from django.apps import apps
@@ -162,6 +163,7 @@ class SimpleTransaction(BaseTransaction):
     def on_accept_regular_payment(self, email):
         """Handles confirmation of a (non-recurring) payment."""
         payment = SimplePayment.objects.create(transaction=self, email=email)
+        self.item.status = SimplePaymentStatus.PAID
         self.item.payment = payment
         self.item.upgrade_subscription()
         self.item.simpleitem.save()
@@ -311,17 +313,35 @@ class Item(models.Model):
             text = html2text.html2text(html)
             send_mail(subject, text, settings.FROM_EMAIL, [email], html_message=html)
 
+
+class SimplePaymentStatus(Enum):
+    NOT_PAID = auto()
+    PAID = auto()
+    REFUNDED = auto()
+
+
 class SimpleItem(Item):
     """Non-subscription item.
 
     To sell a non-subscription item, create a subclass of this model, describing your sold good."""
 
+    status = models.SmallIntegerField(_('Payment status'), default=SimplePaymentStatus.NOT_PAID)  # SimplePaymentStatus
+
     @property
     def paid(self):
-        """It was paid by the user (and not refunded).
+        """It was paid by the user (and not refunded)."""
+        cur = self
+        while True:
+            if cur._paid:
+                return True
+            cur = cur.parent.only('status', 'parent')
+            if not cur:
+                return False
 
-        TODO: Instead use payment states (not paid, paid, refunded)."""
-        return bool(self.payment)
+    @property
+    def _paid(self):
+        """Internal."""
+        return self.status == SimplePaymentStatus.PAID
 
     def is_subscription(self):
         return False
@@ -592,15 +612,20 @@ class Payment(models.Model):
 
     DalPay requires to notify the customer 10 days before every payment."""
 
-    parent = models.ForeignKey('AggregatePayment', null=True, on_delete=models.SET_NULL)
-    """This payment is a part of a single purchase for several payments.
-    
-    FIXME: Make this work."""
+    parent = models.ForeignKey('AggregatePayment', null=True, on_delete=models.SET_NULL, related_name='childs')
+    """This payment is a part of a single purchase for several payments."""
 
     def refund_payment(self):
         """Handles payment refund."""
-        # TODO: Controversial decision to reset payment=None on refund
-        Payment.objects.filter(pk=self.pk).update(payment=None)
+        # Controversial decision to reset payment=None on refund
+        # try:
+        #     SimplePayment.objects.filter(pk=self.pk).update(payment=None, status=SimplePaymentStatus.REFUNDED)
+        # except ObjectDoesNotExist:
+        #     Payment.objects.filter(pk=self.pk).update(payment=None)
+        try:
+            SimplePayment.objects.filter(pk=self.pk).update(status=SimplePaymentStatus.REFUNDED)
+        except ObjectDoesNotExist:
+            pass
         try:
             self.transaction.item.prolongitem.refund_payment()
         except ObjectDoesNotExist:
@@ -644,11 +669,23 @@ class AutomaticPayment(Payment):
     # code = models.CharField(max_length=255)
 
 
-class AggregatePayment(Payment):
+class AggregatePayment(SimplePayment):
     """Several payments in one.
 
     TODO: Not tested!"""
-    pass
+
+    def calc(self):
+        """Update price and shipping to be the sum of all children.
+
+        TODO: Also tax."""
+        price = 0.0
+        shipping = 0.0
+        for child in self.childs.all():
+            price += child.price
+            shipping += child.shipping
+        self.price = price
+        self.shipping = shipping
+        self.save()
 
 
 class CannotCancelSubscription(Exception):
