@@ -35,7 +35,7 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
-            name='Purchase',
+            name='MyPurchase',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('for_organization', models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='for_purchase', to='debits_test.Organization')),
@@ -46,6 +46,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='organization',
             name='purchase',
-            field=models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to='debits_test.Purchase'),
+            field=models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to='debits_test.MyPurchase'),
         ),
     ]

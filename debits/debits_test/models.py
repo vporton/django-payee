@@ -27,7 +27,7 @@ class PricingPlan(models.Model):
         return "<PricingPlan: %s, %s>" % ((("pk=%d" % self.pk) if self.pk else "no pk"), self.__str__())
 
 
-class Purchase(SubscriptionItem):
+class MyPurchase(SubscriptionItem):
     """An example purchase."""
 
     plan = models.ForeignKey(PricingPlan, on_delete=models.CASCADE)
@@ -39,7 +39,7 @@ class Purchase(SubscriptionItem):
     Don't mess :attr:`for_organization` with :attr:`organization`!"""
 
     def __repr__(self):
-        return "<Purchase: %s>" % (("pk=%d" % self.pk) if self.pk else "no pk")
+        return "<MyPurchase: %s>" % (("pk=%d" % self.pk) if self.pk else "no pk")
 
 
 class Organization(models.Model):
@@ -48,8 +48,8 @@ class Organization(models.Model):
     name = models.CharField(max_length=255)
     """Organization name."""
 
-    purchase = models.OneToOneField(Purchase, on_delete=models.CASCADE)
-    """The current active :class:`~debits.debits_test.models.Purchase` for the organization."""
+    purchase = models.OneToOneField(MyPurchase, on_delete=models.CASCADE)
+    """The current active :class:`~debits.debits_test.models.MyPurchase` for the organization."""
 
     def __str__(self):
         return self.name

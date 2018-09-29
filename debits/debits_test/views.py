@@ -2,7 +2,7 @@ import datetime
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, reverse
 from django.utils.translation import ugettext_lazy as _
-from .models import Organization, Purchase, PricingPlan
+from .models import Organization, MyPurchase, PricingPlan
 from .forms import CreateOrganizationForm, SwitchPricingPlanForm
 from .business import create_organization
 from debits.debits_base.base import Period, period_to_string
@@ -111,15 +111,15 @@ def upgrade_calculate_new_period(k, item):
 
 def upgrade_create_new_item(old_purchase, plan, new_period, organization):
     """Create new item used to upgrade another item (:obj:`old_purchase`)."""
-    purchase = Purchase(for_organization=organization,
-                        plan=plan,
-                        product=plan.product,
-                        currency=plan.currency,
-                        price=plan.price,
-                        payment_period_unit=Period.UNIT_MONTHS,
-                        payment_period_count=1,
-                        trial_period_unit=Period.UNIT_DAYS,
-                        trial_period_count=new_period)
+    purchase = MyPurchase(for_organization=organization,
+                          plan=plan,
+                          product=plan.product,
+                          currency=plan.currency,
+                          price=plan.price,
+                          payment_period_unit=Period.UNIT_MONTHS,
+                          payment_period_count=1,
+                          trial_period_unit=Period.UNIT_DAYS,
+                          trial_period_count=new_period)
     purchase.set_payment_date(datetime.date.today() + datetime.timedelta(days=new_period))
     if old_purchase.payment:
         purchase.old_subscription = old_purchase.payment.automaticpayment
@@ -162,15 +162,15 @@ def purchase_view(request):
         due_date = purchase.due_payment_date
         if due_date < datetime.date.today():
             due_date = datetime.date.today()
-        new_purchase = Purchase(for_organization=organization,
-                                plan=purchase.plan,
-                                product=purchase.plan.product,
-                                currency=purchase.plan.currency,
-                                price=purchase.plan.price,
-                                payment_period_unit=Period.UNIT_MONTHS,
-                                payment_period_count=1,
-                                trial_period_unit=Period.UNIT_DAYS,
-                                trial_period_count=(due_date - datetime.date.today()).days)
+        new_purchase = MyPurchase(for_organization=organization,
+                                  plan=purchase.plan,
+                                  product=purchase.plan.product,
+                                  currency=purchase.plan.currency,
+                                  price=purchase.plan.price,
+                                  payment_period_unit=Period.UNIT_MONTHS,
+                                  payment_period_count=1,
+                                  trial_period_unit=Period.UNIT_DAYS,
+                                  trial_period_count=(due_date - datetime.date.today()).days)
         new_purchase.set_payment_date(due_date)
         new_purchase.save()
         return do_subscribe(hash, form, processor, new_purchase)

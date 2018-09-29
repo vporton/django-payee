@@ -19,7 +19,7 @@ class MyPayPalIPN(PayPalIPN):
             self.do_purchase(item)
 
     def do_purchase(self, item):
-        """Set the :class:`~debits.debits_test.models.Purchase` for an :class:`~debits.debits_test.models.Organization`."""
+        """Set the :class:`~debits.debits_test.models.MyPurchase` for an :class:`~debits.debits_test.models.Organization`."""
         organization = item.subscriptionitem.purchase.for_organization
         if organization is not None:
             organization.purchase = item.subscriptionitem.purchase
