@@ -587,8 +587,7 @@ class SubscriptionPurchase(Purchase):
     #         return None
 
 
-# FIXME: Item or Purchase?
-class ProlongItem(SimpleItem):
+class ProlongPurchase(SimplePurchase):
     """Prolong :attr:`parent` item.
 
     This is meant to be a one-time payment which prolongs a manual subscription item."""
