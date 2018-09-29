@@ -310,7 +310,7 @@ class Purchase(models.Model):
     * 2 - at due payment sent
     * 3 - day before deadline sent
 
-    TODO: Move to :class:`SubscriptionItem`?"""
+    TODO: Move to :class:`SubscriptionPurchase`?"""
 
     old_subscription = models.ForeignKey('AutomaticPayment', null=True, related_name='new_subscription',
                                          on_delete=models.CASCADE)
