@@ -716,6 +716,6 @@ class CannotCancelSubscription(Exception):
     pass
 
 
-class CannotRefundSubscription(Exception):
-    """Refunding subscription failed."""
+class CannotRefund(Exception):
+    """Refunding payment failed."""
     pass

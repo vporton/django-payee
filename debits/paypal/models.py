@@ -80,7 +80,7 @@ class PayPalAPI(object):
                               headers = {'content-type': 'application/json'})
         if r.status_code < 200 or r.status_code >= 300:  # PayPal returns 204, to be sure
             # Don't include secret information into the message
-            raise CannotRefundSubscription(r.json()["message"])
+            raise CannotRefund(r.json()["message"])
             # raise RuntimeError(_("Cannot cancel a billing agreement at PayPal. Please contact support:\n" + r.json()["message"]))
 
 
