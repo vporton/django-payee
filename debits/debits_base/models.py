@@ -669,7 +669,7 @@ class AutomaticPayment(Payment):
     # code = models.CharField(max_length=255)
 
 
-class AggregatePayment(SimplePayment):
+class AggregateItem(SimpleItem):
     """Several payments in one.
 
     TODO: Not tested!"""
