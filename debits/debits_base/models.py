@@ -592,6 +592,11 @@ class Payment(models.Model):
 
     DalPay requires to notify the customer 10 days before every payment."""
 
+    parent = models.ForeignKey('AggregatePayment', null=True, on_delete=models.SET_NULL)
+    """This payment is a part of a single purchase for several payments.
+    
+    FIXME: Make this work."""
+
     def refund_payment(self):
         """Handles payment refund."""
         # TODO: Controversial decision to reset payment=None on refund
@@ -637,6 +642,13 @@ class AutomaticPayment(Payment):
 
     # A transaction should have a code that identifies it.
     # code = models.CharField(max_length=255)
+
+
+class AggregatePayment(Payment):
+    """Several payments in one.
+
+    TODO: Not tested!"""
+    pass
 
 
 class CannotCancelSubscription(Exception):
