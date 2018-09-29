@@ -625,7 +625,7 @@ class Payment(models.Model):
     parent = models.ForeignKey('AggregatePayment', null=True, on_delete=models.SET_NULL, related_name='childs')
     """This payment is a part of a single purchase for several payments.
     
-    FIXME"""
+    FIXME: Move to another model?"""
 
     def refund_payment(self):
         """Handles payment refund."""
