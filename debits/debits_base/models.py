@@ -622,8 +622,10 @@ class Payment(models.Model):
 
     DalPay requires to notify the customer 10 days before every payment."""
 
-    parent = models.ForeignKey('AggregatePayment', null=True, on_delete=models.SET_NULL, related_name='childs')
-    """This payment is a part of a single purchase for several payments."""
+    parent = models.ForeignKey('SimplePayment', null=True, on_delete=models.SET_NULL, related_name='childs')
+    """This payment is a part of a single purchase for several payments.
+    
+    FIXME"""
 
     def refund_payment(self):
         """Handles payment refund."""
@@ -685,9 +687,7 @@ class AggregateItem(SimpleItem):
     TODO: Not tested!"""
 
     def calc(self):
-        """Update price and shipping to be the sum of all children.
-
-        TODO: Also tax."""
+        """Update price and shipping to be the sum of all children."""
         price = 0.0
         shipping = 0.0
         for child in self.childs.all():
@@ -696,6 +696,19 @@ class AggregateItem(SimpleItem):
         self.price = price
         self.shipping = shipping
         self.save()
+
+
+class AggregatePurchase(SimplePurchase):
+    """Several payments in one.
+
+    TODO: Not tested!"""
+
+    def calc(self):
+        """Update price and shipping to be the sum of all children.
+
+        TODO: Also tax."""
+        self.item.simpleitem.aggregateitem.calc()
+        pass  # FIXME
 
 
 class CannotCancelSubscription(Exception):
