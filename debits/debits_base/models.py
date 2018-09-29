@@ -258,6 +258,104 @@ class SimpleItem(Item):
 
     To sell a non-subscription item, create a subclass of this model, describing your sold good."""
 
+    def is_subscription(self):
+        return False
+
+
+class SubscriptionItem(Item):
+    """Subscription (recurring) item.
+
+    To sell a subscription item, create a subclass of this model, describing your sold service."""
+
+    grace_period = Period(unit=Period.UNIT_DAYS, count=20)
+    """How much :attr:`payment_deadline` is above :attr:`due_payment_data`."""
+
+    payment_period = Period(unit=Period.UNIT_MONTHS, count=1)
+    """How often to pay (for automatic recurring payments)."""
+
+    trial_period = Period(unit=Period.UNIT_MONTHS, count=0)
+    """Trial period.
+    
+    It may be zero."""
+
+    def is_subscription(self):
+        return True
+
+
+class Purchase(models.Model):
+    item = models.ForeignKey('Item', null=False, on_delete=models.CASCADE)
+
+    creation_date = models.DateTimeField(auto_now_add=True)
+    """Date of item creation."""
+
+    payment = models.OneToOneField('Payment', null=True, on_delete=models.CASCADE)
+    """Payment accomplished for this item or `None`."""
+
+    blocked = models.BooleanField(default=False)
+    """A hacker or misbehavior detected."""
+
+    gratis = models.BooleanField(default=False)
+    """Provide a product or service for free."""
+
+    # code = models.CharField(max_length=255) # TODO
+
+    reminders_sent = models.SmallIntegerField(default=0, db_index=True)
+    """Email (or SMS, etc.) payment reminders sent state.
+
+    * 0 - no reminder sent
+    * 1 - before due payment sent
+    * 2 - at due payment sent
+    * 3 - day before deadline sent
+
+    TODO: Move to :class:`SubscriptionItem`?"""
+
+    old_subscription = models.ForeignKey('AutomaticPayment', null=True, related_name='new_subscription',
+                                         on_delete=models.CASCADE)
+    """We remove old_subscription (if not `None`) automatically when new subscription is created.
+
+    The new payment may be either one-time (:class:`SimpleItem` (usually :class:`ProlongItem`))
+    or subscription (:class:`SubscriptionItem`)."""
+
+    def __repr__(self):
+        return "<Purcahse pk=%d, %s>" % (self.pk, self.item.product.name)
+
+    @transaction.atomic
+    def upgrade_subscription(self):
+        """Internal.
+
+        It cancels the old subscription (if any).
+
+        It can be called from both subscription IPN and payment IPN, so prepare to handle it two times."""
+        if self.old_subscription:
+            self.do_upgrade_subscription()
+
+    def do_upgrade_subscription(self):
+        """Internal.
+
+        TODO: Remove ALL old subscriptions as in payment_system2."""
+        try:
+            self.old_subscription.force_cancel(is_upgrade=True)
+        except CannotCancelSubscription:
+            pass
+        # self.on_upgrade_subscription(transaction, item.old_subscription)  # TODO: Needed?
+        Item.objects.filter(pk=self.pk).update(old_subscription=None)
+
+    # TODO: Move to Payment class?
+    def send_rendered_email(self, template_name, subject, data):
+        """Internal."""
+        email = None
+        try:
+            email = self.payment.email
+            # Item.objects.filter(pk=self.pk).update(email=email)
+        except AttributeError:  # no .payment
+            return
+        if email is not None:
+            html = render_to_string(template_name, data, request=None, using=None)
+            text = html2text.html2text(html)
+            send_mail(subject, text, settings.FROM_EMAIL, [email], html_message=html)
+
+
+class SimplePurchase(Purchase):
     status = models.SmallIntegerField(_('Payment status'), default=SimplePaymentStatus.NOT_PAID)  # SimplePaymentStatus
 
     @property
@@ -276,47 +374,26 @@ class SimpleItem(Item):
         """Internal."""
         return self.status == SimplePaymentStatus.PAID
 
-    def is_subscription(self):
-        return False
-
     def is_paid(self):
         return (self.paid or self.gratis) and not self.blocked
     """If to consider the item paid (or gratis) but not blocked."""
 
 
-class SubscriptionItem(Item):
-    """Subscription (recurring) item.
-
-    To sell a subscription item, create a subclass of this model, describing your sold service."""
-
+class SubscriptionPurchase(Purchase):
     due_payment_date = models.DateField(default=datetime.date.today, db_index=True)
     """The reference payment date."""
 
     payment_deadline = models.DateField(null=True, db_index=True)  # may include "grace period"
     """The dealine payment date.
-    
+
     After it is reached, the item is considered inactive."""
 
     trial = models.BooleanField(default=False, db_index=True)
     """Now in trial period."""
 
-    grace_period = Period(unit=Period.UNIT_DAYS, count=20)
-    """How much :attr:`payment_deadline` is above :attr:`due_payment_data`."""
-
-    payment_period = Period(unit=Period.UNIT_MONTHS, count=1)
-    """How often to pay (for automatic recurring payments)."""
-
-    trial_period = Period(unit=Period.UNIT_MONTHS, count=0)
-    """Trial period.
-    
-    It may be zero."""
-
     # https://bitbucket.org/arcamens/django-payments/wiki/Invoice%20IDs
     subinvoice = models.PositiveIntegerField(default=1)  # no need for index, as it is used only at PayPal side
     """Internal."""
-
-    def is_subscription(self):
-        return True
 
     def is_active(self):
         """Is the item active (paid on time and not blocked).
@@ -507,79 +584,7 @@ class SubscriptionItem(Item):
     #         return None
 
 
-class Purchase(models.Model):
-    item = models.ForeignKey('Item', null=False, on_delete=models.CASCADE)
-
-    creation_date = models.DateTimeField(auto_now_add=True)
-    """Date of item creation."""
-
-    payment = models.OneToOneField('Payment', null=True, on_delete=models.CASCADE)
-    """Payment accomplished for this item or `None`."""
-
-    blocked = models.BooleanField(default=False)
-    """A hacker or misbehavior detected."""
-
-    gratis = models.BooleanField(default=False)
-    """Provide a product or service for free."""
-
-    # code = models.CharField(max_length=255) # TODO
-
-    reminders_sent = models.SmallIntegerField(default=0, db_index=True)
-    """Email (or SMS, etc.) payment reminders sent state.
-
-    * 0 - no reminder sent
-    * 1 - before due payment sent
-    * 2 - at due payment sent
-    * 3 - day before deadline sent
-
-    TODO: Move to :class:`SubscriptionItem`?"""
-
-    old_subscription = models.ForeignKey('AutomaticPayment', null=True, related_name='new_subscription',
-                                         on_delete=models.CASCADE)
-    """We remove old_subscription (if not `None`) automatically when new subscription is created.
-
-    The new payment may be either one-time (:class:`SimpleItem` (usually :class:`ProlongItem`))
-    or subscription (:class:`SubscriptionItem`)."""
-
-    def __repr__(self):
-        return "<Purcahse pk=%d, %s>" % (self.pk, self.item.product.name)
-
-    @transaction.atomic
-    def upgrade_subscription(self):
-        """Internal.
-
-        It cancels the old subscription (if any).
-
-        It can be called from both subscription IPN and payment IPN, so prepare to handle it two times."""
-        if self.old_subscription:
-            self.do_upgrade_subscription()
-
-    def do_upgrade_subscription(self):
-        """Internal.
-
-        TODO: Remove ALL old subscriptions as in payment_system2."""
-        try:
-            self.old_subscription.force_cancel(is_upgrade=True)
-        except CannotCancelSubscription:
-            pass
-        # self.on_upgrade_subscription(transaction, item.old_subscription)  # TODO: Needed?
-        Item.objects.filter(pk=self.pk).update(old_subscription=None)
-
-    # TODO: Move to Payment class?
-    def send_rendered_email(self, template_name, subject, data):
-        """Internal."""
-        email = None
-        try:
-            email = self.payment.email
-            # Item.objects.filter(pk=self.pk).update(email=email)
-        except AttributeError:  # no .payment
-            return
-        if email is not None:
-            html = render_to_string(template_name, data, request=None, using=None)
-            text = html2text.html2text(html)
-            send_mail(subject, text, settings.FROM_EMAIL, [email], html_message=html)
-
-
+# FIXME: Item or Purchase?
 class ProlongItem(SimpleItem):
     """Prolong :attr:`parent` item.
 
