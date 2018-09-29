@@ -590,7 +590,6 @@ class ProlongItem(SimpleItem):
 
     This is meant to be a one-time payment which prolongs a manual subscription item."""
 
-    # item = models.OneToOneField('SimpleItem', related_name='prolongitem', parent_link=True)
     parent = models.ForeignKey('SubscriptionItem', related_name='child', parent_link=False, on_delete=models.CASCADE)
     """Which subscription item to prolong."""
 
