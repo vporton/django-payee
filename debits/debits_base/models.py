@@ -622,7 +622,7 @@ class Payment(models.Model):
 
     DalPay requires to notify the customer 10 days before every payment."""
 
-    parent = models.ForeignKey('SimplePayment', null=True, on_delete=models.SET_NULL, related_name='childs')
+    parent = models.ForeignKey('AggregatePayment', null=True, on_delete=models.SET_NULL, related_name='childs')
     """This payment is a part of a single purchase for several payments.
     
     FIXME"""
