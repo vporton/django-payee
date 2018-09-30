@@ -397,6 +397,9 @@ class SubscriptionPurchase(Purchase):
     subinvoice = models.PositiveIntegerField(default=1)  # no need for index, as it is used only at PayPal side
     """Internal."""
 
+    subscribed = models.BooleanField(default=False)
+    """Is in automatic (not manual) recurring mode."""
+
     def is_active(self):
         """Is the item active (paid on time and not blocked).
 
@@ -442,13 +445,14 @@ class SubscriptionPurchase(Purchase):
         else:
             payment = AutomaticPayment.objects.create(transaction=transaction, subscription_reference=ref, email=email)
         self.payment = payment
+        self.subscribed = True
         self.save()
         return payment
 
     def cancel_subscription(self):
         """Called when we detect that the subscription was canceled."""
         # atomic operation
-        SubscriptionPurchase.objects.filter(pk=self.pk).update(payment=None, subinvoice=F('subinvoice') + 1)
+        SubscriptionPurchase.objects.filter(pk=self.pk).update(payment=None, subscribed=False, subinvoice=F('subinvoice') + 1)
         if not self.old_subscription:  # don't send this email on plan upgrade
             self.cancel_subscription_email()
 
