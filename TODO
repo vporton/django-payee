@@ -5,3 +5,5 @@ and currencies may change in the middle.
 
 For PayPal Checkout, we should split BaseTransaction into billing plan and billing
 agreement models.
+
+Don't wait for IPN to terminate subscription.
