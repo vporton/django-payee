@@ -146,6 +146,9 @@ def do_upgrade(hash, form, processor, purchase, organization):
 
     purchase = upgrade_create_new_item(purchase, plan, new_period, organization)
 
+    print('purchase.payment', purchase.payment)  # FIXME: remove
+    import sys
+    sys.exit()
     if not purchase.payment:
         # Simply create a new purchase which can be paid later
         organization.purchase = purchase
