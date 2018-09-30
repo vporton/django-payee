@@ -439,6 +439,7 @@ class SubscriptionPurchase(Purchase):
         """Internal.
 
         "Competes" with :meth:`on_accept_regular_payment`."""
+        # FIXME: when subscription created, a payment does not necessarily exist
         payments = list(AutomaticPayment.objects.filter(transaction__processor=transaction.processor, subscription_reference=ref))
         if payments:
             payment = payments[0]
