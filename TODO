@@ -1,6 +1,6 @@
 FIXME:
 pk_from_custom() fails by the following steps:
-1. Create new organization with Item 1.
+1. Create new organization with Item 1 without trial. Wait for both IPNs.
 2. Subscribe it to PayPal.
 3. Switch to Item 2.
 
