@@ -1,7 +1,7 @@
 import abc
 import hmac
 import datetime
-from enum import Enum, auto
+from enum import Enum
 
 import html2text
 from django.apps import apps
@@ -243,9 +243,9 @@ class Item(models.Model):
 
 
 class SimplePaymentStatus(Enum):
-    NOT_PAID = auto()
-    PAID = auto()
-    REFUNDED = auto()
+    NOT_PAID = 1
+    PAID = 2
+    REFUNDED = 3
 
 
 class SimpleItem(Item):
