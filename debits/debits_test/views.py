@@ -192,9 +192,7 @@ def purchase_view(request):
 # TODO: purchase argument is not used
 def do_unsubscribe(subscription, purchase):
     try:
-        if not subscription:
-            raise CannotCancelSubscription(_("Subscription was already canceled."))
-        subscription.automaticpayment.force_cancel()
+        purchase.force_cancel()
     except CannotCancelSubscription as e:
         return HttpResponse(e)
     else:
@@ -206,7 +204,7 @@ def unsubscribe_organization_view(request, organization_pk):
     organization_pk = int(organization_pk)  # in real code should use user login information
     organization = Organization.objects.get(pk=organization_pk)
     purchase = organization.purchase.subscriptionpurchase
-    return do_unsubscribe(purchase.payment, purchase)
+    return do_unsubscribe(purchase)
     # return HttpResponseRedirect(reverse('organization-prolong-payment', args=[organization.pk]))
 
 
