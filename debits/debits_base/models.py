@@ -677,6 +677,9 @@ class SimplePayment(Payment):
 class AutomaticPayment(Payment):
     """Automatic (recurring) payment."""
 
+    processor = models.ForeignKey(PaymentProcessor, on_delete=models.CASCADE)
+    """Payment processor."""
+
     subscription_reference = models.CharField(max_length=255, null=True)
     """As `recurring_payment_id` in PayPal.
 
