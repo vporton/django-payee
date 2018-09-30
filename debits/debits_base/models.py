@@ -230,11 +230,6 @@ class Item(models.Model):
     
     For recurring payment it is the amount of one payment."""
 
-    shipping = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    """Price of shipping.
-    
-    Remain zero if doubt."""
-
     def __repr__(self):
         return "<Item pk=%d, %s>" % (self.pk, self.product.name)
 
@@ -299,6 +294,11 @@ class Purchase(models.Model):
 
     gratis = models.BooleanField(default=False)
     """Provide a product or service for free."""
+
+    shipping = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    """Price of shipping.
+
+    Remain zero if doubt."""
 
     # code = models.CharField(max_length=255) # TODO
 
