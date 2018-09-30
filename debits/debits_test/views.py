@@ -144,12 +144,11 @@ def do_upgrade(hash, form, processor, purchase, organization):
     k = plan.price / purchase.item.price  # price multiplies
     new_period = upgrade_calculate_new_period(k, purchase)
 
-    purchase = upgrade_create_new_item(purchase, plan, new_period, organization)
+    new_purchase = upgrade_create_new_item(purchase, plan, new_period, organization)
 
-    print('purchase.subscribed', purchase.subscribed)
     if not purchase.subscribed:
         # Simply create a new purchase which can be paid later
-        organization.purchase = purchase
+        organization.purchase = new_purchase
         organization.save()
         return HttpResponseRedirect(reverse('organization-prolong-payment', args=[organization.pk]))
     else:
