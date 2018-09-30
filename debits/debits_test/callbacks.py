@@ -22,5 +22,5 @@ class MyPayPalIPN(PayPalIPN):
         """Set the :class:`~debits.debits_test.models.MyPurchase` for an :class:`~debits.debits_test.models.Organization`."""
         organization = purchase.item.subscriptionitem.purchase.for_organization
         if organization is not None:
-            organization.purchase = purchase.subscriptionitem.purchase
+            organization.purchase = purchase.item.subscriptionitem.purchase
             organization.save()
