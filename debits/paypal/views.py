@@ -180,7 +180,7 @@ class PayPalIPN(PaymentCallback, View):
         if Decimal(POST['mc_gross']) == transaction.purchase.item.price and \
                         Decimal(POST['shipping']) == transaction.purchase.shipping and \
                         POST['mc_currency'] == transaction.purchase.item.currency:
-            if self.auto_refund(transaction, transaction.purchase.prolongpurchase.prolonged, POST):
+            if self.auto_refund(transaction, transaction.purchase.simplepurchase.prolongpurchase.prolonged, POST):
                 return HttpResponse('')
             payment = transaction.on_accept_regular_payment(POST['payer_email'])
             self.on_payment(payment)
