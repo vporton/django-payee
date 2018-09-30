@@ -252,7 +252,7 @@ class PayPalIPN(PaymentCallback, View):
 
     def do_subscription_or_recurring_created(self, transaction, POST, ref):
         purchase = transaction.purchase.subscriptionpurchase
-        subscription = purchase.obtain_active_subscription(transaction, ref, POST['payer_email'])
+        subscription = purchase.obtain_active_subscription(transaction, ref, POST['payer_email'])  # FIXME: obtain_active_subscription() return value?
         # transaction.processor = PaymentProcessor.objects.get(pk=PAYMENT_PROCESSOR_PAYPAL)
         purchase.trial = False
         purchase.save()  # FIXME: Overwrites purchase.subscribed # TODO: Don't save() also in obtain_active_subscription()
