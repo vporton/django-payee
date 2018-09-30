@@ -15,5 +15,5 @@ class MyPayPalForm(PayPalForm):
     def product_name(self, purchase):
         """What "product" PayPal shows for the purchase."""
         if isinstance(purchase, ProlongPurchase):
-            purchase = purchase.parent
+            purchase = purchase.prolonged
         return purchase.item.product.name + ': ' + purchase.mypurchase.plan.name
