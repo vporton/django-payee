@@ -83,7 +83,7 @@ class BaseTransaction(models.Model):
     creation_date = models.DateTimeField(auto_now_add=True)
     """Date of the redirect."""
 
-    item = models.ForeignKey('Item', related_name='transactions', null=False, on_delete=models.CASCADE)
+    purchase = models.ForeignKey('Purchase', related_name='transactions', null=False, on_delete=models.CASCADE)
     """The stuff sold by this transaction."""
 
     def __repr__(self):
@@ -134,12 +134,12 @@ class BaseTransaction(models.Model):
         Used internally to prevent more than one payment for the same transaction."""
         pass
 
-    def invoiced_item(self):
+    def invoiced_purchase(self):
         """Internal."""
         try:
-            return self.item.old_subscription.transaction.item
+            return self.purchase.old_subscription.transaction.purchase
         except AttributeError:  # ObjectDoesNotExist
-            return self.item
+            return self.purchase
 
     @abc.abstractmethod
     def subinvoice(self):
@@ -197,7 +197,7 @@ class SubscriptionTransaction(BaseTransaction):
     """A transaction for a subscription service."""
 
     def subinvoice(self):
-        return self.invoiced_item().subscriptionitem.subinvoice
+        return self.invoiced_purchase().subscriptionitem.subinvoice
 
     def invoice_id(self):
         if self.purchase.old_subscription:
@@ -636,7 +636,7 @@ class Payment(models.Model):
         except ObjectDoesNotExist:
             pass
         try:
-            self.transaction.item.prolongitem.refund_payment()
+            self.transaction.purchase.prolongpurchase.refund_payment()
         except ObjectDoesNotExist:
             pass
 

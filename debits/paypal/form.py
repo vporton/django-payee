@@ -28,10 +28,10 @@ class PayPalForm(BasePaymentProcessor):
         cart = hash.pop('arcamens_cart', False)  # TODO: check if it is an AggregatePurchase (hasattr)
 
         items = self.init_items(transaction)
-        if transaction.item.is_subscription():
-            self.make_subscription(items, transaction, transaction.item)
+        if transaction.purchase.item.is_subscription():
+            self.make_subscription(items, transaction, transaction.purchase)
         else:
-            self.make_regular(items, transaction, transaction.item, cart)
+            self.make_regular(items, transaction, transaction.purchase, cart)
 
         items.update(hash)
         items['bn'] = 'Arcamens_SP_EC'  # we don't want this token be changed without changing the code
@@ -42,7 +42,7 @@ class PayPalForm(BasePaymentProcessor):
         url = 'https://www.sandbox.paypal.com' if debug else 'https://www.paypal.com'
         return {'business': settings.PAYPAL_ID,
                 'arcamens_action': url + "/cgi-bin/webscr",
-                'cmd': "_xclick-subscriptions" if transaction.item.is_subscription() else "_xclick",
+                'cmd': "_xclick-subscriptions" if transaction.purchase.item.is_subscription() else "_xclick",
                 'notify_url': self.ipn_url(),
                 'custom': BaseTransaction.custom_from_pk(transaction.pk),
                 'invoice': transaction.invoice_id()}
