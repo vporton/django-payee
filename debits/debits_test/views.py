@@ -86,7 +86,7 @@ def get_processor(request, hash):
 
 def do_subscribe(hash, form, processor, purchase):
     """Start subscription to our subscription purchase."""
-    transaction = SubscriptionTransaction.objects.create(processor=processor, item=purchase.item.subscriptionitem)
+    transaction = SubscriptionTransaction.objects.create(processor=processor, purchase=purchase)
     return form.make_purchase_from_form(hash, transaction)
 
 
