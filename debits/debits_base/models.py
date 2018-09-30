@@ -351,7 +351,8 @@ class Purchase(models.Model):
             except CannotCancelSubscription:
                 logger.warn("Cannot cancel subscription " + self.subscription_reference)
                 # fallback
-                SubscriptionItem.objects.filter(payment=self.pk).update(payment=None, subinvoice=F('subinvoice') + 1)
+                SubscriptionItem.objects.filter(payment=self.pk).update(
+                    payment=None, subscription_reference=None, subinvoice=F('subinvoice') + 1)
                 raise
             # transaction.cancel_subscription()  # runs in the callback
         else:
