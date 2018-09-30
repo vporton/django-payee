@@ -444,6 +444,7 @@ class SubscriptionPurchase(Purchase):
             payment = AutomaticPayment.objects.create(transaction=transaction, subscription_reference=ref, email=email)
         self.payment = payment
         self.save()
+        print('obtain_active_subscription: self.payment', self.payment)
         return payment
 
     def cancel_subscription(self):
