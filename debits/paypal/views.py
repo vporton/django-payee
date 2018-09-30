@@ -253,9 +253,9 @@ class PayPalIPN(PaymentCallback, View):
         subscription = purchase.obtain_active_subscription(transaction, ref, POST['payer_email'])
         # transaction.processor = PaymentProcessor.objects.get(pk=PAYMENT_PROCESSOR_PAYPAL)
         purchase.trial = False
-        purchase.save()  # TODO: Don't save() also in obtain_active_subscription()
+        purchase.save()  # FIXME: Overwrites purchase.subscribed # TODO: Don't save() also in obtain_active_subscription()
         purchase.upgrade_subscription()
-        self.on_subscription_created(POST, subscription)
+        self.on_subscription_created(POST, subscription)  # FIXME: subscription vs payment
 
     def accept_subscription_signup(self, POST, transaction_id):
         try:
