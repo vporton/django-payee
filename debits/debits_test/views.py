@@ -190,7 +190,7 @@ def purchase_view(request):
 
 
 # TODO: purchase argument is not used
-def do_unsubscribe(subscription, purchase):
+def do_unsubscribe(purchase):
     try:
         purchase.force_cancel()
     except CannotCancelSubscription as e:
