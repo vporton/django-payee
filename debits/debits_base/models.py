@@ -200,7 +200,7 @@ class SubscriptionTransaction(BaseTransaction):
         return self.invoiced_item().subscriptionitem.subinvoice
 
     def invoice_id(self):
-        if self.item.old_subscription:
+        if self.purchase.old_subscription:
             return settings.PAYMENTS_REALM + ' %d-%d-u' % (self.item.pk, self.subinvoice())
         else:
             return settings.PAYMENTS_REALM + ' %d-%d' % (self.item.pk, self.subinvoice())
