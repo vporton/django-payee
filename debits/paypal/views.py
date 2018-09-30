@@ -10,7 +10,8 @@ from django.views.decorators.csrf import csrf_exempt
 
 from debits.debits_base.processors import PaymentCallback
 from debits.debits_base.base import logger
-from debits.debits_base.models import BaseTransaction, SimpleTransaction, SubscriptionTransaction, AutomaticPayment
+from debits.debits_base.models import BaseTransaction, SimpleTransaction, SubscriptionTransaction, AutomaticPayment, \
+    SubscriptionPurchase
 from debits.debits_base.base import Period
 from django.conf import settings
 
@@ -220,8 +221,8 @@ class PayPalIPN(PaymentCallback, View):
         payment = AutomaticPayment.objects.create(transaction=transaction,
                                                   email=POST['payer_email'],
                                                   subscription_reference=ref)
-        # FIXME: Set purchase.payment
-        self.do_subscription_or_recurring_payment(purchase.subscriptionpurchase)  # FIXME: save() conflict?
+        purchase.payment = payment
+        self.do_subscription_or_recurring_payment(purchase.subscriptionpurchase)  # calls save()
         self.on_payment(transaction.payment.automaticpayment)
 
     def do_accept_subscription_payment(self, POST, transaction_id):
@@ -252,10 +253,9 @@ class PayPalIPN(PaymentCallback, View):
 
     def do_subscription_or_recurring_created(self, transaction, POST, ref):
         purchase = transaction.purchase.subscriptionpurchase
-        purchase.activate_subscription(ref, POST['payer_email'])  # FIXME: activate_subscription() return value?
+        purchase.activate_subscription(ref, POST['payer_email'])
         # transaction.processor = PaymentProcessor.objects.get(pk=PAYMENT_PROCESSOR_PAYPAL)
-        purchase.trial = False
-        purchase.save()  # FIXME: Overwrites purchase.subscribed # TODO: Don't save() also in activate_subscription()
+        SubscriptionPurchase.objects.filter(pk=purchase.pk).update(subscribed=True, trial=False)
         purchase.upgrade_subscription()
         self.on_subscription_created(POST, purchase)
 

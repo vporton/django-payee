@@ -451,7 +451,8 @@ class SubscriptionPurchase(Purchase):
     def cancel_subscription(self):
         """Called when we detect that the subscription was canceled."""
         # atomic operation
-        SubscriptionPurchase.objects.filter(pk=self.pk).update(payment=None, subscribed=False, subinvoice=F('subinvoice') + 1)
+        SubscriptionPurchase.objects.filter(pk=self.pk).update(
+            payment=None, subscription_reference=None, subscribed=False, subinvoice=F('subinvoice') + 1)
         if not self.old_subscription:  # don't send this email on plan upgrade
             self.cancel_subscription_email()
 
