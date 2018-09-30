@@ -42,7 +42,7 @@ def do_organization_payment_view(request, purchase, organization):
                    'active': purchase.is_active(),
                    'blocked': purchase.blocked,
                    'manual_mode': not purchase.subscribed,
-                   'processor_name': purchase.purchase.transaction.processor.name if purchase.purchase.transaction else None,
+                   'processor_name': purchase.basetransaction.processor.name if purchase.basetransaction else None,
                    # only for automatic recurring payment
                    'plan': purchase.plan.name,
                    'trial': purchase.trial,
