@@ -6,7 +6,7 @@ from .models import Organization, MyPurchase, PricingPlan
 from .forms import CreateOrganizationForm, SwitchPricingPlanForm
 from .business import create_organization
 from debits.debits_base.base import Period, period_to_string
-from debits.debits_base.models import SimpleTransaction, SubscriptionTransaction, ProlongItem, SubscriptionItem, logger, \
+from debits.debits_base.models import SimpleTransaction, SubscriptionTransaction, ProlongPurchase, SubscriptionItem, logger, \
     CannotCancelSubscription, ProlongPurchase, SimpleItem
 import debits
 from .processors import MyPayPalForm
