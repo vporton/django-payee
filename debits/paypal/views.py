@@ -287,7 +287,7 @@ class PayPalIPN(PaymentCallback, View):
         try:
             transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
             if 'period1' not in POST and 'period2' not in POST and \
-                            Decimal(POST['mc_amount3']) == transaction.purchase.item.price + transaction.item.shipping and \
+                            Decimal(POST['mc_amount3']) == transaction.purchase.item.price + transaction.purchase.shipping and \
                             POST['mc_currency'] == transaction.purchase.item.currency and \
                             POST['period3'] in self.pp_payment_cycles(transaction):
                 self.do_subscription_or_recurring_created(transaction, POST, POST['recurring_payment_id'])
