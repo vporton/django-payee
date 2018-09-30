@@ -155,7 +155,7 @@ class SimpleTransaction(BaseTransaction):
         return 1
 
     def invoice_id(self):
-        return settings.PAYMENTS_REALM + ' p-%d' % (self.item.pk,)
+        return settings.PAYMENTS_REALM + ' p-%d' % (self.purchase.pk,)
 
     # Make transaction atomic to be sure that simpleitem.save() and advance_parent() do together
     @transaction.atomic
