@@ -217,9 +217,11 @@ class PayPalIPN(PaymentCallback, View):
             return HttpResponse('')
         purchase.subscriptionpurchase.obtain_active_subscription(transaction, ref, POST['payer_email'])
         # This is already done in obtain_active_subscription():
-        # payment = AutomaticPayment.objects.create(transaction=transaction,
-        #                                           email=POST['payer_email'])
-        self.do_subscription_or_recurring_payment(purchase.subscriptionpurchase)
+        payment = AutomaticPayment.objects.create(transaction=transaction,
+                                                  email=POST['payer_email'],
+                                                  subscription_reference=ref)
+        # FIXME: Set purchase.payment
+        self.do_subscription_or_recurring_payment(purchase.subscriptionpurchase)  # FIXME: save() conflict?
         self.on_payment(transaction.payment.automaticpayment)
 
     def do_accept_subscription_payment(self, POST, transaction_id):

@@ -398,7 +398,9 @@ class SubscriptionPurchase(Purchase):
     """Internal."""
 
     subscribed = models.BooleanField(default=False)
-    """Is in automatic (not manual) recurring mode."""
+    """Is in automatic (not manual) recurring mode.
+    
+    FIXME: Make it a propery dependent on `subscription_reference`"""
 
     subscription_reference = models.CharField(max_length=255, null=True)
     """As `recurring_payment_id` in PayPal.
@@ -439,22 +441,20 @@ class SubscriptionPurchase(Purchase):
             # self.set_payment_date(klass.offset_date(datetime.date.today(), self.trial_period))
             self.set_payment_date(datetime.date.today() + period_to_delta(self.item.subscriptionitem.trial_period))
 
+    # FIXME: Also set AutomaticPayment.subscription_reference and SubscriptionPurchase.payment
+    # FIXME: This function should NOT return a payment
     @django.db.transaction.atomic
     def obtain_active_subscription(self, transaction, ref, email):
         """Internal.
 
         "Competes" with :meth:`on_accept_regular_payment`."""
-        # FIXME: when subscription created, a payment does not necessarily exist
-        # (use both SubscriptionPurchase.subscription_reference and AutomaticPayment.subscription_reference)
-        payments = list(AutomaticPayment.objects.filter(transaction__processor=transaction.processor, subscription_reference=ref))
-        if payments:
-            payment = payments[0]
+        # FIXME: Also set AutomaticPayment.subscription_reference
+        purchases = list(SubscriptionPurchase.objects.filter(transaction__processor=transaction.processor, subscription_reference=ref))
+        if not purchases:
+            purchase = purchases[0]
         else:
-            payment = AutomaticPayment.objects.create(transaction=transaction, subscription_reference=ref, email=email)
-        self.payment = payment
-        self.subscribed = True
-        self.save()
-        return payment
+            purchase = SubscriptionPurchase.objects.create(transaction=transaction, subscription_reference=ref, email=email, subscribed=True)
+        return purchase
 
     def cancel_subscription(self):
         """Called when we detect that the subscription was canceled."""
