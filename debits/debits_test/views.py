@@ -165,13 +165,13 @@ def purchase_view(request):
         due_date = purchase.due_payment_date
         if due_date < datetime.date.today():
             due_date = datetime.date.today()
-        new_item = debits.debits_base.models.SimpleItem(product=purchase.plan.product,
-                                                        currency=purchase.plan.currency,
-                                                        price=purchase.plan.price,
-                                                        payment_period_unit=Period.UNIT_MONTHS,
-                                                        payment_period_count=1,
-                                                        trial_period_unit=Period.UNIT_DAYS,
-                                                        trial_period_count=(due_date - datetime.date.today()).days)
+        new_item = debits.debits_base.models.SubscriptionItem(product=purchase.plan.product,
+                                                              currency=purchase.plan.currency,
+                                                              price=purchase.plan.price,
+                                                              payment_period_unit=Period.UNIT_MONTHS,
+                                                              payment_period_count=1,
+                                                              trial_period_unit=Period.UNIT_DAYS,
+                                                              trial_period_count=(due_date - datetime.date.today()).days)
         new_purchase = MyPurchase(item=new_item,
                                   for_organization=organization,
                                   plan=purchase.plan)
