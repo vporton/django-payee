@@ -226,8 +226,8 @@ class PayPalIPN(PaymentCallback, View):
         # transaction = BaseTransaction.objects.select_for_update().get(pk=transaction_id)  # only inside transaction
         transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
         purchase = transaction.purchase
-        if Decimal(POST['mc_gross']) == purchase.purchase.item.price + purchase.shipping and \
-                        POST['mc_currency'] == purchase.purchase.item.currency:
+        if Decimal(POST['mc_gross']) == purchase.item.price + purchase.shipping and \
+                        POST['mc_currency'] == purchase.item.currency:
             self.do_do_accept_subscription_or_recurring_payment(transaction, purchase, POST, POST['subscr_id'])
         else:
             logger.warning("Wrong subscription payment data")
@@ -236,7 +236,7 @@ class PayPalIPN(PaymentCallback, View):
         # transaction.processor = PaymentProcessor.objects.get(pk=PAYMENT_PROCESSOR_PAYPAL)
         purchase.trial = False
         date = purchase.due_payment_date
-        if purchase.purchase.item.subscriptionitem.payment_period.count > 0:  # hack to eliminate infinite loop
+        if purchase.item.subscriptionitem.payment_period.count > 0:  # hack to eliminate infinite loop
             while date <= datetime.date.today():
                 date = self.advance_item_date(date, purchase)
         purchase.due_payment_date = date
@@ -274,7 +274,7 @@ class PayPalIPN(PaymentCallback, View):
         }
         period1_right = (purchase.item.subscriptionitem.trial_period.count == 0 and 'period1' not in POST) or \
                         (purchase.item.subscriptionitem.trial_period.count != 0 and 'period1' in POST and \
-                         POST['period1'] == str(purchase.purchase.item.subscriptionitem.trial_period.count)+' '+m[purchase.item.subscriptionitem.trial_period.unit])
+                         POST['period1'] == str(purchase.item.subscriptionitem.trial_period.count)+' '+m[purchase.item.subscriptionitem.trial_period.unit])
         if period1_right and 'period2' not in POST and \
                         Decimal(POST['amount3']) == purchase.item.price and \
                         POST['period3'] == str(purchase.item.subscriptionitem.payment_period.count)+' '+m[purchase.item.subscriptionitem.payment_period.unit] and \
