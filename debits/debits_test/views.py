@@ -100,7 +100,7 @@ def do_prolong(hash, form, processor, purchase):
                                                  prolonged=purchase,
                                                  period_unit=Period.UNIT_MONTHS,
                                                  period_count=periods)
-    subtransaction = SimpleTransaction.objects.create(processor=processor, item=subpurchase)
+    subtransaction = SimpleTransaction.objects.create(processor=processor, purchase=subpurchase)
     return form.make_purchase_from_form(hash, subtransaction)
 
 
