@@ -400,6 +400,11 @@ class SubscriptionPurchase(Purchase):
     subscribed = models.BooleanField(default=False)
     """Is in automatic (not manual) recurring mode."""
 
+    subscription_reference = models.CharField(max_length=255, null=True)
+    """As `recurring_payment_id` in PayPal.
+
+    TODO: Avangate has it for every product, but PayPal for transaction as a whole."""
+
     def is_active(self):
         """Is the item active (paid on time and not blocked).
 
@@ -440,6 +445,7 @@ class SubscriptionPurchase(Purchase):
 
         "Competes" with :meth:`on_accept_regular_payment`."""
         # FIXME: when subscription created, a payment does not necessarily exist
+        # (use both SubscriptionPurchase.subscription_reference and AutomaticPayment.subscription_reference)
         payments = list(AutomaticPayment.objects.filter(transaction__processor=transaction.processor, subscription_reference=ref))
         if payments:
             payment = payments[0]
