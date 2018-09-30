@@ -162,12 +162,12 @@ class SimpleTransaction(BaseTransaction):
     def on_accept_regular_payment(self, email):
         """Handles confirmation of a (non-recurring) payment."""
         payment = SimplePayment.objects.create(transaction=self, email=email)
-        self.item.status = SimplePaymentStatus.PAID
-        self.item.payment = payment
-        self.item.upgrade_subscription()
-        self.item.simpleitem.save()
+        self.purchase.status = SimplePaymentStatus.PAID
+        self.purchase.payment = payment
+        self.purchase.upgrade_subscription()
+        self.purchase.save()
         try:
-            self.advance_parent(self.item.simpleitem.prolongitem, payment)
+            self.advance_parent(self.purchase.simplepurchase.prolongpurchase, payment)
         except AttributeError:
             pass
         return payment
