@@ -180,6 +180,7 @@ def purchase_view(request):
         return do_upgrade(hash, form, processor, purchase, organization)
 
 
+# TODO: purchase argument is not used
 def do_unsubscribe(subscription, purchase):
     try:
         if not subscription:
