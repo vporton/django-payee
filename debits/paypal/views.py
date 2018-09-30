@@ -134,7 +134,7 @@ class PayPalIPN(PaymentCallback, View):
         # Crazy: Recurring payment and subscription debits are not the same.
         # 'recurring_payment_id' and 'subscr_id' are equivalent: https://thereforei.am/2012/07/03/cancelling-subscriptions-created-with-paypal-standard-via-the-express-checkout-api/
         type_dispatch = {
-            'web_accept': self.accept_regular_payment,
+            'web_accept': self.accept_regular_payment,  # FIXME: web_accept seems to be fired on first subscription payment (without trial)
             'cart': self.accept_regular_payment,
             'express_checkout': self.accept_regular_payment,
             'recurring_payment': self.accept_recurring_payment,
