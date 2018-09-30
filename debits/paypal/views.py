@@ -221,7 +221,7 @@ class PayPalIPN(PaymentCallback, View):
         payment = AutomaticPayment.objects.create(transaction=transaction,
                                                   email=POST['payer_email'],
                                                   subscription_reference=ref,
-                                                  processor=PAYMENT_PROCESSOR_PAYPAL)
+                                                  processor_id=PAYMENT_PROCESSOR_PAYPAL)
         purchase.payment = payment
         self.do_subscription_or_recurring_payment(purchase.subscriptionpurchase)  # calls save()
         self.on_payment(transaction.payment.automaticpayment)
