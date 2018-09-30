@@ -8,7 +8,7 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
-from debits.debits_base.processors import PaymentCallback
+from debits.debits_base.processors import PaymentCallback, PAYMENT_PROCESSOR_PAYPAL
 from debits.debits_base.base import logger
 from debits.debits_base.models import BaseTransaction, SimpleTransaction, SubscriptionTransaction, AutomaticPayment, \
     SubscriptionPurchase
@@ -216,11 +216,12 @@ class PayPalIPN(PaymentCallback, View):
     def do_do_accept_subscription_or_recurring_payment(self, transaction, purchase, POST, ref):
         if self.auto_refund(transaction, purchase, POST):
             return HttpResponse('')
-        purchase.subscriptionpurchase.activate_subscription(ref, POST['payer_email'])
+        purchase.subscriptionpurchase.activate_subscription(ref, POST['payer_email'], PAYMENT_PROCESSOR_PAYPAL)
         # This is already done in activate_subscription():
         payment = AutomaticPayment.objects.create(transaction=transaction,
                                                   email=POST['payer_email'],
-                                                  subscription_reference=ref)
+                                                  subscription_reference=ref,
+                                                  processor=PAYMENT_PROCESSOR_PAYPAL)
         purchase.payment = payment
         self.do_subscription_or_recurring_payment(purchase.subscriptionpurchase)  # calls save()
         self.on_payment(transaction.payment.automaticpayment)
@@ -253,7 +254,7 @@ class PayPalIPN(PaymentCallback, View):
 
     def do_subscription_or_recurring_created(self, transaction, POST, ref):
         purchase = transaction.purchase.subscriptionpurchase
-        purchase.activate_subscription(ref, POST['payer_email'])
+        purchase.activate_subscription(ref, POST['payer_email'], PAYMENT_PROCESSOR_PAYPAL)
         # transaction.processor = PaymentProcessor.objects.get(pk=PAYMENT_PROCESSOR_PAYPAL)
         SubscriptionPurchase.objects.filter(pk=purchase.pk).update(trial=False)
         purchase.upgrade_subscription()

@@ -418,6 +418,9 @@ class SubscriptionPurchase(Purchase):
 
     TODO: Avangate has it for every product, but PayPal for transaction as a whole."""
 
+    processor = models.ForeignKey(PaymentProcessor, on_delete=models.CASCADE, null=True)
+    """Payment processor for a subscription payment."""
+
     email = models.EmailField(null=True)
     """User's email.
 
@@ -463,17 +466,17 @@ class SubscriptionPurchase(Purchase):
             self.set_payment_date(datetime.date.today() + period_to_delta(self.item.subscriptionitem.trial_period))
 
     @django.db.transaction.atomic
-    def activate_subscription(self, ref, email):
+    def activate_subscription(self, ref, email, processor):
         """Internal.
 
         "Competes" with :meth:`on_accept_regular_payment`."""
-        SubscriptionPurchase.objects.filter(pk=self.pk).update(subscription_reference=ref, email=email)
+        SubscriptionPurchase.objects.filter(pk=self.pk).update(subscription_reference=ref, email=email, processor=processor)
 
     def cancel_subscription(self):
         """Called when we detect that the subscription was canceled."""
         # atomic operation
         SubscriptionPurchase.objects.filter(pk=self.pk).update(
-            payment=None, subscription_reference=None, subinvoice=F('subinvoice') + 1)
+            payment=None, subscription_reference=None, processor=None, subinvoice=F('subinvoice') + 1)
         if not self.old_subscription:  # don't send this email on plan upgrade
             self.cancel_subscription_email()
 
