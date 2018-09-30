@@ -115,13 +115,14 @@ def upgrade_calculate_new_period(k, purchase):
 
 def upgrade_create_new_item(old_purchase, plan, new_period, organization):
     """Create new purchase used to upgrade another purchase (:obj:`old_purchase`)."""
-    item = debits.debits_base.models.Item(product=plan.product,
-                                          currency=plan.currency,
-                                          price=plan.price,
-                                          payment_period_unit=Period.UNIT_MONTHS,
-                                          payment_period_count=1,
-                                          trial_period_unit=Period.UNIT_DAYS,
-                                          trial_period_count=new_period)
+    item = debits.debits_base.models.SubscriptionItem.objects.create(
+        product=plan.product,
+        currency=plan.currency,
+        price=plan.price,
+        payment_period_unit=Period.UNIT_MONTHS,
+        payment_period_count=1,
+        trial_period_unit=Period.UNIT_DAYS,
+        trial_period_count=new_period)
     purchase = MyPurchase(item=item,
                           for_organization=organization,
                           plan=plan)
