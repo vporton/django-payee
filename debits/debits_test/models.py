@@ -1,6 +1,6 @@
 from django.db import models
 from debits.debits_base.base import Period
-from debits.debits_base.models import Product, SubscriptionItem
+from debits.debits_base.models import Product, SubscriptionPurchase
 
 
 class PricingPlan(models.Model):
@@ -27,7 +27,7 @@ class PricingPlan(models.Model):
         return "<PricingPlan: %s, %s>" % ((("pk=%d" % self.pk) if self.pk else "no pk"), self.__str__())
 
 
-class MyPurchase(SubscriptionItem):
+class MyPurchase(SubscriptionPurchase):
     """An example purchase."""
 
     plan = models.ForeignKey(PricingPlan, on_delete=models.CASCADE)
