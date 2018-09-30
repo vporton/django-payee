@@ -420,7 +420,7 @@ class SubscriptionPurchase(Purchase):
         self.due_payment_date = date
         # klass = model_from_ref(self.payment.transaction.processor.klass)
         # self.payment_deadline = klass.offset_date(self.due_payment_date, self.grace_period)
-        self.payment_deadline = self.due_payment_date + period_to_delta(self.grace_period)
+        self.payment_deadline = self.due_payment_date + period_to_delta(self.item.grace_period)
 
     def start_trial(self):
         """Start trial period.
