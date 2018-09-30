@@ -442,16 +442,11 @@ class SubscriptionPurchase(Purchase):
             self.set_payment_date(datetime.date.today() + period_to_delta(self.item.subscriptionitem.trial_period))
 
     @django.db.transaction.atomic
-    def obtain_active_subscription(self, transaction, ref, email):
+    def activate_subscription(self, ref, email):
         """Internal.
 
         "Competes" with :meth:`on_accept_regular_payment`."""
-        purchases = list(SubscriptionPurchase.objects.filter(transaction__processor=transaction.processor, subscription_reference=ref))
-        if not purchases:
-            purchase = purchases[0]
-        else:
-            purchase = SubscriptionPurchase.objects.create(transaction=transaction, subscription_reference=ref, email=email, subscribed=True)  # FIXME: shall not create
-        return purchase
+        SubscriptionPurchase.filter(pk=self.pk).update(subscription_reference=ref, email=email, subscribed=True)
 
     def cancel_subscription(self):
         """Called when we detect that the subscription was canceled."""

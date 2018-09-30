@@ -215,8 +215,8 @@ class PayPalIPN(PaymentCallback, View):
     def do_do_accept_subscription_or_recurring_payment(self, transaction, purchase, POST, ref):
         if self.auto_refund(transaction, purchase, POST):
             return HttpResponse('')
-        purchase.subscriptionpurchase.obtain_active_subscription(transaction, ref, POST['payer_email'])
-        # This is already done in obtain_active_subscription():
+        purchase.subscriptionpurchase.activate_subscription(ref, POST['payer_email'])
+        # This is already done in activate_subscription():
         payment = AutomaticPayment.objects.create(transaction=transaction,
                                                   email=POST['payer_email'],
                                                   subscription_reference=ref)
@@ -252,12 +252,12 @@ class PayPalIPN(PaymentCallback, View):
 
     def do_subscription_or_recurring_created(self, transaction, POST, ref):
         purchase = transaction.purchase.subscriptionpurchase
-        subscription = purchase.obtain_active_subscription(transaction, ref, POST['payer_email'])  # FIXME: obtain_active_subscription() return value?
+        purchase.activate_subscription(ref, POST['payer_email'])  # FIXME: activate_subscription() return value?
         # transaction.processor = PaymentProcessor.objects.get(pk=PAYMENT_PROCESSOR_PAYPAL)
         purchase.trial = False
-        purchase.save()  # FIXME: Overwrites purchase.subscribed # TODO: Don't save() also in obtain_active_subscription()
+        purchase.save()  # FIXME: Overwrites purchase.subscribed # TODO: Don't save() also in activate_subscription()
         purchase.upgrade_subscription()
-        self.on_subscription_created(POST, subscription)  # FIXME: subscription vs payment
+        self.on_subscription_created(POST, purchase)
 
     def accept_subscription_signup(self, POST, transaction_id):
         try:
