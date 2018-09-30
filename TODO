@@ -1,4 +1,5 @@
 FIXME: It seems that canceling old_subscription does not work!
+FIXME: ProlongPurchase silently fails!
 
 Need to implement PayPal Checkout.
 At first it may seem that for PayPal Checkout we do not need to store the payment info
