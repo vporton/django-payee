@@ -175,21 +175,21 @@ class SimpleTransaction(BaseTransaction):
 
 
     @transaction.atomic
-    def advance_parent(self, prolongitem, payment):
+    def advance_parent(self, prolongpurchase, payment):
         """Advances the parent transaction on receive of a "prolong" payment.
 
         Args:
-            prolongitem: :class:`ProlongItem`.
+            prolongpurchase: :class:`ProlongPurchase`.
 
         `prolongitem.period` contains the number of days to advance the parent (:class:`SubscriptionItem`)
         item. The parent transaction is advanced this number of days.
         """
         parent_item = SubscriptionItem.objects.select_for_update().get(
-            pk=prolongitem.parent_id)  # must be inside transaction
+            pk=prolongpurchase.parent_id)  # must be inside transaction
         # parent.email = transaction.email
         base_date = max(datetime.date.today(), parent_item.due_payment_date)
-        klass = model_from_ref(payment.transaction.processor.klass)  # prolongitem.payment is None, so use payment instead
-        parent_item.set_payment_date(klass.offset_date(base_date, prolongitem.period))
+        klass = model_from_ref(payment.transaction.processor.klass)  # prolongpurchase.payment is None, so use payment instead
+        parent_item.set_payment_date(klass.offset_date(base_date, prolongpurchase.period))
         parent_item.save()
 
 
@@ -316,11 +316,11 @@ class Purchase(models.Model):
                                          on_delete=models.CASCADE)
     """We remove old_subscription (if not `None`) automatically when new subscription is created.
 
-    The new payment may be either one-time (:class:`SimpleItem` (usually :class:`ProlongItem`))
+    The new payment may be either one-time (:class:`SimpleItem` (usually :class:`ProlongPurchase`))
     or subscription (:class:`SubscriptionItem`)."""
 
     def __repr__(self):
-        return "<Purcahse pk=%d, %s>" % (self.pk, self.item.product.name)
+        return "<Purchase pk=%d, %s>" % (self.pk, self.item.product.name)
 
     @transaction.atomic
     def upgrade_subscription(self):
@@ -601,7 +601,7 @@ class ProlongPurchase(SimplePurchase):
     def refund_payment(self):
         """Handle payment refund.
 
-        For :class:`ProlongItem` we subtract the prolong days back from the :attr:`parent` item."""
+        For :class:`ProlongPurchase` we subtract the prolong days back from the :attr:`parent` item."""
         prolong2 = self.period
         prolong2.count *= -1
         klass = model_from_ref(self.payment.transaction.processor.klass)

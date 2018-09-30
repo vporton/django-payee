@@ -6,7 +6,8 @@ from .models import Organization, MyPurchase, PricingPlan
 from .forms import CreateOrganizationForm, SwitchPricingPlanForm
 from .business import create_organization
 from debits.debits_base.base import Period, period_to_string
-from debits.debits_base.models import SimpleTransaction, SubscriptionTransaction, ProlongItem, SubscriptionItem, logger, CannotCancelSubscription
+from debits.debits_base.models import SimpleTransaction, SubscriptionTransaction, ProlongItem, SubscriptionItem, logger, \
+    CannotCancelSubscription, ProlongPurchase, SimpleItem
 import debits
 from .processors import MyPayPalForm
 
@@ -90,13 +91,14 @@ def do_subscribe(hash, form, processor, purchase):
 def do_prolong(hash, form, processor, purchase):
     """Start prolonging our subscription purchase."""
     periods = int(hash['periods'])
-    subitem = ProlongItem.objects.create(product=purchase.item.product,
-                                         currency=purchase.item.currency,
-                                         price=purchase.item.price * periods,
-                                         parent=purchase,
-                                         period_unit=Period.UNIT_MONTHS,
-                                         period_count=periods)
-    subtransaction = SimpleTransaction.objects.create(processor=processor, item=subitem)
+    subitem = SimpleItem.objects.create(product=purchase.item.product,
+                                        currency=purchase.item.currency,
+                                        price=purchase.item.price * periods)
+    subpurchase = ProlongPurchase.objects.create(item=subitem,
+                                                 parent=purchase.item,
+                                                 period_unit=Period.UNIT_MONTHS,
+                                                 period_count=periods)
+    subtransaction = SimpleTransaction.objects.create(processor=processor, item=subpurchase)
     return form.make_purchase_from_form(hash, subtransaction)
 
 
@@ -111,15 +113,16 @@ def upgrade_calculate_new_period(k, purchase):
 
 def upgrade_create_new_item(old_purchase, plan, new_period, organization):
     """Create new purchase used to upgrade another purchase (:obj:`old_purchase`)."""
-    purchase = MyPurchase(for_organization=organization,
-                          plan=plan,
-                          product=plan.product,
-                          currency=plan.currency,
-                          price=plan.price,
-                          payment_period_unit=Period.UNIT_MONTHS,
-                          payment_period_count=1,
-                          trial_period_unit=Period.UNIT_DAYS,
-                          trial_period_count=new_period)
+    item = debits.debits_base.models.Item(product=plan.product,
+                                          currency=plan.currency,
+                                          price=plan.price,
+                                          payment_period_unit=Period.UNIT_MONTHS,
+                                          payment_period_count=1,
+                                          trial_period_unit=Period.UNIT_DAYS,
+                                          trial_period_count=new_period)
+    purchase = MyPurchase(item=item,
+                          for_organization=organization,
+                          plan=plan)
     purchase.set_payment_date(datetime.date.today() + datetime.timedelta(days=new_period))
     if old_purchase.payment:
         purchase.old_subscription = old_purchase.payment.automaticpayment
@@ -162,15 +165,16 @@ def purchase_view(request):
         due_date = purchase.due_payment_date
         if due_date < datetime.date.today():
             due_date = datetime.date.today()
-        new_purchase = MyPurchase(for_organization=organization,
-                                  plan=purchase.plan,
-                                  product=purchase.plan.product,
-                                  currency=purchase.plan.currency,
-                                  price=purchase.plan.price,
-                                  payment_period_unit=Period.UNIT_MONTHS,
-                                  payment_period_count=1,
-                                  trial_period_unit=Period.UNIT_DAYS,
-                                  trial_period_count=(due_date - datetime.date.today()).days)
+        new_item = debits.debits_base.models.Item(product=purchase.plan.product,
+                                                  currency=purchase.plan.currency,
+                                                  price=purchase.plan.price,
+                                                  payment_period_unit=Period.UNIT_MONTHS,
+                                                  payment_period_count=1,
+                                                  trial_period_unit=Period.UNIT_DAYS,
+                                                  trial_period_count=(due_date - datetime.date.today()).days)
+        new_purchase = MyPurchase(item=new_item,
+                                  for_organization=organization,
+                                  plan=purchase.plan)
         new_purchase.set_payment_date(due_date)
         new_purchase.save()
         return do_subscribe(hash, form, processor, new_purchase)
