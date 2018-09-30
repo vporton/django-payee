@@ -1,4 +1,4 @@
-FIXME:
+FIXME: (Explanation: When switching plans, PayPal considers it a single payment, not subscription. Why?)
 pk_from_custom() fails by the following steps:
 1. Create new organization with Item 1 without trial. Wait for both IPNs.
 2. Subscribe it to PayPal.
