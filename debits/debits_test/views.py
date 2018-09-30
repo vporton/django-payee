@@ -128,8 +128,8 @@ def upgrade_create_new_item(old_purchase, plan, new_period, organization):
                           for_organization=organization,
                           plan=plan)
     purchase.set_payment_date(datetime.date.today() + datetime.timedelta(days=new_period))
-    if old_purchase.payment:
-        purchase.old_subscription = old_purchase.payment.automaticpayment
+    if old_purchase.subscribed:
+        purchase.old_subscription = old_purchase
     purchase.save()
     return purchase
 

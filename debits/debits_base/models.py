@@ -136,7 +136,7 @@ class BaseTransaction(models.Model):
     def invoiced_purchase(self):
         """Internal."""
         try:
-            return self.purchase.old_subscription.transaction.purchase
+            return self.purchase.old_subscription
         except AttributeError:  # ObjectDoesNotExist
             return self.purchase
 
@@ -311,7 +311,7 @@ class Purchase(models.Model):
 
     TODO: Move to :class:`SubscriptionPurchase`?"""
 
-    old_subscription = models.ForeignKey('AutomaticPayment', null=True, related_name='new_subscription',
+    old_subscription = models.ForeignKey('Purchase', null=True, related_name='new_subscription',
                                          on_delete=models.CASCADE)
     """We remove old_subscription (if not `None`) automatically when new subscription is created.
 
@@ -340,7 +340,26 @@ class Purchase(models.Model):
         except CannotCancelSubscription:
             pass
         # self.on_upgrade_subscription(transaction, item.old_subscription)  # TODO: Needed?
-        Item.objects.filter(pk=self.pk).update(old_subscription=None)
+        Purchase.objects.filter(pk=self.pk).update(old_subscription=None)
+
+    # TODO: The same as in do_upgrade_subscription()
+    #@shared_task  # PayPal tormoz, so run in a separate thread # TODO: celery (with `TypeError: force_cancel() missing 1 required positional argument: 'self'`)
+    def force_cancel(self, is_upgrade=False):
+        """Cancels the :attr:`transaction`."""
+        if self.subscription_reference:
+            klass = model_from_ref(self.transaction.processor.klass)
+            api = klass().api()
+            try:
+                api.cancel_agreement(self.subscription_reference, is_upgrade=is_upgrade)  # may raise an exception
+            except CannotCancelSubscription:
+                logger.warn("Cannot cancel subscription " + self.subscription_reference)
+                # fallback
+                SubscriptionItem.objects.filter(payment=self.pk).update(payment=None, subinvoice=F('subinvoice') + 1)
+                raise
+            # transaction.cancel_subscription()  # runs in the callback
+        else:
+            # SubscriptionItem.objects.filter(payment=self.pk).update(payment=None, subinvoice=F('subinvoice') + 1)  # called in cancel_subscription()
+            pass
 
     # TODO: Move to Payment class?
     def send_rendered_email(self, template_name, subject, data):
@@ -662,25 +681,6 @@ class AutomaticPayment(Payment):
     """As `recurring_payment_id` in PayPal.
 
     TODO: Avangate has it for every product, but PayPal for transaction as a whole."""
-
-    # TODO: The same as in do_upgrade_subscription()
-    #@shared_task  # PayPal tormoz, so run in a separate thread # TODO: celery (with `TypeError: force_cancel() missing 1 required positional argument: 'self'`)
-    def force_cancel(self, is_upgrade=False):
-        """Cancels the :attr:`transaction`."""
-        if self.subscription_reference:
-            klass = model_from_ref(self.transaction.processor.klass)
-            api = klass().api()
-            try:
-                api.cancel_agreement(self.subscription_reference, is_upgrade=is_upgrade)  # may raise an exception
-            except CannotCancelSubscription:
-                logger.warn("Cannot cancel subscription " + self.subscription_reference)
-                # fallback
-                SubscriptionItem.objects.filter(payment=self.pk).update(payment=None, subinvoice=F('subinvoice') + 1)
-                raise
-            # transaction.cancel_subscription()  # runs in the callback
-        else:
-            # SubscriptionItem.objects.filter(payment=self.pk).update(payment=None, subinvoice=F('subinvoice') + 1)  # called in cancel_subscription()
-            pass
 
     # A transaction should have a code that identifies it.
     # code = models.CharField(max_length=255)
