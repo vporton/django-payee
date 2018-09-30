@@ -88,9 +88,9 @@ class BasePaymentProcessor(abc.ABC):
         """See :meth:`ready_for_subscription`."""
         pass
 
-    def product_name(self, purchase):
+    def product_name(self, purchase):  # FIXME
         """Internal."""
-        return purchase.product.name
+        return purchase.item.product.name
 
 
 PAYMENT_PROCESSOR_AVANGATE = 1

@@ -159,7 +159,7 @@ class PayPalIPN(PaymentCallback, View):
 
     def do_appect_refund(self, POST, transaction_id):
         transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
-        if POST['mc_currency'] == transaction.item.currency:
+        if POST['mc_currency'] == transaction.itempurchase.item.currency:
             transaction.payment.automaticpayment.refund_payment()
         else:
             logger.warning("Wrong refund currency.")
@@ -179,7 +179,7 @@ class PayPalIPN(PaymentCallback, View):
         transaction = SimpleTransaction.objects.get(pk=transaction_id)
         if Decimal(POST['mc_gross']) == transaction.item.price and \
                         Decimal(POST['shipping']) == transaction.item.shipping and \
-                        POST['mc_currency'] == transaction.item.currency:
+                        POST['mc_currency'] == transaction.itempurchase.item.currency:
             if self.auto_refund(transaction, transaction.item.simpleitem.prolongitem.parent, POST):
                 return HttpResponse('')
             payment = transaction.on_accept_regular_payment(POST['payer_email'])
@@ -226,8 +226,8 @@ class PayPalIPN(PaymentCallback, View):
         # transaction = BaseTransaction.objects.select_for_update().get(pk=transaction_id)  # only inside transaction
         transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
         purchase = transaction.purchase
-        if Decimal(POST['mc_gross']) == purchase.price + purchase.shipping and \
-                        POST['mc_currency'] == purchase.currency:
+        if Decimal(POST['mc_gross']) == purchase.item.price + purchase.shipping and \
+                        POST['mc_currency'] == purchase.item.currency:
             self.do_do_accept_subscription_or_recurring_payment(transaction, purchase, POST, POST['subscr_id'])
         else:
             logger.warning("Wrong subscription payment data")
@@ -236,14 +236,14 @@ class PayPalIPN(PaymentCallback, View):
         # transaction.processor = PaymentProcessor.objects.get(pk=PAYMENT_PROCESSOR_PAYPAL)
         purchase.trial = False
         date = purchase.due_payment_date
-        if purchase.payment_period.count > 0:  # hack to eliminate infinite loop
+        if purchase.item.subscriptionitem.payment_period.count > 0:  # hack to eliminate infinite loop
             while date <= datetime.date.today():
                 date = self.advance_item_date(date, purchase)
         purchase.due_payment_date = date
         purchase.save()
 
     def advance_item_date(self, date, purchase):
-        date = PayPalProcessorInfo.offset_date(date, purchase.payment_period)
+        date = PayPalProcessorInfo.offset_date(date, purchase.item.subscriptionitem.payment_period)
         purchase.set_payment_date(date)
         purchase.reminders_sent = 0
         return date
@@ -272,13 +272,13 @@ class PayPalIPN(PaymentCallback, View):
             Period.UNIT_MONTHS: 'M',
             Period.UNIT_YEARS: 'Y',
         }
-        period1_right = (purchase.trial_period.count == 0 and 'period1' not in POST) or \
-                        (purchase.trial_period.count != 0 and 'period1' in POST and \
-                         POST['period1'] == str(purchase.trial_period.count)+' '+m[purchase.trial_period.unit])
+        period1_right = (purchase.item.subscriptionitem.trial_period.count == 0 and 'period1' not in POST) or \
+                        (purchase.item.subscriptionitem.trial_period.count != 0 and 'period1' in POST and \
+                         POST['period1'] == str(purchase.item.subscriptionitem.trial_period.count)+' '+m[purchase.item.subscriptionitem.trial_period.unit])
         if period1_right and 'period2' not in POST and \
-                        Decimal(POST['amount3']) == purchase.price and \
-                        POST['period3'] == str(purchase.payment_period.count)+' '+m[purchase.payment_period.unit] and \
-                        POST['mc_currency'] == purchase.currency:
+                        Decimal(POST['amount3']) == purchase.item.price and \
+                        POST['period3'] == str(purchase.item.subscriptionitem.payment_period.count)+' '+m[purchase.item.subscriptionitem.payment_period.unit] and \
+                        POST['mc_currency'] == purchase.item.currency:
             self.do_subscription_or_recurring_created(transaction, POST, POST['subscr_id'])
         else:
             logger.warning("Wrong subscription signup data")
@@ -287,7 +287,7 @@ class PayPalIPN(PaymentCallback, View):
         try:
             transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
             if 'period1' not in POST and 'period2' not in POST and \
-                            Decimal(POST['mc_amount3']) == transaction.item.price + transaction.item.shipping and \
+                            Decimal(POST['mc_amount3']) == transaction.purchase.item.price + transaction.item.shipping and \
                             POST['mc_currency'] == transaction.item.currency and \
                             POST['period3'] in self.pp_payment_cycles(transaction):
                 self.do_subscription_or_recurring_created(transaction, POST, POST['recurring_payment_id'])
@@ -312,7 +312,7 @@ class PayPalIPN(PaymentCallback, View):
         if self.should_auto_refund():
             api = PayPalAPI()
             # FIXME: Wrong for American Express card: https://www.paypal.com/us/selfhelp/article/How-do-I-issue-a-full-or-partial-refund-FAQ780
-            amount = (transaction.price - Decimal(0.30)).quantize(Decimal('1.00'))
+            amount = (transaction.purchase.item.price - Decimal(0.30)).quantize(Decimal('1.00'))
             api.refund(POST['txn_id'], str(amount))
             return True
         return False
@@ -327,15 +327,15 @@ class PayPalIPN(PaymentCallback, View):
             Period.UNIT_WEEKS: 'every %d Weeks',
             Period.UNIT_MONTHS: 'every %d Months',
             Period.UNIT_YEARS: 'every %d Years',
-        }[purchase.payment_period.unit]
-        first = first_tmpl % purchase.payment_period.count
-        if purchase.payment_period.count == 1:
+        }[purchase.item.subscriptionitem.payment_period.unit]
+        first = first_tmpl % purchase.item.subscriptionitem.payment_period.count
+        if purchase.item.subscriptionitem.payment_period.count == 1:
             second = {
                 Period.UNIT_DAYS: 'Daily',
                 Period.UNIT_WEEKS: 'Weekly',
                 Period.UNIT_MONTHS: 'Monthly',
                 Period.UNIT_YEARS: 'Yearly',
-            }[purchase.payment_period.unit]
+            }[purchase.item.subscriptionitem.payment_period.unit]
             return (first, second)
         else:
             return (first,)

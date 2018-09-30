@@ -56,27 +56,27 @@ class PayPalForm(BasePaymentProcessor):
                     Period.UNIT_WEEKS: 'W',
                     Period.UNIT_MONTHS: 'M',
                     Period.UNIT_YEARS: 'Y'}
-        if purchase.trial_period.count > 0:
+        if purchase.item.subscriptionitem.trial_period.count > 0:
             items['a1'] = 0
-            items['p1'] = purchase.trial_period.count
-            items['t1'] = unit_map[purchase.trial_period.unit]
-        items['a3'] = purchase.price + purchase.shipping
-        items['p3'] = purchase.payment_period.count
-        items['t3'] = unit_map[purchase.payment_period.unit]
+            items['p1'] = purchase.item.subscriptionitem.trial_period.count
+            items['t1'] = unit_map[purchase.item.subscriptionitem.trial_period.unit]
+        items['a3'] = purchase.item.price + purchase.shipping
+        items['p3'] = purchase.item.subscriptionitem.payment_period.count
+        items['t3'] = unit_map[purchase.item.subscriptionitem.payment_period.unit]
 
     def make_regular(self, items, transaction, purchase, cart):
         """Internal."""
         if cart:  # TODO: AggregatePurchase support
             items['item_name_1'] = self.product_name(purchase)
-            items['amount_1'] = purchase.price
+            items['amount_1'] = purchase.item.price
             items['shipping_1'] = purchase.shipping
-            items['quantity_1'] = purchase.product_qty
+            items['quantity_1'] = purchase.item.product_qty
             items['upload'] = 1
         else:
             items['item_name'] = self.product_name(purchase)[0:127]
-            items['amount'] = purchase.price
+            items['amount'] = purchase.item.price
             items['shipping'] = purchase.shipping
-            items['quantity'] = purchase.product_qty
+            items['quantity'] = purchase.item.product_qty
 
     def subscription_allowed_date(self, purchase):
         return max(datetime.date.today(),

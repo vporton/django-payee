@@ -42,12 +42,12 @@ def do_organization_payment_view(request, purchase, organization):
                    'processor_name': purchase.payment.transaction.processor.name if purchase.payment else None,  # only for automatic recurring payment
                    'plan': purchase.plan.name,
                    'trial': purchase.trial,
-                   'trial_period': period_to_string(purchase.trial_period),
+                   'trial_period': period_to_string(purchase.item.subscriptionitem.trial_period),
                    'due_date': purchase.due_payment_date,
                    'deadline': purchase.payment_deadline,
-                   'price': purchase.price,
-                   'currency': purchase.currency,
-                   'payment_period': period_to_string(purchase.payment_period),
+                   'price': purchase.item.price,
+                   'currency': purchase.item.currency,
+                   'payment_period': period_to_string(purchase.item.subscriptionitem.payment_period),
                    'plan_form': plan_form,
                    'can_switch_to_recurring': pp.ready_for_subscription(purchase),
                    'subscription_allowed_date': pp.subscription_allowed_date(purchase),
@@ -90,9 +90,9 @@ def do_subscribe(hash, form, processor, purchase):
 def do_prolong(hash, form, processor, purchase):
     """Start prolonging our subscription purchase."""
     periods = int(hash['periods'])
-    subitem = ProlongItem.objects.create(product=purchase.product,
-                                         currency=purchase.currency,
-                                         price=purchase.price * periods,
+    subitem = ProlongItem.objects.create(product=purchase.item.product,
+                                         currency=purchase.item.currency,
+                                         price=purchase.item.price * periods,
                                          parent=purchase,
                                          period_unit=Period.UNIT_MONTHS,
                                          period_count=periods)
@@ -130,12 +130,12 @@ def upgrade_create_new_item(old_purchase, plan, new_period, organization):
 def do_upgrade(hash, form, processor, purchase, organization):
     """Start upgrading a subscription purchase,"""
     plan = PricingPlan.objects.get(pk=int(hash['pricing_plan']))
-    if plan.currency != purchase.currency:
+    if plan.currency != purchase.item.currency:
         raise RuntimeError(_("Cannot upgrade to a payment plan with other currency."))
-    if purchase.payment_period.unit != Period.UNIT_MONTHS or purchase.payment_period.count != 1:
+    if purchase.item.subscriptionitem.payment_period.unit != Period.UNIT_MONTHS or purchase.item.subscriptionitem.payment_period.count != 1:
         raise RuntimeError(_("Only one month payment period supported."))
 
-    k = plan.price / purchase.price  # price multiplies
+    k = plan.price / purchase.item.price  # price multiplies
     new_period = upgrade_calculate_new_period(k, purchase)
 
     purchase = upgrade_create_new_item(purchase, plan, new_period, organization)
