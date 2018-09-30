@@ -1,3 +1,6 @@
+FIXME: "BaseTransaction 2 does not exist" error message despite
+BaseTransaction.objects.get(pk=2) does not fail.
+
 FIXME: It seems that canceling old_subscription does not work!
 
 Need to implement PayPal Checkout.
