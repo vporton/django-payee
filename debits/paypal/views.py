@@ -156,7 +156,7 @@ class PayPalIPN(PaymentCallback, View):
         try:
             transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
         except BaseTransaction.DoesNotExist:
-            traceback.print_exc("Wrong 'custom' field for a transaction")
+            traceback.print_exc()
             return
         if POST['mc_currency'] == transaction.purchase.item.currency:
             transaction.payment.automaticpayment.refund_payment()
@@ -311,6 +311,7 @@ class PayPalIPN(PaymentCallback, View):
             transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
         except BaseTransaction.DoesNotExist:
             traceback.print_exc("Wrong 'custom' field for a transaction")
+
             return
         transaction.purchase.subscriptionpurchase.cancel_subscription()
         self.on_subscription_canceled(POST, transaction.purchase)
