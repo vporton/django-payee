@@ -175,7 +175,7 @@ class PayPalIPN(PaymentCallback, View):
         try:
             transaction = SimpleTransaction.objects.get(pk=transaction_id)
         except BaseTransaction.DoesNotExist:
-            logger.warning("Wrong 'custom' field for a transaction")
+            traceback.print_exc("Wrong 'custom' field for a transaction")
             return
 
         if Decimal(POST['mc_gross']) == transaction.purchase.item.price and \
@@ -198,7 +198,7 @@ class PayPalIPN(PaymentCallback, View):
         try:
             transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
         except BaseTransaction.DoesNotExist:
-            logger.warning("Wrong 'custom' field for a transaction")
+            traceback.print_exc("Wrong 'custom' field for a transaction")
             return
         if Decimal(POST['amount_per_cycle']) == transaction.purchase.item.price + transaction.purchase.item.shipping and \
                         POST['payment_cycle'] in self.pp_payment_cycles(transaction.purchase.item):
@@ -229,7 +229,7 @@ class PayPalIPN(PaymentCallback, View):
         try:
             transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
         except BaseTransaction.DoesNotExist:
-            logger.warning("Wrong 'custom' field for a transaction")
+            traceback.print_exc("Wrong 'custom' field for a transaction")
             return
         purchase = transaction.purchase
         if Decimal(POST['mc_gross']) == purchase.item.price + purchase.shipping and \
@@ -269,7 +269,7 @@ class PayPalIPN(PaymentCallback, View):
         try:
             transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
         except BaseTransaction.DoesNotExist:
-            logger.warning("Wrong 'custom' field for a transaction")
+            traceback.print_exc("Wrong 'custom' field for a transaction")
             return
         purchase = transaction.purchase.subscriptionpurchase
         m = {
@@ -293,7 +293,7 @@ class PayPalIPN(PaymentCallback, View):
         try:
             transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
         except BaseTransaction.DoesNotExist:
-            logger.warning("Wrong 'custom' field for a transaction")
+            traceback.print_exc("Wrong 'custom' field for a transaction")
             return
         if 'period1' not in POST and 'period2' not in POST and \
                         Decimal(POST['mc_amount3']) == transaction.purchase.item.price + transaction.purchase.shipping and \
@@ -310,7 +310,7 @@ class PayPalIPN(PaymentCallback, View):
         try:
             transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
         except BaseTransaction.DoesNotExist:
-            logger.warning("Wrong 'custom' field for a transaction")
+            traceback.print_exc("Wrong 'custom' field for a transaction")
             return
         transaction.purchase.subscriptionpurchase.cancel_subscription()
         self.on_subscription_canceled(POST, transaction.purchase)
