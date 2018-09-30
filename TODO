@@ -4,10 +4,6 @@ pk_from_custom() fails by the following steps:
 2. Subscribe it to PayPal.
 3. Switch to Item 2.
 
-FIXME: "BaseTransaction 2 does not exist" error message despite
-BaseTransaction.objects.get(pk=2) does not fail.
-Some .transaction query fails.
-
 FIXME: It seems that canceling old_subscription does not work!
 
 Need to implement PayPal Checkout.
