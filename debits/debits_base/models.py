@@ -184,7 +184,7 @@ class SimpleTransaction(BaseTransaction):
         item. The parent transaction is advanced this number of days.
         """
         parent_item = SubscriptionItem.objects.select_for_update().get(
-            pk=prolongpurchase.parent_id)  # must be inside transaction
+            pk=prolongpurchase.prolong_id)  # must be inside transaction
         # parent.email = transaction.email
         base_date = max(datetime.date.today(), parent_item.due_payment_date)
         klass = model_from_ref(payment.transaction.processor.klass)  # prolongpurchase.payment is None, so use payment instead
