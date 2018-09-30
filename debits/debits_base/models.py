@@ -183,13 +183,13 @@ class SimpleTransaction(BaseTransaction):
         `prolongitem.period` contains the number of days to advance the parent (:class:`SubscriptionItem`)
         item. The parent transaction is advanced this number of days.
         """
-        parent_item = SubscriptionItem.objects.select_for_update().get(
+        parent_purchase = SubscriptionPurchase.objects.select_for_update().get(
             pk=prolongpurchase.prolonged_id)  # must be inside transaction
         # parent.email = transaction.email
-        base_date = max(datetime.date.today(), parent_item.due_payment_date)
+        base_date = max(datetime.date.today(), parent_purchase.due_payment_date)
         klass = model_from_ref(payment.transaction.processor.klass)  # prolongpurchase.payment is None, so use payment instead
-        parent_item.set_payment_date(klass.offset_date(base_date, prolongpurchase.period))
-        parent_item.save()
+        parent_purchase.set_payment_date(klass.offset_date(base_date, prolongpurchase.period))
+        parent_purchase.save()
 
 
 class SubscriptionTransaction(BaseTransaction):
