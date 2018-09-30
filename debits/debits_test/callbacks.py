@@ -9,8 +9,7 @@ class MyPayPalIPN(PayPalIPN):
     It is not a problem (if not to count a tiny performance lag).
 
     TODO: Generalize it for non PayPal processors."""
-    def on_subscription_created(self, POST, subscription):
-        purchase = subscription.transaction.payment.purchase
+    def on_subscription_created(self, POST, purchase):
         self.do_purchase(purchase)
 
     def on_payment(self, payment):
