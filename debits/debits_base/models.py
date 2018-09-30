@@ -592,7 +592,7 @@ class ProlongPurchase(SimplePurchase):
 
     This is meant to be a one-time payment which prolongs a manual subscription item."""
 
-    prolonged = models.ForeignKey('SubscriptionItem', related_name='child', parent_link=False, on_delete=models.CASCADE)
+    prolonged = models.ForeignKey('SubscriptionPurchase', related_name='child', parent_link=False, on_delete=models.CASCADE)
     """Which subscription item to prolong."""
 
     period = Period(unit=Period.UNIT_MONTHS, count=0)
