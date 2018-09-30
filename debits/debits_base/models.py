@@ -135,10 +135,7 @@ class BaseTransaction(models.Model):
 
     def invoiced_purchase(self):
         """Internal."""
-        try:
-            return self.purchase.old_subscription
-        except AttributeError:  # ObjectDoesNotExist
-            return self.purchase
+        return self.purchase.old_subscription or self.purchase
 
     @abc.abstractmethod
     def subinvoice(self):
