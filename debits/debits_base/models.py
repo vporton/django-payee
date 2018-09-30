@@ -1,7 +1,6 @@
 import abc
 import hmac
 import datetime
-from enum import Enum
 
 import html2text
 from django.apps import apps
@@ -242,7 +241,7 @@ class Item(models.Model):
     """Is this a recurring (or one-time) payment."""
 
 
-class SimplePaymentStatus(Enum):
+class SimplePaymentStatus(object):
     NOT_PAID = 1
     PAID = 2
     REFUNDED = 3
