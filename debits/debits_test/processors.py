@@ -12,8 +12,8 @@ class MyPayPalForm(PayPalForm):
     def ipn_name(cls):
         return 'paypal-ipn'
 
-    def product_name(self, item):
+    def product_name(self, purchase):
         """What "product" PayPal shows for the purchase."""
-        if isinstance(item, ProlongPurchase):
-            item = item.parent
-        return item.product.name + ': ' + item.purchase.plan.name
+        if isinstance(purchase, ProlongPurchase):
+            item = purchase.parent
+        return purchase.item.product.name + ': ' + purchase.plan.name
