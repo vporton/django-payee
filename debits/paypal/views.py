@@ -1,3 +1,4 @@
+import traceback
 from decimal import Decimal
 import datetime
 import requests
@@ -155,7 +156,7 @@ class PayPalIPN(PaymentCallback, View):
         try:
             transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
         except BaseTransaction.DoesNotExist:
-            logger.warning("Wrong 'custom' field for a transaction")
+            traceback.print_exc("Wrong 'custom' field for a transaction")
             return
         if POST['mc_currency'] == transaction.purchase.item.currency:
             transaction.payment.automaticpayment.refund_payment()
