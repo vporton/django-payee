@@ -12,7 +12,7 @@ except ImportError:
 from django.db import models
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
-from debits.debits_base.models import logger, CannotCancelSubscription, CannotRefundSubscription
+from debits.debits_base.models import logger, CannotCancelSubscription, CannotRefund
 
 
 class PayPalProcessorInfo(models.Model):

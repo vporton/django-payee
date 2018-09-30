@@ -10,17 +10,17 @@ class MyPayPalIPN(PayPalIPN):
 
     TODO: Generalize it for non PayPal processors."""
     def on_subscription_created(self, POST, subscription):
-        item = subscription.transaction.payment.item
-        self.do_purchase(item)
+        purchase = subscription.transaction.payment.purchase
+        self.do_purchase(purchase)
 
     def on_payment(self, payment):
         if isinstance(payment, AutomaticPayment):
-            item = payment.transaction.item
-            self.do_purchase(item)
+            purchase = payment.transaction.purchase
+            self.do_purchase(purchase)
 
-    def do_purchase(self, item):
+    def do_purchase(self, purchase):
         """Set the :class:`~debits.debits_test.models.MyPurchase` for an :class:`~debits.debits_test.models.Organization`."""
-        organization = item.subscriptionitem.purchase.for_organization
+        organization = purchase.subscriptionitem.purchase.for_organization
         if organization is not None:
-            organization.purchase = item.subscriptionitem.purchase
+            organization.purchase = purchase.subscriptionitem.purchase
             organization.save()

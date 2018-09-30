@@ -81,36 +81,36 @@ def get_processor(request, hash):
     return form, processor
 
 
-def do_subscribe(hash, form, processor, item):
-    """Start subscription to our subscription item."""
-    transaction = SubscriptionTransaction.objects.create(processor=processor, item=item.subscriptionitem)
+def do_subscribe(hash, form, processor, purchase):
+    """Start subscription to our subscription purchase."""
+    transaction = SubscriptionTransaction.objects.create(processor=processor, item=purchase.subscriptionitem)
     return form.make_purchase_from_form(hash, transaction)
 
 
-def do_prolong(hash, form, processor, item):
-    """Start prolonging our subscription item."""
+def do_prolong(hash, form, processor, purchase):
+    """Start prolonging our subscription purchase."""
     periods = int(hash['periods'])
-    subitem = ProlongItem.objects.create(product=item.product,
-                                         currency=item.currency,
-                                         price=item.price * periods,
-                                         parent=item,
+    subitem = ProlongItem.objects.create(product=purchase.product,
+                                         currency=purchase.currency,
+                                         price=purchase.price * periods,
+                                         parent=purchase,
                                          period_unit=Period.UNIT_MONTHS,
                                          period_count=periods)
     subtransaction = SimpleTransaction.objects.create(processor=processor, item=subitem)
     return form.make_purchase_from_form(hash, subtransaction)
 
 
-def upgrade_calculate_new_period(k, item):
+def upgrade_calculate_new_period(k, purchase):
     """New period (in days) after an upgrade."""
-    if item.due_payment_date:
-        period = (item.due_payment_date - datetime.date.today()).days
+    if purchase.due_payment_date:
+        period = (purchase.due_payment_date - datetime.date.today()).days
     else:
         period = 0
     return round(period / k) if k > 1 else period  # don't increase paid period when downgrading
 
 
 def upgrade_create_new_item(old_purchase, plan, new_period, organization):
-    """Create new item used to upgrade another item (:obj:`old_purchase`)."""
+    """Create new purchase used to upgrade another purchase (:obj:`old_purchase`)."""
     purchase = MyPurchase(for_organization=organization,
                           plan=plan,
                           product=plan.product,
@@ -127,20 +127,20 @@ def upgrade_create_new_item(old_purchase, plan, new_period, organization):
     return purchase
 
 
-def do_upgrade(hash, form, processor, item, organization):
-    """Start upgrading a subscription item,"""
+def do_upgrade(hash, form, processor, purchase, organization):
+    """Start upgrading a subscription purchase,"""
     plan = PricingPlan.objects.get(pk=int(hash['pricing_plan']))
-    if plan.currency != item.currency:
+    if plan.currency != purchase.currency:
         raise RuntimeError(_("Cannot upgrade to a payment plan with other currency."))
-    if item.payment_period.unit != Period.UNIT_MONTHS or item.payment_period.count != 1:
+    if purchase.payment_period.unit != Period.UNIT_MONTHS or purchase.payment_period.count != 1:
         raise RuntimeError(_("Only one month payment period supported."))
 
-    k = plan.price / item.price  # price multiplies
-    new_period = upgrade_calculate_new_period(k, item)
+    k = plan.price / purchase.price  # price multiplies
+    new_period = upgrade_calculate_new_period(k, purchase)
 
-    purchase = upgrade_create_new_item(item, plan, new_period, organization)
+    purchase = upgrade_create_new_item(purchase, plan, new_period, organization)
 
-    if not item.payment:
+    if not purchase.payment:
         # Simply create a new purchase which can be paid later
         organization.purchase = purchase
         organization.save()
@@ -180,7 +180,7 @@ def purchase_view(request):
         return do_upgrade(hash, form, processor, purchase, organization)
 
 
-def do_unsubscribe(subscription, item):
+def do_unsubscribe(subscription, purchase):
     try:
         if not subscription:
             raise CannotCancelSubscription(_("Subscription was already canceled."))
@@ -195,8 +195,8 @@ def unsubscribe_organization_view(request, organization_pk):
     """Django view for the "Unsubscribe" button."""
     organization_pk = int(organization_pk)  # in real code should use user login information
     organization = Organization.objects.get(pk=organization_pk)
-    item = organization.purchase.subscriptionitem
-    return do_unsubscribe(item.payment, item)
+    purchase = organization.purchase.subscriptionpurchase
+    return do_unsubscribe(purchase.payment, purchase)
     # return HttpResponseRedirect(reverse('organization-prolong-payment', args=[organization.pk]))
 
 
