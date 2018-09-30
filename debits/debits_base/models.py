@@ -402,6 +402,11 @@ class SubscriptionPurchase(Purchase):
 
     TODO: Avangate has it for every product, but PayPal for transaction as a whole."""
 
+    email = models.EmailField(null=True)
+    """User's email.
+
+    DalPay requires to notify the customer 10 days before every payment."""
+
     @property
     def subscribed(self):
         """Is in automatic (not manual) recurring mode."""
