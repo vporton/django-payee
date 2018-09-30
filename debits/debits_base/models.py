@@ -588,11 +588,11 @@ class SubscriptionPurchase(Purchase):
 
 
 class ProlongPurchase(SimplePurchase):
-    """Prolong :attr:`parent` item.
+    """Prolong :attr:`prolonged` item.
 
     This is meant to be a one-time payment which prolongs a manual subscription item."""
 
-    parent = models.ForeignKey('SubscriptionItem', related_name='child', parent_link=False, on_delete=models.CASCADE)
+    prolonged = models.ForeignKey('SubscriptionItem', related_name='child', parent_link=False, on_delete=models.CASCADE)
     """Which subscription item to prolong."""
 
     period = Period(unit=Period.UNIT_MONTHS, count=0)
@@ -605,8 +605,8 @@ class ProlongPurchase(SimplePurchase):
         prolong2 = self.period
         prolong2.count *= -1
         klass = model_from_ref(self.payment.transaction.processor.klass)
-        self.parent.set_payment_date(klass.offset_date(self.parent.due_payment_date, prolong2))
-        self.parent.save()
+        self.prolonged.set_payment_date(klass.offset_date(self.parent.due_payment_date, prolong2))
+        self.prolonged.save()
 
 
 class Payment(models.Model):
