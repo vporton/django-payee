@@ -255,7 +255,7 @@ class PayPalIPN(PaymentCallback, View):
         purchase = transaction.purchase.subscriptionpurchase
         purchase.activate_subscription(ref, POST['payer_email'])
         # transaction.processor = PaymentProcessor.objects.get(pk=PAYMENT_PROCESSOR_PAYPAL)
-        SubscriptionPurchase.objects.filter(pk=purchase.pk).update(subscribed=True, trial=False)
+        SubscriptionPurchase.objects.filter(pk=purchase.pk).update(trial=False)
         purchase.upgrade_subscription()
         self.on_subscription_created(POST, purchase)
 

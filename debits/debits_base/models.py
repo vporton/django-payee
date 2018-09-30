@@ -397,15 +397,15 @@ class SubscriptionPurchase(Purchase):
     subinvoice = models.PositiveIntegerField(default=1)  # no need for index, as it is used only at PayPal side
     """Internal."""
 
-    subscribed = models.BooleanField(default=False)
-    """Is in automatic (not manual) recurring mode.
-    
-    FIXME: Make it a propery dependent on `subscription_reference`"""
-
     subscription_reference = models.CharField(max_length=255, null=True)
     """As `recurring_payment_id` in PayPal.
 
     TODO: Avangate has it for every product, but PayPal for transaction as a whole."""
+
+    @property
+    def subscribed(self):
+        """Is in automatic (not manual) recurring mode."""
+        return bool(self.subscription_reference)
 
     def is_active(self):
         """Is the item active (paid on time and not blocked).
@@ -446,13 +446,13 @@ class SubscriptionPurchase(Purchase):
         """Internal.
 
         "Competes" with :meth:`on_accept_regular_payment`."""
-        SubscriptionPurchase.filter(pk=self.pk).update(subscription_reference=ref, email=email, subscribed=True)
+        SubscriptionPurchase.filter(pk=self.pk).update(subscription_reference=ref, email=email)
 
     def cancel_subscription(self):
         """Called when we detect that the subscription was canceled."""
         # atomic operation
         SubscriptionPurchase.objects.filter(pk=self.pk).update(
-            payment=None, subscription_reference=None, subscribed=False, subinvoice=F('subinvoice') + 1)
+            payment=None, subscription_reference=None, subinvoice=F('subinvoice') + 1)
         if not self.old_subscription:  # don't send this email on plan upgrade
             self.cancel_subscription_email()
 
@@ -689,12 +689,9 @@ class AggregateItem(SimpleItem):
     def calc(self):
         """Update price and shipping to be the sum of all children."""
         price = 0.0
-        shipping = 0.0
         for child in self.childs.all():
             price += child.price
-            shipping += child.shipping
         self.price = price
-        self.shipping = shipping # FIXNE
         self.save()
 
 
@@ -708,7 +705,11 @@ class AggregatePurchase(SimplePurchase):
 
         TODO: Also tax."""
         self.item.simpleitem.aggregateitem.calc()
-        pass  # FIXME
+        shipping = 0.0
+        for child in self.childs.all():
+            shipping += child.shipping
+        self.shipping = shipping
+        self.save()
 
 
 class CannotCancelSubscription(Exception):
