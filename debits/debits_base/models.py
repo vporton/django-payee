@@ -446,7 +446,7 @@ class SubscriptionPurchase(Purchase):
         """Internal.
 
         "Competes" with :meth:`on_accept_regular_payment`."""
-        SubscriptionPurchase.filter(pk=self.pk).update(subscription_reference=ref, email=email)
+        SubscriptionPurchase.objects.filter(pk=self.pk).update(subscription_reference=ref, email=email)
 
     def cancel_subscription(self):
         """Called when we detect that the subscription was canceled."""
