@@ -450,7 +450,7 @@ class SubscriptionPurchase(Purchase):
         if not purchases:
             purchase = purchases[0]
         else:
-            purchase = SubscriptionPurchase.objects.create(transaction=transaction, subscription_reference=ref, email=email, subscribed=True)
+            purchase = SubscriptionPurchase.objects.create(transaction=transaction, subscription_reference=ref, email=email, subscribed=True)  # FIXME: shall not create
         return purchase
 
     def cancel_subscription(self):
