@@ -328,7 +328,7 @@ class Purchase(models.Model):
         It cancels the old subscription (if any).
 
         It can be called from both subscription IPN and payment IPN, so prepare to handle it two times."""
-        print('self.old_subscription', self.old_subscription, self.old_subscription.subscription_reference)  # FIXME: remove
+        # print('self.old_subscription', self.old_subscription, self.old_subscription.subscription_reference)  # FIXME: remove
         if self.old_subscription:
             self.do_upgrade_subscription()
 
@@ -663,7 +663,7 @@ class AutomaticPayment(Payment):
             klass = model_from_ref(self.transaction.processor.klass)
             api = klass().api()
             try:
-                print('api.cancel_agreement(', self.subscription_reference, 'is_upgrade=', is_upgrade, ')') # FIXME: remove
+                # print('api.cancel_agreement(', self.subscription_reference, 'is_upgrade=', is_upgrade, ')') # FIXME: remove
                 api.cancel_agreement(self.subscription_reference, is_upgrade=is_upgrade)  # may raise an exception
             except CannotCancelSubscription:
                 logger.warn("Cannot cancel subscription " + self.subscription_reference)
