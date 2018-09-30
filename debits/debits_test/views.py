@@ -42,7 +42,7 @@ def do_organization_payment_view(request, purchase, organization):
                    'active': purchase.is_active(),
                    'blocked': purchase.blocked,
                    'manual_mode': not purchase.subscribed,
-                   'processor_name': purchase.payment.transaction.processor.name if purchase.payment else None,
+                   'processor_name': purchase.payment.transaction.processor.name if purchase.payment else None,  # FIXME: Does not work for subscription with delayed first payment
                    # only for automatic recurring payment
                    'plan': purchase.plan.name,
                    'trial': purchase.trial,
