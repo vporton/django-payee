@@ -154,7 +154,7 @@ def do_upgrade(hash, form, processor, purchase, organization):
         organization.save()
         return HttpResponseRedirect(reverse('organization-prolong-payment', args=[organization.pk]))
     else:
-        upgrade_transaction = SubscriptionTransaction.objects.create(processor=processor, purchase=purchase)
+        upgrade_transaction = SubscriptionTransaction.objects.create(processor=processor, purchase=new_purchase)
         return form.make_purchase_from_form(hash, upgrade_transaction)
 
 
