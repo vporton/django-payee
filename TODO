@@ -1,7 +1,3 @@
-FIXME: Shows wrong plan in PayPal when switching plans
-
-FIXME: It seems that canceling old_subscription does not work!
-
 Need to implement PayPal Checkout.
 At first it may seem that for PayPal Checkout we do not need to store the payment info
 in the DB until the payment is accomplished. But in reality we need, because prices
