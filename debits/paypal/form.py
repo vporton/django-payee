@@ -28,8 +28,9 @@ class PayPalForm(BasePaymentProcessor):
         cart = hash.pop('arcamens_cart', False)  # TODO: check if it is an AggregatePurchase (hasattr)
 
         items = self.init_items(transaction)
-        if transaction.purchase.item.is_subscription():
-            self.make_subscription(items, transaction, transaction.purchase)
+        # if transaction.purchase.item.is_subscription():
+        if hasattr(transaction, 'subscriptiontransaction'):
+                self.make_subscription(items, transaction, transaction.purchase)
         else:
             self.make_regular(items, transaction, transaction.purchase, cart)
 
