@@ -71,11 +71,11 @@ class PayPalForm(BasePaymentProcessor):
             items['upload'] = 1
             i = 1
             for child in purchase.aggregatepurchase.childs.order_by('pk') if purchase.is_aggregate else [purchase]:
-                items['item_name' + str(i)] = self.product_name(child)
-                items['amount' + str(i)] = child.item.price
-                items['shipping' + str(i)] = child.shipping
-                items['tax' + str(i)] = child.tax
-                items['quantity' + str(i)] = child.item.product_qty
+                items['item_name_' + str(i)] = self.product_name(child)
+                items['amount_' + str(i)] = child.item.price
+                items['shipping_' + str(i)] = child.shipping
+                items['tax_' + str(i)] = child.tax
+                items['quantity_' + str(i)] = child.item.product_qty
                 i += 1
         else:
             items['item_name'] = self.product_name(purchase)[0:127]
