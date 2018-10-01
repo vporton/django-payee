@@ -116,6 +116,7 @@ def upgrade_calculate_new_period(k, purchase):
 
 def upgrade_create_new_item(old_purchase, plan, new_period, organization):
     """Create new purchase used to upgrade another purchase (:obj:`old_purchase`)."""
+    print('product:', plan.product.name)
     item = debits.debits_base.models.SubscriptionItem.objects.create(
         product=plan.product,
         currency=plan.currency,
@@ -136,7 +137,7 @@ def upgrade_create_new_item(old_purchase, plan, new_period, organization):
 
 def do_upgrade(hash, form, processor, purchase, organization):
     """Start upgrading a subscription purchase,"""
-    plan = PricingPlan.objects.get(pk=int(hash['pricing_plan']))
+    plan = PricingPlan.objects.get(pk=int(hash['pricing_plan']))   # TODO: Don't pass pricing_plan to PayPal
     if plan.currency != purchase.item.currency:
         raise RuntimeError(_("Cannot upgrade to a payment plan with other currency."))
     if purchase.item.subscriptionitem.payment_period.unit != Period.UNIT_MONTHS or purchase.item.subscriptionitem.payment_period.count != 1:
