@@ -25,7 +25,7 @@ class PayPalForm(BasePaymentProcessor):
     def amend_hash_new_purchase(self, transaction, hash):
         # https://developer.paypal.com/docs/classic/paypal-payments-standard/integration-guide/Appx_websitestandard_htmlvariables/
 
-        cart = hash.pop('arcamens_cart', False)  # TODO: check if it is an AggregatePurchase (hasattr)
+        cart = hash.pop('arcamens_cart', hasattr(transaction.purchase.aggregatepurchase))
 
         items = self.init_items(transaction)
         # if transaction.purchase.item.is_subscription():
@@ -67,12 +67,22 @@ class PayPalForm(BasePaymentProcessor):
 
     def make_regular(self, items, transaction, purchase, cart):
         """Internal."""
-        if cart:  # TODO: AggregatePurchase support
-            items['item_name_1'] = self.product_name(purchase)
-            items['amount_1'] = purchase.item.price
-            items['shipping_1'] = purchase.shipping
-            items['tax_1'] = purchase.tax
-            items['quantity_1'] = purchase.item.product_qty
+        if cart:
+            if hasattr(transaction.purchase.aggregatepurchase):
+                i = 1
+                for child in transaction.purchase.aggregatepurchase.childs:
+                    items['item_name' + str(i)] = self.product_name(child)
+                    items['amount' + str(i)] = child.item.price
+                    items['shipping' + str(i)] = child.shipping
+                    items['tax' + str(i)] = child.tax
+                    items['quantity' + str(i)] = child.item.product_qty
+                    i += 1
+            else:
+                items['item_name_1'] = self.product_name(purchase)
+                items['amount_1'] = purchase.item.price
+                items['shipping_1'] = purchase.shipping
+                items['tax_1'] = purchase.tax
+                items['quantity_1'] = purchase.item.product_qty
             items['upload'] = 1
         else:
             items['item_name'] = self.product_name(purchase)[0:127]
