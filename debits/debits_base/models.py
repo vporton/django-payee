@@ -674,7 +674,7 @@ class Payment(models.Model):
         # except ObjectDoesNotExist:
         #     Payment.objects.filter(pk=self.pk).update(payment=None)
         try:
-            SimplePurchase.objects.filter(pk=self.payment.pk).update(status=SimplePaymentStatus.REFUNDED)
+            SimplePurchase.objects.filter(pk=self.purchase.pk).update(status=SimplePaymentStatus.REFUNDED)
         except ObjectDoesNotExist:
             pass
         try:
