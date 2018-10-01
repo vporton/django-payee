@@ -339,26 +339,6 @@ class Purchase(models.Model):
         # self.on_upgrade_subscription(transaction, item.old_subscription)  # TODO: Needed?
         Purchase.objects.filter(pk=self.pk).update(old_subscription=None)
 
-    # TODO: The same as in do_upgrade_subscription()
-    #@shared_task  # PayPal tormoz, so run in a separate thread # TODO: celery (with `TypeError: force_cancel() missing 1 required positional argument: 'self'`)
-    def force_cancel(self, is_upgrade=False):
-        """Cancels the :attr:`transaction`."""
-        if self.subscription_reference:
-            klass = model_from_ref(self.processor.klass)
-            api = klass().api()
-            try:
-                api.cancel_agreement(self.subscription_reference, is_upgrade=is_upgrade)  # may raise an exception
-            except CannotCancelSubscription:
-                logger.warn("Cannot cancel subscription " + self.subscription_reference)
-                # fallback
-                SubscriptionPurchase.objects.filter(pk=self.pk).update(
-                    payment=None, processor=None, subscription_reference=None, subinvoice=F('subinvoice') + 1)
-                raise
-            # transaction.cancel_subscription()  # runs in the callback
-        else:
-            # SubscriptionItem.objects.filter(payment=self.pk).update(payment=None, subinvoice=F('subinvoice') + 1)  # called in cancel_subscription()
-            pass
-
     # TODO: Move to Payment class?
     def send_rendered_email(self, template_name, subject, data):
         """Internal."""
@@ -465,6 +445,26 @@ class SubscriptionPurchase(Purchase):
             # klass = model_from_ref(self.payment.transaction.processor.klass)  # not yet defined
             # self.set_payment_date(klass.offset_date(datetime.date.today(), self.trial_period))
             self.set_payment_date(datetime.date.today() + period_to_delta(self.item.subscriptionitem.trial_period))
+
+    # TODO: The same as in do_upgrade_subscription()
+    #@shared_task  # PayPal tormoz, so run in a separate thread # TODO: celery (with `TypeError: force_cancel() missing 1 required positional argument: 'self'`)
+    def force_cancel(self, is_upgrade=False):
+        """Cancels the :attr:`transaction`."""
+        if self.subscription_reference:
+            klass = model_from_ref(self.processor.klass)
+            api = klass().api()
+            try:
+                api.cancel_agreement(self.subscription_reference, is_upgrade=is_upgrade)  # may raise an exception
+            except CannotCancelSubscription:
+                logger.warn("Cannot cancel subscription " + self.subscription_reference)
+                # fallback
+                SubscriptionPurchase.objects.filter(pk=self.pk).update(
+                    payment=None, processor=None, subscription_reference=None, subinvoice=F('subinvoice') + 1)
+                raise
+            # transaction.cancel_subscription()  # runs in the callback
+        else:
+            # SubscriptionItem.objects.filter(payment=self.pk).update(payment=None, subinvoice=F('subinvoice') + 1)  # called in cancel_subscription()
+            pass
 
     @django.db.transaction.atomic
     def activate_subscription(self, ref, email, processor):
