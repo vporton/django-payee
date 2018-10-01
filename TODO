@@ -1,9 +1,3 @@
-FIXME: (Explanation: When switching plans, PayPal considers it a single payment, not subscription. Why?)
-pk_from_custom() fails by the following steps:
-1. Create new organization with Item 1 without trial. Wait for both IPNs.
-2. Subscribe it to PayPal.
-3. Switch to Item 2.
-
 FIXME: It seems that canceling old_subscription does not work!
 
 Need to implement PayPal Checkout.
