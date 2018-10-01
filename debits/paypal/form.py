@@ -70,7 +70,8 @@ class PayPalForm(BasePaymentProcessor):
         if cart:
             items['upload'] = 1
             i = 1
-            for child in transaction.purchase.aggregatepurchase.childs if transaction.purchase.is_aggregate else [purchase]:
+            for child in transaction.purchase.aggregatepurchase.childs.order_by('pk') \
+                    if transaction.purchase.is_aggregate else [purchase]:
                 items['item_name' + str(i)] = self.product_name(child)
                 items['amount' + str(i)] = child.item.price
                 items['shipping' + str(i)] = child.shipping
