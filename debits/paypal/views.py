@@ -102,7 +102,6 @@ class PayPalIPN(PaymentCallback, View):
         except:
             import traceback
             traceback.print_exc()
-            # logger.warning(e)
         return HttpResponse('', content_type="text/plain")
 
     def do_post(self, request):
