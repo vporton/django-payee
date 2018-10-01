@@ -647,7 +647,7 @@ class ProlongPurchase(SimplePurchase):
         prolong2 = self.period
         prolong2.count *= -1
         klass = model_from_ref(self.payment.transaction.processor.klass)
-        self.prolonged.set_payment_date(klass.offset_date(self.parent.due_payment_date, prolong2))
+        self.prolonged.set_payment_date(klass.offset_date(self.prolonged.due_payment_date, prolong2))
         self.prolonged.save()
 
 
