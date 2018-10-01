@@ -454,7 +454,7 @@ class SubscriptionPurchase(Purchase):
         """Start trial period.
 
         This should be called after setting non-zero :attr:`trial_period`."""
-        if self.trial_period.count != 0:
+        if self.item.subscriptionitem.trial_period.count != 0:
             self.trial = True
             # klass = model_from_ref(self.payment.transaction.processor.klass)  # not yet defined
             # self.set_payment_date(klass.offset_date(datetime.date.today(), self.trial_period))
