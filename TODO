@@ -1,3 +1,5 @@
+FIXME: Shows wrong plan in PayPal when switching plans
+
 FIXME: It seems that canceling old_subscription does not work!
 
 Need to implement PayPal Checkout.
