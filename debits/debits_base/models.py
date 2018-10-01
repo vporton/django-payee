@@ -167,11 +167,6 @@ class SimpleTransaction(BaseTransaction):
             self.advance_parent(self.purchase.simplepurchase.prolongpurchase, payment)
         except AttributeError:
             pass
-        try:  # FIXME: remove
-            print('XXX', Payment.objects.get(pk=payment.pk).transaction_id)
-        except:
-            import traceback
-            traceback.print_exc()
         return payment
 
 

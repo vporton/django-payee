@@ -125,7 +125,7 @@ class PayPalIPN(PaymentCallback, View):
             logger.warning("PayPal verification not passed")
 
     def verified_post(self, POST, request):
-        print('custom', POST['custom'])  # FIXME: Don't print sensitive data
+        # print('custom', POST['custom'])  # Don't print sensitive data
         transaction_id = BaseTransaction.pk_from_custom(POST['custom'])
         self.on_transaction_complete(POST, transaction_id)
 
