@@ -116,7 +116,7 @@ def upgrade_calculate_new_period(k, purchase):
 
 def upgrade_create_new_item(old_purchase, plan, new_period, organization):
     """Create new purchase used to upgrade another purchase (:obj:`old_purchase`)."""
-    print('product:', plan.product.name)
+    print('plan:', plan.name)  # FIXME: remove
     item = debits.debits_base.models.SubscriptionItem.objects.create(
         product=plan.product,
         currency=plan.currency,
