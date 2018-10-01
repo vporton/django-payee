@@ -55,7 +55,7 @@ def do_organization_payment_view(request, purchase, organization):
                    'plan_form': plan_form,
                    'can_switch_to_recurring': pp.ready_for_subscription(purchase),
                    'subscription_allowed_date': pp.subscription_allowed_date(purchase),
-                   'subscription_reference': purchase.payment.automaticpayment.subscription_reference if purchase.subscribed else None,
+                   'subscription_reference': purchase.subscription_reference,
                    'subinvoice': purchase.subinvoice})
 
 
