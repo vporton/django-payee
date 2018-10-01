@@ -70,7 +70,7 @@ class BasePaymentProcessor(abc.ABC):
         action = escape(hash['arcamens_action'])
         del hash['arcamens_action']
         return "<html><head><meta charset='utf-8'' /></head>\n" +\
-            "<body onload='document.forms[0].xsubmit()'>\n<p>Redirecting...</p>\n" + \
+            "<body onload='document.forms[0].submit()'>\n<p>Redirecting...</p>\n" + \
             "<form method='post' action='"+action+"'>\n" + \
             '\n'.join([hidden_field(i[0], str(i[1])) for i in hash.items()]) + \
             "\n</form></body></html>"

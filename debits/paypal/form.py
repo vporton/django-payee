@@ -43,7 +43,7 @@ class PayPalForm(BasePaymentProcessor):
         url = 'https://www.sandbox.paypal.com' if debug else 'https://www.paypal.com'
         return {'business': settings.PAYPAL_ID,
                 'arcamens_action': url + "/cgi-bin/webscr",
-                'cmd': "_xclick-subscriptions" if transaction.purchase.item.is_subscription() else "_xclick",
+                'cmd': "_xclick-subscriptions" if hasattr(transaction, 'subscriptiontransaction') else "_xclick",
                 'notify_url': self.ipn_url(),
                 'custom': BaseTransaction.custom_from_pk(transaction.pk),
                 'invoice': transaction.invoice_id()}
