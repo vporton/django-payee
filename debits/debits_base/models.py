@@ -333,7 +333,7 @@ class Purchase(models.Model):
 
         TODO: Remove ALL old subscriptions as in payment_system2."""
         try:
-            self.old_subscription.force_cancel(is_upgrade=True)
+            self.old_subscription.subscriptionpurchase.force_cancel(is_upgrade=True)
         except CannotCancelSubscription:
             pass
         # self.on_upgrade_subscription(transaction, item.old_subscription)  # TODO: Needed?
