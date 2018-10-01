@@ -68,22 +68,15 @@ class PayPalForm(BasePaymentProcessor):
     def make_regular(self, items, transaction, purchase, cart):
         """Internal."""
         if cart:
-            if hasattr(transaction.purchase.aggregatepurchase):
-                i = 1
-                for child in transaction.purchase.aggregatepurchase.childs:
-                    items['item_name' + str(i)] = self.product_name(child)
-                    items['amount' + str(i)] = child.item.price
-                    items['shipping' + str(i)] = child.shipping
-                    items['tax' + str(i)] = child.tax
-                    items['quantity' + str(i)] = child.item.product_qty
-                    i += 1
-            else:
-                items['item_name_1'] = self.product_name(purchase)
-                items['amount_1'] = purchase.item.price
-                items['shipping_1'] = purchase.shipping
-                items['tax_1'] = purchase.tax
-                items['quantity_1'] = purchase.item.product_qty
             items['upload'] = 1
+            i = 1
+            for child in transaction.purchase.aggregatepurchase.childs if hasattr(purchase.aggregatepurchase) else [purchase]:
+                items['item_name' + str(i)] = self.product_name(child)
+                items['amount' + str(i)] = child.item.price
+                items['shipping' + str(i)] = child.shipping
+                items['tax' + str(i)] = child.tax
+                items['quantity' + str(i)] = child.item.product_qty
+                i += 1
         else:
             items['item_name'] = self.product_name(purchase)[0:127]
             items['amount'] = purchase.item.price
