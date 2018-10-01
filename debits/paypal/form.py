@@ -30,7 +30,7 @@ class PayPalForm(BasePaymentProcessor):
         items = self.init_items(transaction)
         # if transaction.purchase.item.is_subscription():
         if hasattr(transaction, 'subscriptiontransaction'):
-                self.make_subscription(items, transaction, transaction.purchase)
+            self.make_subscription(items, transaction, transaction.purchase)
         else:
             self.make_regular(items, transaction, transaction.purchase, cart)
 
