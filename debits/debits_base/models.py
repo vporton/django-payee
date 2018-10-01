@@ -678,8 +678,8 @@ class Payment(models.Model):
         except ObjectDoesNotExist:
             pass
         try:
-            self.transaction.purchase.prolongpurchase.refund_payment()
-        except ObjectDoesNotExist:
+            self.transaction.purchase.simplepurchase.prolongpurchase.refund_payment()
+        except (SimplePurchase.DoesNotExist, ProlongPurchase.DoesNotExist):
             pass
 
 
