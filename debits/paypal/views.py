@@ -160,7 +160,7 @@ class PayPalIPN(PaymentCallback, View):
             traceback.print_exc()
             return
         if POST['mc_currency'] == transaction.purchase.item.currency:
-            transaction.payment.refund_payment()
+            transaction.basetransaction.payment.refund_payment()
         else:
             logger.warning("Wrong refund currency.")
 
