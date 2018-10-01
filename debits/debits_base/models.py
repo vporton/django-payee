@@ -323,6 +323,10 @@ class Purchase(models.Model):
     def __repr__(self):
         return "<Purchase pk=%d, %s>" % (self.pk, self.item.product.name)
 
+    @property
+    def is_aggregate(self):
+        return False
+
     @transaction.atomic
     def upgrade_subscription(self):
         """Internal.
@@ -727,6 +731,10 @@ class AggregatePurchase(SimplePurchase):
         self.shipping = shipping
         self.tax = tax
         self.save()
+
+    @property
+    def is_aggregate(self):
+        return True
 
 
 class CannotCancelSubscription(Exception):

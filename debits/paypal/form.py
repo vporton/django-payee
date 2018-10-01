@@ -25,7 +25,7 @@ class PayPalForm(BasePaymentProcessor):
     def amend_hash_new_purchase(self, transaction, hash):
         # https://developer.paypal.com/docs/classic/paypal-payments-standard/integration-guide/Appx_websitestandard_htmlvariables/
 
-        cart = hash.pop('arcamens_cart', hasattr(transaction.purchase.aggregatepurchase))
+        cart = hash.pop('arcamens_cart', transaction.purchase.is_aggregate)
 
         items = self.init_items(transaction)
         # if transaction.purchase.item.is_subscription():
@@ -70,7 +70,7 @@ class PayPalForm(BasePaymentProcessor):
         if cart:
             items['upload'] = 1
             i = 1
-            for child in transaction.purchase.aggregatepurchase.childs if hasattr(purchase.aggregatepurchase) else [purchase]:
+            for child in transaction.purchase.aggregatepurchase.childs if transaction.purchase.is_aggregate else [purchase]:
                 items['item_name' + str(i)] = self.product_name(child)
                 items['amount' + str(i)] = child.item.price
                 items['shipping' + str(i)] = child.shipping
