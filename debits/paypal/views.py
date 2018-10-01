@@ -180,6 +180,7 @@ class PayPalIPN(PaymentCallback, View):
             return
         if Decimal(POST['mc_gross']) == transaction.purchase.item.price and \
                         Decimal(POST['shipping']) == transaction.purchase.shipping and \
+                        Decimal(POST['tax']) == transaction.purchase.tax and \
                         POST['mc_currency'] == transaction.purchase.item.currency:
             if self.auto_refund(transaction, transaction.purchase.simplepurchase.prolongpurchase.prolonged, POST):
                 return HttpResponse('')
@@ -200,7 +201,7 @@ class PayPalIPN(PaymentCallback, View):
         except BaseTransaction.DoesNotExist:
             traceback.print_exc()
             return
-        if Decimal(POST['amount_per_cycle']) == transaction.purchase.item.price + transaction.purchase.item.shipping and \
+        if Decimal(POST['amount_per_cycle']) == transaction.purchase.item.price + transaction.purchase.item.shipping + transaction.purchase.item.tax and \
                         POST['payment_cycle'] in self.pp_payment_cycles(transaction.purchase.item):
             self.do_do_accept_subscription_or_recurring_payment(transaction, transaction.purchase.item, POST, POST['recurring_payment_id'])
         else:
@@ -232,7 +233,7 @@ class PayPalIPN(PaymentCallback, View):
             traceback.print_exc()
             return
         purchase = transaction.purchase
-        if Decimal(POST['mc_gross']) == purchase.item.price + purchase.shipping and \
+        if Decimal(POST['mc_gross']) == purchase.item.price + purchase.shipping + purchase.tax and \
                         POST['mc_currency'] == purchase.item.currency:
             self.do_do_accept_subscription_or_recurring_payment(transaction, purchase, POST, POST['subscr_id'])
         else:
@@ -296,7 +297,7 @@ class PayPalIPN(PaymentCallback, View):
             traceback.print_exc()
             return
         if 'period1' not in POST and 'period2' not in POST and \
-                        Decimal(POST['mc_amount3']) == transaction.purchase.item.price + transaction.purchase.shipping and \
+                        Decimal(POST['mc_amount3']) == transaction.purchase.item.price + transaction.purchase.shipping + transaction.purchase.tax and \
                         POST['mc_currency'] == transaction.purchase.item.currency and \
                         POST['period3'] in self.pp_payment_cycles(transaction):
             self.do_subscription_or_recurring_created(transaction, POST, POST['recurring_payment_id'])

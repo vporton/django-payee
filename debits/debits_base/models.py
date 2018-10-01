@@ -296,6 +296,11 @@ class Purchase(models.Model):
 
     Remain zero if doubt."""
 
+    rax = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    """Tax for the sale.
+
+    Remain zero if doubt."""
+
     # code = models.CharField(max_length=255) # TODO
 
     reminders_sent = models.SmallIntegerField(default=0, db_index=True)
@@ -696,7 +701,7 @@ class AggregateItem(SimpleItem):
     TODO: Not tested!"""
 
     def calc(self):
-        """Update price and shipping to be the sum of all children."""
+        """Update price to be the sum of all children."""
         price = 0.0
         for child in self.childs.all():
             price += child.price
@@ -710,14 +715,17 @@ class AggregatePurchase(SimplePurchase):
     TODO: Not tested!"""
 
     def calc(self):
-        """Update price and shipping to be the sum of all children.
+        """Update shipping and tax to be the sum of all children.
 
         TODO: Also tax."""
         self.item.simpleitem.aggregateitem.calc()
         shipping = 0.0
+        tax = 0.0
         for child in self.childs.all():
             shipping += child.shipping
+            tax += child.tax
         self.shipping = shipping
+        self.tax = tax
         self.save()
 
 

@@ -61,7 +61,7 @@ class PayPalForm(BasePaymentProcessor):
             items['a1'] = 0
             items['p1'] = purchase.item.subscriptionitem.trial_period.count
             items['t1'] = unit_map[purchase.item.subscriptionitem.trial_period.unit]
-        items['a3'] = purchase.item.price + purchase.shipping
+        items['a3'] = purchase.item.price + purchase.shipping + purchase.tax
         items['p3'] = purchase.item.subscriptionitem.payment_period.count
         items['t3'] = unit_map[purchase.item.subscriptionitem.payment_period.unit]
 
@@ -71,12 +71,14 @@ class PayPalForm(BasePaymentProcessor):
             items['item_name_1'] = self.product_name(purchase)
             items['amount_1'] = purchase.item.price
             items['shipping_1'] = purchase.shipping
+            items['tax_1'] = purchase.tax
             items['quantity_1'] = purchase.item.product_qty
             items['upload'] = 1
         else:
             items['item_name'] = self.product_name(purchase)[0:127]
             items['amount'] = purchase.item.price
             items['shipping'] = purchase.shipping
+            items['tax'] = purchase.tax
             items['quantity'] = purchase.item.product_qty
 
     def subscription_allowed_date(self, purchase):
