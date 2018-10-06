@@ -1,7 +1,7 @@
 import abc
 import datetime
 from django.urls import reverse
-from debits.debits_base.processors import BasePaymentProcessor
+from debits.debits_base.processors import RedirectPaymentProcessor
 from debits.debits_base.base import Period
 from debits.debits_base.models import BaseTransaction
 from django.conf import settings
@@ -11,7 +11,7 @@ from django.conf import settings
 # https://developer.paypal.com/docs/classic/express-checkout/integration-guide/ECRecurringPayments/
 # You can increase the profile amount by only 20% in each 180-day interval after you create the profile.
 
-class PayPalForm(BasePaymentProcessor):
+class PayPalForm(RedirectPaymentProcessor):
     """Base class for processing submit of a PayPal form."""
     @classmethod
     def ipn_url(cls):

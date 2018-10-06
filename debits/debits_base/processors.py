@@ -10,43 +10,30 @@ except ImportError:
 import debits.debits_base
 
 
-def hidden_field(f, v):
-    """Internal."""
-    return "<input type='hidden' name='%s' value='%s'/>" % (escape(f), escape(v))
-
-
 class BasePaymentProcessor(abc.ABC):
     """Executing a transaction for a particular payment processor (by a derived class).
 
     We receive a derivative of :class:`~debits.debits_base.models.BaseTransaction` object
-    and a hash (see for example PayPay documentation) from user.
-
-    Then the hash is amended (for example added the price from the transaction object) and
-    passed to the payment processor.
-    """
+    from user."""
     @abc.abstractmethod
-    def amend_hash_new_purchase(self, transaction, hash):
-        """Internal."""
+    def make_purchase(self, hash, transaction):
+        """Start the process of purchase with given hash and transaction.
+
+        `hash` is ignore in this class (but not all its subclasses)."""
         pass
 
-    def amend_hash_change_subscription(self, transaction, hash):
-        """Internal."""
-        raise NotImplementedError()
+    @abc.abstractmethod
+    def change_subscription(self, hash, transaction):
+        """Start the process of changing a subscription with hash transaction.
 
-    def change_subscription(self, transaction, hash):
-        """Start the process of changing a subscription with given hash and transaction."""
-        hash = self.amend_hash_change_subscription(transaction, hash)
-        return self.redirect_to_processor(hash)
-
-    def make_purchase(self, hash, transaction):
-        """Start the process of purchase with given hash and transaction."""
-        hash = self.amend_hash_new_purchase(transaction, hash)
-        return self.redirect_to_processor(hash)
+        `hash` is ignore in this class (but not all its subclasses)."""
+        pass
 
     def make_purchase_from_form(self, hash, transaction):
         """Start the process of purchase with hash received from a HTML form and transaction."""
         hash = dict(hash)
-        del hash['csrfmiddlewaretoken']
+        if 'csrfmiddlewaretoken' in hash:
+            del hash['csrfmiddlewaretoken']
         # immediately before redirect to the processor
         return self.make_purchase(hash, transaction)
 
@@ -54,26 +41,10 @@ class BasePaymentProcessor(abc.ABC):
         """Start the process of changing a subscription with hash received from a HTML form and transaction."""
         hash = dict(hash)
         transaction = debits.debits_base.models.Item.objects.get(hash['arcamens_purchaseid'])
-        del hash['arcamens_purchaseid']
+        if 'csrfmiddlewaretoken' in hash:
+            del hash['csrfmiddlewaretoken']
         hash = self.amend_hash_change_subscription(transaction, hash)
-        return self.change_subscription(transaction, hash)
-
-    def redirect_to_processor(self, hash):
-        """Internal."""
-        return HttpResponse(BasePaymentProcessor.html(hash))
-
-    # Internal
-    # Use this instead of a redirect because we prefer POST over GET
-    @staticmethod
-    def html(hash):
-        """Internal."""
-        action = escape(hash['arcamens_action'])
-        del hash['arcamens_action']
-        return "<html><head><meta charset='utf-8'' /></head>\n" +\
-            "<body onload='document.forms[0].submit()'>\n<p>Redirecting...</p>\n" + \
-            "<form method='post' action='"+action+"'>\n" + \
-            '\n'.join([hidden_field(i[0], str(i[1])) for i in hash.items()]) + \
-            "\n</form></body></html>"
+        return self.change_subscription(hash, transaction)
 
     def ready_for_subscription(self, transaction):
         """Check if ready for subscription.
@@ -91,6 +62,57 @@ class BasePaymentProcessor(abc.ABC):
     def product_name(self, purchase):
         """Internal."""
         return purchase.item.product.name
+
+
+def hidden_field(f, v):
+    """Internal."""
+    return "<input type='hidden' name='%s' value='%s'/>" % (escape(f), escape(v))
+
+
+class RedirectPaymentProcessor(BasePaymentProcessor, metaclass=abc.ABCMeta):
+    """Payment processor which redirects the user's browser to a page on payment site.
+
+    We receive a derivative of :class:`~debits.debits_base.models.BaseTransaction` object
+    and a hash (see for example PayPay documentation) from user.
+
+    Then the hash is amended (for example added the price from the transaction object) and
+    passed to the payment processor.
+    """
+    @abc.abstractmethod
+    def amend_hash_new_purchase(self, transaction, hash):
+        """Internal."""
+        pass
+
+    def amend_hash_change_subscription(self, transaction, hash):
+        """Internal."""
+        raise NotImplementedError()
+
+    def make_purchase(self, hash, transaction):
+        """Start the process of purchase with given hash and transaction."""
+        hash = self.amend_hash_new_purchase(transaction, hash)
+        return self.redirect_to_processor(hash)
+
+    def change_subscription(self, transaction, hash):
+        """Start the process of changing a subscription with given hash and transaction."""
+        hash = self.amend_hash_change_subscription(transaction, hash)
+        return self.redirect_to_processor(hash)
+
+    def redirect_to_processor(self, hash):
+        """Internal."""
+        return HttpResponse(RedirectPaymentProcessor.html(hash))
+
+    # Internal
+    # Use this instead of a redirect because we prefer POST over GET
+    @staticmethod
+    def html(hash):
+        """Internal."""
+        action = escape(hash['arcamens_action'])
+        del hash['arcamens_action']
+        return "<html><head><meta charset='utf-8'' /></head>\n" +\
+            "<body onload='document.forms[0].submit()'>\n<p>Redirecting...</p>\n" + \
+            "<form method='post' action='"+action+"'>\n" + \
+            '\n'.join([hidden_field(i[0], str(i[1])) for i in hash.items()]) + \
+            "\n</form></body></html>"
 
 
 PAYMENT_PROCESSOR_AVANGATE = 1
