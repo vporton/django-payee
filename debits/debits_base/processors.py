@@ -22,12 +22,11 @@ class BasePaymentProcessor(abc.ABC):
         `hash` is ignored in this class (but not all its subclasses)."""
         pass
 
-    @abc.abstractmethod
     def change_subscription(self, hash, transaction):
         """Start the process of changing a subscription with hash transaction.
 
         `hash` is ignored in this class (but not all its subclasses)."""
-        pass
+        raise NotImplementedError()
 
     def make_purchase_from_form(self, hash, transaction):
         """Start the process of purchase with hash received from a HTML form and transaction."""
