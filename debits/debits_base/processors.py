@@ -13,7 +13,7 @@ import debits.debits_base
 class BasePaymentProcessor(abc.ABC):
     """Executing a transaction for a particular payment processor (by a derived class).
 
-    We receive a derivative of :class:`~debits.debits_base.models.BaseTransaction` object
+    We receive a derivative of :class:`~debits.debits_base.models.Transaction` object
     from user."""
     @abc.abstractmethod
     def make_purchase(self, hash, transaction):
@@ -71,7 +71,7 @@ def hidden_field(f, v):
 class RedirectPaymentProcessor(BasePaymentProcessor, metaclass=abc.ABCMeta):
     """Payment processor which redirects the user's browser to a page on payment site.
 
-    We receive a derivative of :class:`~debits.debits_base.models.BaseTransaction` object
+    We receive a derivative of :class:`~debits.debits_base.models.Transaction` object
     and a hash (see for example PayPay documentation) from user.
 
     Then the hash is amended (for example added the price from the transaction object) and

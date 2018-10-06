@@ -10,7 +10,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from debits.debits_base.processors import PaymentCallback, PAYMENT_PROCESSOR_PAYPAL
 from debits.debits_base.base import logger
-from debits.debits_base.models import BaseTransaction, SimpleTransaction, SubscriptionTransaction, AutomaticPayment, \
+from debits.debits_base.models import Transaction, SimpleTransaction, SubscriptionTransaction, AutomaticPayment, \
     SubscriptionPurchase
 from debits.debits_base.base import Period
 from django.conf import settings
@@ -126,7 +126,7 @@ class PayPalIPN(PaymentCallback, View):
 
     def verified_post(self, POST, request):
         # print('custom', POST['custom'])  # Don't print sensitive data
-        transaction_id = BaseTransaction.pk_from_custom(POST['custom'])
+        transaction_id = Transaction.pk_from_custom(POST['custom'])
         self.on_transaction_complete(POST, transaction_id)
 
     def on_transaction_complete(self, POST, transaction_id):
@@ -154,8 +154,8 @@ class PayPalIPN(PaymentCallback, View):
 
     def do_appect_refund(self, POST, transaction_id):
         try:
-            transaction = BaseTransaction.objects.get(pk=transaction_id)
-        except BaseTransaction.DoesNotExist:
+            transaction = Transaction.objects.get(pk=transaction_id)
+        except Transaction.DoesNotExist:
             traceback.print_exc()
             return
         if POST['mc_currency'] == transaction.purchase.item.currency:
@@ -174,7 +174,7 @@ class PayPalIPN(PaymentCallback, View):
     def do_do_accept_regular_payment(self, POST, transaction_id):
         try:
             transaction = SimpleTransaction.objects.get(pk=transaction_id)
-        except BaseTransaction.DoesNotExist:
+        except Transaction.DoesNotExist:
             traceback.print_exc()
             return
         if Decimal(POST['mc_gross']) == transaction.purchase.item.price and \
@@ -194,10 +194,10 @@ class PayPalIPN(PaymentCallback, View):
         self.do_accept_recurring_payment(POST, transaction_id)
 
     def do_accept_recurring_payment(self, POST, transaction_id):
-        # transaction = BaseTransaction.objects.select_for_update().get(pk=transaction_id)  # only inside transaction
+        # transaction = Transaction.objects.select_for_update().get(pk=transaction_id)  # only inside transaction
         try:
             transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
-        except BaseTransaction.DoesNotExist:
+        except Transaction.DoesNotExist:
             traceback.print_exc()
             return
         if Decimal(POST['amount_per_cycle']) == transaction.purchase.item.price + transaction.purchase.item.shipping + transaction.purchase.item.tax and \
@@ -225,10 +225,10 @@ class PayPalIPN(PaymentCallback, View):
         self.on_payment(transaction.payment.automaticpayment)
 
     def do_accept_subscription_payment(self, POST, transaction_id):
-        # transaction = BaseTransaction.objects.select_for_update().get(pk=transaction_id)  # only inside transaction
+        # transaction = Transaction.objects.select_for_update().get(pk=transaction_id)  # only inside transaction
         try:
             transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
-        except BaseTransaction.DoesNotExist:
+        except Transaction.DoesNotExist:
             traceback.print_exc()
             return
         purchase = transaction.purchase
@@ -268,7 +268,7 @@ class PayPalIPN(PaymentCallback, View):
     def do_accept_subscription_signup(self, POST, transaction_id):
         try:
             transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
-        except BaseTransaction.DoesNotExist:
+        except Transaction.DoesNotExist:
             traceback.print_exc()
             return
         purchase = transaction.purchase.subscriptionpurchase
@@ -292,7 +292,7 @@ class PayPalIPN(PaymentCallback, View):
     def accept_recurring_signup(self, POST, transaction_id):
         try:
             transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
-        except BaseTransaction.DoesNotExist:
+        except Transaction.DoesNotExist:
             traceback.print_exc()
             return
         if 'period1' not in POST and 'period2' not in POST and \
@@ -309,7 +309,7 @@ class PayPalIPN(PaymentCallback, View):
     def do_accept_recurring_canceled(self, POST, transaction_id):
         try:
             transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
-        except BaseTransaction.DoesNotExist:
+        except Transaction.DoesNotExist:
             traceback.print_exc()
 
             return

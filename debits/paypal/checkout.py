@@ -9,19 +9,18 @@ from debits.paypal.models import PayPalAPI
 
 
 class PayPalCheckoutCreate(BasePaymentProcessor):
+    # FIXME: It works only for non-subscription payments
     def make_purchase(self, hash, transaction):
+        transactions = []
+        for subpurchase in transaction.purchase.as_iter():
+            transactions.append({'amount': subpurchase.item.price,
+                                 'currency': subpurchase.item.currency})  # FIXME
         input = {
                 'intent': 'sale',
                 'payer': {
                     'payment_method': 'paypal'
                 },
-                'transactions': [
-                    {
-                        'amount': {
-                            'total': '5.99',
-                            'currency': 'USD'
-                        }
-                    }],
+                'transactions': transactions,
                 'redirect_urls': {
                     'return_url': 'https://www.mysite.com',
                     'cancel_url': 'https://www.mysite.com'

@@ -3,7 +3,7 @@ At first it may seem that for PayPal Checkout we do not need to store the paymen
 in the DB until the payment is accomplished. But in reality we need, because prices
 and currencies may change in the middle.
 
-For PayPal Checkout, we should split BaseTransaction into billing plan and billing
+For PayPal Checkout, we should split Transaction into billing plan and billing
 agreement models.
 
 Don't wait for IPN to terminate subscription.

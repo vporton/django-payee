@@ -68,7 +68,7 @@ class Product(models.Model):
         return self.name
 
 
-class BaseTransaction(models.Model):
+class Transaction(models.Model):
     """A redirect (or other query) to the payment processor.
 
     It may be paid or (not yet) paid."""
@@ -86,17 +86,17 @@ class BaseTransaction(models.Model):
     """The stuff sold by this transaction."""
 
     def __repr__(self):
-        return "<BaseTransaction: %s>" % (("pk=%d" % self.pk) if self.pk else "no pk")
+        return "<Transaction: %s>" % (("pk=%d" % self.pk) if self.pk else "no pk")
 
     @staticmethod
     def custom_from_pk(pk):
         """Secret code of a transaction.
 
-        Secret can be known only to one who created a BaseTransaction.
+        Secret can be known only to one who created a Transaction.
         This prevents third parties to make fake IPNs from a payment processor.
 
         Args:
-            pk: the serial primary key (of :class:`BaseTransaction`) used to calculate the secret transaction code.
+            pk: the serial primary key (of :class:`Transaction`) used to calculate the secret transaction code.
 
         Returns:
             A secret string."""
@@ -105,26 +105,26 @@ class BaseTransaction(models.Model):
 
     @staticmethod
     def pk_from_custom(custom):
-        """Restore the :class:`BaseTransaction` primary key from the secret "custom".
+        """Restore the :class:`Transaction` primary key from the secret "custom".
 
-        Raises :class:`BaseTransaction.DoesNotExist` if the custom is wrong.
+        Raises :class:`Transaction.DoesNotExist` if the custom is wrong.
 
         Args:
             custom: A secret string.
 
         Returns:
-            The primary key for :class:`BaseTransaction`."""
+            The primary key for :class:`Transaction`."""
         r = custom.split(' ', 2)
         if len(r) != 3 or r[0] != settings.PAYMENTS_REALM:
-            raise BaseTransaction.DoesNotExist
+            raise Transaction.DoesNotExist
         try:
             pk = int(r[1])
             secret = hmac.new(settings.SECRET_KEY.encode(), ('payid ' + str(pk)).encode()).hexdigest()
             if r[2] != secret:
-                raise BaseTransaction.DoesNotExist
+                raise Transaction.DoesNotExist
             return pk
         except ValueError:
-            raise BaseTransaction.DoesNotExist
+            raise Transaction.DoesNotExist
 
     @abc.abstractmethod
     def invoice_id(self):
@@ -145,7 +145,7 @@ class BaseTransaction(models.Model):
         pass
 
 
-class SimpleTransaction(BaseTransaction):
+class SimpleTransaction(Transaction):
     """A one-time (non-recurring) transaction."""
 
     def subinvoice(self):
@@ -189,7 +189,7 @@ class SimpleTransaction(BaseTransaction):
         parent_purchase.save()
 
 
-class SubscriptionTransaction(BaseTransaction):
+class SubscriptionTransaction(Transaction):
     """A transaction for a subscription service."""
 
     def subinvoice(self):
@@ -660,7 +660,7 @@ class Payment(models.Model):
 
     payment_time = models.DateTimeField(_('Payment time'), auto_now_add=True)
 
-    transaction = models.OneToOneField('BaseTransaction', on_delete=models.CASCADE)
+    transaction = models.OneToOneField('Transaction', on_delete=models.CASCADE)
     """The transaction we accepted."""
 
     email = models.EmailField(null=True)

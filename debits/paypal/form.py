@@ -3,7 +3,7 @@ import datetime
 from django.urls import reverse
 from debits.debits_base.processors import RedirectPaymentProcessor
 from debits.debits_base.base import Period
-from debits.debits_base.models import BaseTransaction
+from debits.debits_base.models import Transaction
 from django.conf import settings
 
 
@@ -45,7 +45,7 @@ class PayPalForm(RedirectPaymentProcessor):
                 'arcamens_action': url + "/cgi-bin/webscr",
                 'cmd': "_xclick-subscriptions" if hasattr(transaction, 'subscriptiontransaction') else "_xclick",
                 'notify_url': self.ipn_url(),
-                'custom': BaseTransaction.custom_from_pk(transaction.pk),
+                'custom': Transaction.custom_from_pk(transaction.pk),
                 'invoice': transaction.invoice_id()}
 
     def make_subscription(self, items, transaction, purchase):
