@@ -36,5 +36,3 @@ class PayPalCheckoutCreate(BasePaymentProcessor):
         output = r.json()
         return HttpResponse(json.dumps({'id': output['id']}))
         # return HttpResponse(json.dumps({'paymentID': output['id'], 'payerID': TODO}))  # FIXME: It is for payment execution
-
-
