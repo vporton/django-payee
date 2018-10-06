@@ -19,14 +19,14 @@ class BasePaymentProcessor(abc.ABC):
     def make_purchase(self, hash, transaction):
         """Start the process of purchase with given hash and transaction.
 
-        `hash` is ignore in this class (but not all its subclasses)."""
+        `hash` is ignored in this class (but not all its subclasses)."""
         pass
 
     @abc.abstractmethod
     def change_subscription(self, hash, transaction):
         """Start the process of changing a subscription with hash transaction.
 
-        `hash` is ignore in this class (but not all its subclasses)."""
+        `hash` is ignored in this class (but not all its subclasses)."""
         pass
 
     def make_purchase_from_form(self, hash, transaction):
