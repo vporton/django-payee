@@ -12,6 +12,7 @@ INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
+    'django.contrib.staticfiles',
     'debits.debits_base',
     'debits.paypal',
     'debits.debits_test',
@@ -48,6 +49,8 @@ DATABASES = {
 }
 
 ROOT_URLCONF = 'debits.debits_test.urls'
+
+STATIC_URL = '/static/'
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.10/topics/i18n/

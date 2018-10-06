@@ -1,5 +1,6 @@
 import datetime
 
+from django.conf import settings
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, reverse
 from django.utils.translation import ugettext_lazy as _
@@ -56,7 +57,8 @@ def do_organization_payment_view(request, purchase, organization):
                    'can_switch_to_recurring': pp.ready_for_subscription(purchase),
                    'subscription_allowed_date': pp.subscription_allowed_date(purchase),
                    'subscription_reference': purchase.subscription_reference,
-                   'subinvoice': purchase.subinvoice})
+                   'subinvoice': purchase.subinvoice,
+                   'debug': settings.PAYPAL_DEBUG})
 
 
 def create_organization_view(request):

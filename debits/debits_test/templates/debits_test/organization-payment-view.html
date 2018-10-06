@@ -1,9 +1,33 @@
 {% load i18n %}
+{% load static %}
 <html>
     <head>
         <meta charset="utf-8" />
         <title>Organization payment page</title>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+        <script src="https://www.paypalobjects.com/api/checkout.js"></script>
+        <script src="{% static 'paypal-checkout-wrapper.js' %}"></script>
+        <script>
+            var paypal_options = {
+                // Specify the style of the button
+                style: {
+                  layout: 'vertical',  // horizontal | vertical
+                  size:   'medium',    // medium | large | responsive
+                  shape:  'rect',      // pill | rect
+                  color:  'gold'       // gold | blue | silver | white | black
+                },
+
+                // Specify allowed and disallowed funding sources
+                funding: {
+                  allowed: [
+                    paypal.FUNDING.CARD,
+                    paypal.FUNDING.CREDIT,
+                    paypal.FUNDING.ELV
+                  ],
+                  disallowed: []
+                }
+            };
+        </script>
     </head>
     <body>
         <p><strong>WARNING: Information at this page updates not immediately but after a delay.</strong></p>
@@ -47,6 +71,16 @@
             {% else %}
             (Your payment for the old plan is lost when you switch plans in automatic mode. To mitigate
             this you can either pay in the end of a payment period or use manual mode.)
+            <div id="switch_paypal_checkout"></div>
+            <script>
+            debits_render_paypal_button("switch_paypal_checkout",
+                                        '{{ debug|yesno:"sandbox,production" }}',
+                                        '/',  // FIXME
+                                        '/',  // FIXME
+                                        {organization: {{ organization_id }}},
+                                        paypal_options,
+                                        function() {alert("Plan switched!")});
+            </script>
             {% endif %}
         </form>
         {% if manual_mode %}
@@ -57,8 +91,18 @@
             <input type="hidden" name="arcamens_processor" value="PayPal" />
             <input type="hidden" name="arcamens_op" value="subscribe" />
             <input type="hidden" name="organization" value="{{ organization_id }}" />
-            <input type="submit" value="{% trans "Subscribe with PayPal" %}" />
+            <input type="submit" value="{% trans "Subscribe with PayPal (HTML Button)" %}" />
         </form>
+        <div id="subscr_paypal_checkout"></div>
+        <script>
+        debits_render_paypal_button("subscr_paypal_checkout",
+                                    '{{ debug|yesno:"sandbox,production" }}',
+                                    '/',  // FIXME
+                                    '/',  // FIXME
+                                    {organization: {{ organization_id }}},
+                                    paypal_options,
+                                    function() {alert("Subscribed!")});
+        </script>
             {% else %}
         <p>Cannot switch to recurring mode before {{ subscription_allowed_date }}</p>
             {% endif %}
@@ -81,8 +125,18 @@
                 <option value="18">18 months</option>
                 <option value="24">24 months</option>
             </select>
-            <input type="submit" value="{% trans "Pay with PayPal" %}" />
+            <input type="submit" value="{% trans "Pay with PayPal (HTML Button)" %}" />
         </form>
+        <div id="paypal_checkout_manual"></div>
+        <script>
+        debits_render_paypal_button("paypal_checkout_manual",
+                                    '{{ debug|yesno:"sandbox,production" }}',
+                                    '/',  // FIXME
+                                    '/',  // FIXME
+                                    {organization: {{ organization_id }}},
+                                    paypal_options,
+                                    function() {alert("Paid!")});
+        </script>
         {% else %}
         <h2>Terminate subscription (not recommended)</h2>
         <form method="post" action="{% url 'unsubscribe-organization' organization_id %}"
