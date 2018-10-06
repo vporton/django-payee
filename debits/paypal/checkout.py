@@ -19,7 +19,7 @@ class PayPalCheckoutCreate(BasePaymentProcessor):
                                  'details':{'subtotal': subitem.price, 'shipping': subitem.shipping, 'tax': subitem.tax},
                                  'description': self.product_name(subpurchase)[0:127]})
         input = {
-            'intent': 'sale',
+            'intent': 'sale',  # TODO: Other modes (cannot pass through a form parameter for security reasons)
             'payer': {
                 'payment_method': 'paypal'
             },
