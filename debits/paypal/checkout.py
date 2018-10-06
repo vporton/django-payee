@@ -19,16 +19,16 @@ class PayPalCheckoutCreate(BasePaymentProcessor):
                                  'details':{'subtotal': subitem.price, 'shipping': subitem.shipping, 'tax': subitem.tax},
                                  'description': self.product_name(subpurchase)[0:127]})
         input = {
-                'intent': 'sale',
-                'payer': {
-                    'payment_method': 'paypal'
-                },
-                'transactions': transactions,
-                'redirect_urls': {
-                    'return_url': 'https://www.mysite.com',
-                    'cancel_url': 'https://www.mysite.com'
-                }
+            'intent': 'sale',
+            'payer': {
+                'payment_method': 'paypal'
+            },
+            'transactions': transactions,
+            'redirect_urls': {
+                'return_url': 'https://www.mysite.com',
+                'cancel_url': 'https://www.mysite.com'
             }
+        }
         api = PayPalAPI()
         r = api.session.post(api.server + '/v1/payments/payment',
                              data=json.dumps(input),
