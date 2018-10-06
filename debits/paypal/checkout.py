@@ -32,7 +32,8 @@ class PayPalCheckoutCreate(BasePaymentProcessor):
         api = PayPalAPI()
         r = api.session.post(api.server + '/v1/payments/payment',
                              data=json.dumps(input),
-                             headers={'content-type': 'application/json'})
+                             headers={'Content-Type': 'application/json',
+                                      'PayPal-Request-Id': settings.PAYMENTS_REALM + ' ' + transaction.pk})
         if r.status_code != 201:
             return HttpResponse('')  # TODO: What to do in this situation?
         output = r.json()
