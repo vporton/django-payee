@@ -107,13 +107,16 @@
         <p>Cannot switch to recurring mode before {{ subscription_allowed_date }}</p>
             {% endif %}
         <h2>Pay manually</h2>
+        <script>
+        var manual_checkout_hash;
+        </script>
         <form method="post" action="{% url 'do-purchase' %}">
             {% csrf_token %}
             <input type="hidden" name="arcamens_processor" value="PayPal" />
             <input type="hidden" name="arcamens_op" value="manual" />
             <input type="hidden" name="organization" value="{{ organization_id }}" />
             {% trans "Pay for yet" %}
-            <select name="periods">
+            <select id="periods" name="periods" onchange="manual_checkout_hash.periods = $(this).val()">
                 <option value="1">1 month</option>
                 <option value="2">2 months</option>
                 <option value="3">3 months</option>
@@ -129,11 +132,13 @@
         </form>
         <div id="paypal_checkout_manual"></div>
         <script>
+        manual_checkout_hash = {organization: {{ organization_id }},
+                                periods: $("#periods").val()}
         debits_render_paypal_button("paypal_checkout_manual",
                                     '{{ debug|yesno:"sandbox,production" }}',
                                     '/',  // FIXME
                                     '/',  // FIXME
-                                    {organization: {{ organization_id }}},
+                                    manual_checkout_hash,
                                     paypal_options,
                                     function() {alert("Paid!")});
         </script>
