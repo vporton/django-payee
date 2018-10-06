@@ -52,7 +52,8 @@ class PayPalAPI(object):
                    headers={'content-type': 'application/x-www-form-urlencoded'},
                    auth=(settings.PAYPAL_CLIENT_ID, settings.PAYPAL_SECRET))
         token = r.json()["access_token"]
-        s.headers.update({'Authorization': 'Bearer '+token})
+        s.headers.update({'Authorization': 'Bearer '+token,
+                          'PayPal-Partner-Attribution-Id': 'Arcamens_SP_EC'})
         self.session = s
 
     def cancel_agreement(self, agreement_id, is_upgrade=False):
