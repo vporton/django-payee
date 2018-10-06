@@ -13,8 +13,11 @@ class PayPalCheckoutCreate(BasePaymentProcessor):
     def make_purchase(self, hash, transaction):
         transactions = []
         for subpurchase in transaction.purchase.as_iter():
-            transactions.append({'amount': subpurchase.item.price,
-                                 'currency': subpurchase.item.currency})  # FIXME
+            subitem = subpurchase.item
+            transactions.append({'amount': subitem.price + subitem.shipping + subitem.tax,
+                                 'currency': subitem.currency,
+                                 'details':{'subtotal': subitem.price, 'shipping': subitem.shipping, 'tax': subitem.tax},
+                                 'description': self.product_name(subpurchase)[0:127]})
         input = {
                 'intent': 'sale',
                 'payer': {
