@@ -327,6 +327,13 @@ class Purchase(models.Model):
     def is_aggregate(self):
         return False
 
+    def as_iter(self):
+        """Returns an iterator of purchases.
+
+        It is one-item list for a regular purchase or a sorted iterator for an aggregate
+        (see :class:`AggregatePurchase`) purchase."""
+        return self.aggregatepurchase.childs.order_by('pk') if self.is_aggregate else [self]
+
     @transaction.atomic
     def upgrade_subscription(self):
         """Internal.

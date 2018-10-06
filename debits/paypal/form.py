@@ -70,7 +70,7 @@ class PayPalForm(RedirectPaymentProcessor):
         if cart:
             items['upload'] = 1
             i = 1
-            for child in purchase.aggregatepurchase.childs.order_by('pk') if purchase.is_aggregate else [purchase]:
+            for child in purchase.as_iter():
                 items['item_name_' + str(i)] = self.product_name(child)
                 items['amount_' + str(i)] = child.item.price
                 items['shipping_' + str(i)] = child.shipping
