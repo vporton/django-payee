@@ -16,11 +16,11 @@ class PayPalCheckoutCreate(BasePaymentProcessor):
         for subpurchase in transaction.purchase.as_iter():
             subitem = subpurchase.item
             transactions.append({'amount': {
-                                     'total': float(subitem.price + subpurchase.shipping + subpurchase.tax),
+                                     'total': str(subitem.price + subpurchase.shipping + subpurchase.tax),
                                      'currency': subitem.currency,
-                                     'details': {'subtotal': float(subitem.price),
-                                                 'shipping': float(subpurchase.shipping),
-                                                 'tax': float(subpurchase.tax)},
+                                     'details': {'subtotal': str(subitem.price),
+                                                 'shipping': str(subpurchase.shipping),
+                                                 'tax': str(subpurchase.tax)},
                                  },
                                  'description': self.product_name(subpurchase)[0:127]})
         input = {
@@ -34,7 +34,6 @@ class PayPalCheckoutCreate(BasePaymentProcessor):
                 'cancel_url': 'https://www.mysite.com'
             }
         }
-        print(json.dumps(input))
         api = PayPalAPI()
         r = api.session.post(api.server + '/v1/payments/payment',
                              data=json.dumps(input),
