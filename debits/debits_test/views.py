@@ -10,11 +10,10 @@ from .models import Organization, MyPurchase, PricingPlan
 from .forms import CreateOrganizationForm, SwitchPricingPlanForm
 from .business import create_organization
 from debits.debits_base.base import Period, period_to_string
-from debits.debits_base.models import SimpleTransaction, SubscriptionTransaction, ProlongPurchase, SubscriptionItem, \
-    logger, \
+from debits.debits_base.models import SimpleTransaction, SubscriptionTransaction, \
     CannotCancelSubscription, ProlongPurchase, SimpleItem
 import debits
-from .processors import MyPayPalForm
+from .processors import MyPayPalForm, MyPayPalCheckoutCreate
 
 
 def transaction_payment_view(request, transaction_id):
@@ -35,7 +34,7 @@ def organization_payment_view(request, organization_id):
 def do_organization_payment_view(request, purchase, organization):
     """The common pars of views for :func:`transaction_payment_view` and :func:`organization_payment_view`."""
     plan_form = SwitchPricingPlanForm({'pricing_plan': purchase.plan.pk})
-    pp = MyPayPalForm(request)
+    pp = MyPayPalForm()
     return render(request, 'debits_test/organization-payment-view.html',
                   {'organization_id': organization.pk,
                    'organization': organization.name,
@@ -81,11 +80,11 @@ def get_processor(request, hash):
     """Determine the payment processor, from a form."""
     processor_name = hash.pop('arcamens_processor')
     if processor_name == 'PayPal':
-        form = MyPayPalForm(request)
+        form = MyPayPalForm()
         processor_id = debits.debits_base.processors.PAYMENT_PROCESSOR_PAYPAL
         processor = debits.debits_base.models.PaymentProcessor.objects.get(pk=processor_id)
     elif processor_name == 'PayPal Checkout':
-        form = PayPalCheckoutCreate()
+        form = MyPayPalCheckoutCreate()
         processor_id = debits.debits_base.processors.PAYMENT_PROCESSOR_PAYPAL_CHECKOUT
         processor = debits.debits_base.models.PaymentProcessor.objects.get(pk=processor_id)
     else:
