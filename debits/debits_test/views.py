@@ -4,6 +4,8 @@ from django.conf import settings
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, reverse
 from django.utils.translation import ugettext_lazy as _
+
+from debits.paypal.checkout import PayPalCheckoutCreate
 from .models import Organization, MyPurchase, PricingPlan
 from .forms import CreateOrganizationForm, SwitchPricingPlanForm
 from .business import create_organization
@@ -81,6 +83,10 @@ def get_processor(request, hash):
     if processor_name == 'PayPal':
         form = MyPayPalForm(request)
         processor_id = debits.debits_base.processors.PAYMENT_PROCESSOR_PAYPAL
+        processor = debits.debits_base.models.PaymentProcessor.objects.get(pk=processor_id)
+    elif processor_name == 'PayPal Checkout':
+        form = PayPalCheckoutCreate(request)
+        processor_id = debits.debits_base.processors.PAYMENT_PROCESSOR_PAYPAL_CHECKOUT
         processor = debits.debits_base.models.PaymentProcessor.objects.get(pk=processor_id)
     else:
         raise RuntimeError("Unsupported payment form.")
