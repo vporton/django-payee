@@ -39,7 +39,6 @@ class PayPalCheckoutCreate(BasePaymentProcessor):
                              data=json.dumps(input),
                              headers={'Content-Type': 'application/json',
                                       'PayPal-Request-Id': transaction.invoice_id()})  # TODO: Or consider using invoice_number for every transaction?
-        print(r.content)
         if r.status_code != 201:
             return HttpResponse('')  # TODO: What to do in this situation?
         output = r.json()
