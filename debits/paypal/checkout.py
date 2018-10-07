@@ -1,3 +1,4 @@
+import datetime
 import json
 
 import requests
@@ -14,9 +15,11 @@ class PayPalCheckoutCreate(BasePaymentProcessor):
         transactions = []
         for subpurchase in transaction.purchase.as_iter():
             subitem = subpurchase.item
-            transactions.append({'amount': subitem.price + subitem.shipping + subitem.tax,
+            transactions.append({'amount': float(subitem.price + subpurchase.shipping + subpurchase.tax),
                                  'currency': subitem.currency,
-                                 'details':{'subtotal': subitem.price, 'shipping': subitem.shipping, 'tax': subitem.tax},
+                                 'details':{'subtotal': float(subitem.price),
+                                            'shipping': float(subpurchase.shipping),
+                                            'tax': float(subpurchase.tax)},
                                  'description': self.product_name(subpurchase)[0:127]})
         input = {
             'intent': 'sale',  # TODO: Other modes (cannot pass through a form parameter for security reasons)
@@ -39,3 +42,8 @@ class PayPalCheckoutCreate(BasePaymentProcessor):
         output = r.json()
         return HttpResponse(json.dumps({'id': output['id']}))
         # return HttpResponse(json.dumps({'paymentID': output['id'], 'payerID': TODO}))  # FIXME: It is for payment execution
+
+    # FIXME: 1. Correct here? 2. Duplicate with form.py
+    def subscription_allowed_date(self, purchase):
+        return max(datetime.date.today(),
+                   purchase.due_payment_date - datetime.timedelta(days=89))  # intentionally one day added to be sure

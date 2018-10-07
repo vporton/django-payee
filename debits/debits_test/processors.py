@@ -12,6 +12,7 @@ class MyPayPalForm(PayPalForm):
     def ipn_name(cls):
         return 'paypal-ipn'
 
+    # FIXME: Common for different processors
     def product_name(self, purchase):
         """What "product" PayPal shows for the purchase."""
         if isinstance(purchase, ProlongPurchase):

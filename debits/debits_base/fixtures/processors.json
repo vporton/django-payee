@@ -48,5 +48,15 @@
       "klass_app_label": "",
       "klass_model": ""
     }
+  },
+  {
+    "model": "debits_base.paymentprocessor",
+    "pk": 6,
+    "fields": {
+      "name": "PayPal Checkout",
+      "url": "http://www.paypal.com/",
+      "klass_app_label": "paypal",
+      "klass_model": "PayPalProcessorInfo"
+    }
   }
 ]

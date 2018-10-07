@@ -85,7 +85,7 @@ def get_processor(request, hash):
         processor_id = debits.debits_base.processors.PAYMENT_PROCESSOR_PAYPAL
         processor = debits.debits_base.models.PaymentProcessor.objects.get(pk=processor_id)
     elif processor_name == 'PayPal Checkout':
-        form = PayPalCheckoutCreate(request)
+        form = PayPalCheckoutCreate()
         processor_id = debits.debits_base.processors.PAYMENT_PROCESSOR_PAYPAL_CHECKOUT
         processor = debits.debits_base.models.PaymentProcessor.objects.get(pk=processor_id)
     else:

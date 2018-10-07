@@ -97,9 +97,9 @@
         <script>
         debits_render_paypal_button("subscr_paypal_checkout",
                                     '{{ debug|yesno:"sandbox,production" }}',
+                                    "{% url 'do-purchase' %}",
                                     '/',  // FIXME
-                                    '/',  // FIXME
-                                    {organization: {{ organization_id }}},
+                                    {organization: {{ organization_id }}, 'arcamens_op': "subscribe"},
                                     paypal_options,
                                     function() {alert("Subscribed!")});
         </script>
@@ -133,10 +133,11 @@
         <div id="paypal_checkout_manual"></div>
         <script>
         manual_checkout_hash = {organization: {{ organization_id }},
-                                periods: $("#periods").val()}
+                                periods: $("#periods").val(),
+                                'arcamens_op': "manual"}
         debits_render_paypal_button("paypal_checkout_manual",
                                     '{{ debug|yesno:"sandbox,production" }}',
-                                    '/',  // FIXME
+                                    "{% url 'do-purchase' %}",
                                     '/',  // FIXME
                                     manual_checkout_hash,
                                     paypal_options,

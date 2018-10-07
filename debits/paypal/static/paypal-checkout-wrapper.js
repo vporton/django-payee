@@ -1,5 +1,5 @@
 function debits_render_paypal_button(html_id, mode, create_cb, execute_cb, hash, options, confirmation) {
-  hash['processor'] = 'PayPal Checkout';
+  hash['arcamens_processor'] = 'PayPal Checkout';
   var all_options = {
     env: mode, //'sandbox' or 'production'
     payment: function(data, actions) {

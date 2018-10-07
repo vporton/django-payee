@@ -82,6 +82,6 @@ PAYPAL_DEBUG = True
 PAYMENTS_REALM = 'testapp1'
 
 try:
-    from local_settings import *
+    from debits.debits_test.local_settings import *
 except ImportError as e:
     pass
