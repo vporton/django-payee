@@ -34,7 +34,7 @@ def organization_payment_view(request, organization_id):
 def do_organization_payment_view(request, purchase, organization):
     """The common pars of views for :func:`transaction_payment_view` and :func:`organization_payment_view`."""
     plan_form = SwitchPricingPlanForm({'pricing_plan': purchase.plan.pk})
-    pp = MyPayPalForm()
+    pp = MyPayPalForm({})  # TODO: hack
     return render(request, 'debits_test/organization-payment-view.html',
                   {'organization_id': organization.pk,
                    'organization': organization.name,
@@ -80,11 +80,16 @@ def get_processor(request, hash):
     """Determine the payment processor, from a form."""
     processor_name = hash.pop('arcamens_processor')
     if processor_name == 'PayPal':
-        form = MyPayPalForm()
+        form = MyPayPalForm({})
         processor_id = debits.debits_base.processors.PAYMENT_PROCESSOR_PAYPAL
         processor = debits.debits_base.models.PaymentProcessor.objects.get(pk=processor_id)
     elif processor_name == 'PayPal Checkout':
-        form = MyPayPalCheckoutCreate()
+        form = MyPayPalCheckoutCreate({
+            'redirect_urls': {
+                'return_url': "http://example.com",
+                'cancel_url': "http://example.com"
+            }
+        })
         processor_id = debits.debits_base.processors.PAYMENT_PROCESSOR_PAYPAL_CHECKOUT
         processor = debits.debits_base.models.PaymentProcessor.objects.get(pk=processor_id)
     else:
@@ -95,7 +100,7 @@ def get_processor(request, hash):
 def do_subscribe(hash, form, processor, purchase):
     """Start subscription to our subscription purchase."""
     transaction = SubscriptionTransaction.objects.create(processor=processor, purchase=purchase)
-    return form.make_purchase({}, transaction)
+    return form.make_purchase(transaction)
 
 
 def do_prolong(hash, form, processor, purchase):
@@ -109,7 +114,7 @@ def do_prolong(hash, form, processor, purchase):
                                                  period_unit=Period.UNIT_MONTHS,
                                                  period_count=periods)
     subtransaction = SimpleTransaction.objects.create(processor=processor, purchase=subpurchase)
-    return form.make_purchase({}, subtransaction)
+    return form.make_purchase(subtransaction)
 
 
 def upgrade_calculate_new_period(k, purchase):
@@ -161,7 +166,7 @@ def do_upgrade(hash, form, processor, purchase, organization):
         return HttpResponseRedirect(reverse('organization-prolong-payment', args=[organization.pk]))
     else:
         upgrade_transaction = SubscriptionTransaction.objects.create(processor=processor, purchase=new_purchase)
-        return form.make_purchase({}, upgrade_transaction)
+        return form.make_purchase(upgrade_transaction)
 
 
 def purchase_view(request):

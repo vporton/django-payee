@@ -22,10 +22,10 @@ class PayPalForm(RedirectPaymentProcessor):
         """Django view name for PayPal IPN."""
         pass
 
-    def amend_hash_new_purchase(self, transaction, hash):
+    def amend_hash_new_purchase(self, transaction):
         # https://developer.paypal.com/docs/classic/paypal-payments-standard/integration-guide/Appx_websitestandard_htmlvariables/
 
-        cart = hash.pop('arcamens_cart', transaction.purchase.is_aggregate)
+        cart = self.hash.pop('arcamens_cart', transaction.purchase.is_aggregate)
 
         items = self.init_items(transaction)
         # if transaction.purchase.item.is_subscription():
@@ -34,7 +34,7 @@ class PayPalForm(RedirectPaymentProcessor):
         else:
             self.make_regular(items, transaction, transaction.purchase, cart)
 
-        items.update(hash)
+        items.update(self.hash)
         items['bn'] = 'Arcamens_SP_EC'  # we don't want this token be changed without changing the code
         return items
 

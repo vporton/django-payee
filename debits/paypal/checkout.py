@@ -11,7 +11,7 @@ from debits.paypal.models import PayPalAPI
 
 class PayPalCheckoutCreate(BasePaymentProcessor):
     # FIXME: It works only for non-subscription payments
-    def make_purchase(self, hash, transaction):
+    def make_purchase(self, transaction):
         transactions = []
         for subpurchase in transaction.purchase.as_iter():
             subitem = subpurchase.item
@@ -29,16 +29,14 @@ class PayPalCheckoutCreate(BasePaymentProcessor):
                 'payment_method': 'paypal'
             },
             'transactions': transactions,
-            'redirect_urls': {
-                'return_url': 'https://www.mysite.com',  # FIXME
-                'cancel_url': 'https://www.mysite.com'
-            }
         }
+        input.update(self.hash)
         api = PayPalAPI()
         r = api.session.post(api.server + '/v1/payments/payment',
                              data=json.dumps(input),
                              headers={'Content-Type': 'application/json',
                                       'PayPal-Request-Id': transaction.invoice_id()})  # TODO: Or consider using invoice_number for every transaction?
+        #print(r.content)
         if r.status_code != 201:
             return HttpResponse('')  # TODO: What to do in this situation?
         output = r.json()

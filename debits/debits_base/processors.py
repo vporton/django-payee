@@ -15,14 +15,18 @@ class BasePaymentProcessor(abc.ABC):
 
     We receive a derivative of :class:`~debits.debits_base.models.Transaction` object
     from user."""
+    def __init__(self, hash):
+        """`hash` is interpreted differently for each payment processor."""
+        self.hash = hash
+
     @abc.abstractmethod
-    def make_purchase(self, hash, transaction):
+    def make_purchase(self, transaction):
         """Start the process of purchase with given hash and transaction.
 
         `hash` is ignored in this class (but not all its subclasses)."""
         pass
 
-    def change_subscription(self, hash, transaction):
+    def change_subscription(self, transaction):
         """Start the process of changing a subscription with hash transaction.
 
         `hash` is ignored in this class (but not all its subclasses)."""
