@@ -1,10 +1,13 @@
 from django.db import models
 from debits.debits_base.base import Period
-from debits.debits_base.models import Product, SubscriptionPurchase
+from debits.debits_base.models import Product, SubscriptionPurchase, SubscriptionItem
 
 
 class PricingPlan(models.Model):
-    """Pricing plan (like "Item 1", $10/month)."""
+    """Pricing plan (like "Item 1", $10/month).
+
+    TODO: Make it derived from SubscriptionItem?"""
+
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     """Sold product."""
 
@@ -26,6 +29,9 @@ class PricingPlan(models.Model):
     def __repr__(self):
         return "<PricingPlan: %s, %s>" % ((("pk=%d" % self.pk) if self.pk else "no pk"), self.__str__())
 
+
+# class MyItem(SubscriptionItem):
+#     """An example sold item."""
 
 class MyPurchase(SubscriptionPurchase):
     """An example purchase."""
