@@ -9,7 +9,7 @@ try:
     from html import escape  # python 3.x
 except ImportError:
     from cgi import escape  # python 2.x
-from django.db import models
+from django.db import models, IntegrityError
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 from debits.debits_base.models import logger, CannotCancelSubscription, CannotRefund
@@ -90,3 +90,20 @@ class PayPalAPI(object):
     #     r = self.session.get(self.server + ('/v1/payments/billing-agreements/%s' % escape(agreement_id)),
     #                          headers={'content-type': 'application/json'})
     #     # ...
+
+
+class PayPalBillingPlan(models.Model):
+    """Internal."""
+    item = models.OneToOneField('debits_base.Item')
+
+    code = models.CharField(max_length=256, null=False, blank=False, unique=True, on_delete=models.CASCADE)
+
+    def create(self, item):
+        try:
+            api = PayPalAPI()
+            # FIXME
+            r = api.session.post(api.server + '/v1/payments/payment',
+                                 data=json.dumps(input),
+                                 headers={'Content-Type': 'application/json'})  # TODO: Or consider using invoice_number for every transaction?
+        except IntegrityError:  # may happend because of two threads creating it in parallel
+            pass
