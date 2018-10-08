@@ -28,23 +28,6 @@ class BasePaymentProcessor(abc.ABC):
         `hash` is ignored in this class (but not all its subclasses)."""
         raise NotImplementedError()
 
-    def make_purchase_from_form(self, hash, transaction):
-        """Start the process of purchase with hash received from a HTML form and transaction."""
-        hash = dict(hash)
-        if 'csrfmiddlewaretoken' in hash:
-            del hash['csrfmiddlewaretoken']
-        # immediately before redirect to the processor
-        return self.make_purchase(hash, transaction)
-
-    def change_subscription_from_form(self, hash):
-        """Start the process of changing a subscription with hash received from a HTML form and transaction."""
-        hash = dict(hash)
-        transaction = debits.debits_base.models.Item.objects.get(hash['arcamens_purchaseid'])
-        if 'csrfmiddlewaretoken' in hash:
-            del hash['csrfmiddlewaretoken']
-        hash = self.amend_hash_change_subscription(transaction, hash)
-        return self.change_subscription(hash, transaction)
-
     def ready_for_subscription(self, transaction):
         """Check if ready for subscription.
 

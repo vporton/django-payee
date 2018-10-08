@@ -95,7 +95,7 @@ def get_processor(request, hash):
 def do_subscribe(hash, form, processor, purchase):
     """Start subscription to our subscription purchase."""
     transaction = SubscriptionTransaction.objects.create(processor=processor, purchase=purchase)
-    return form.make_purchase_from_form(hash, transaction)
+    return form.make_purchase({}, transaction)
 
 
 def do_prolong(hash, form, processor, purchase):
@@ -109,7 +109,7 @@ def do_prolong(hash, form, processor, purchase):
                                                  period_unit=Period.UNIT_MONTHS,
                                                  period_count=periods)
     subtransaction = SimpleTransaction.objects.create(processor=processor, purchase=subpurchase)
-    return form.make_purchase_from_form(hash, subtransaction)
+    return form.make_purchase({}, subtransaction)
 
 
 def upgrade_calculate_new_period(k, purchase):
@@ -161,7 +161,7 @@ def do_upgrade(hash, form, processor, purchase, organization):
         return HttpResponseRedirect(reverse('organization-prolong-payment', args=[organization.pk]))
     else:
         upgrade_transaction = SubscriptionTransaction.objects.create(processor=processor, purchase=new_purchase)
-        return form.make_purchase_from_form(hash, upgrade_transaction)
+        return form.make_purchase({}, upgrade_transaction)
 
 
 def purchase_view(request):
