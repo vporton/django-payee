@@ -10,8 +10,13 @@ from debits.paypal.models import PayPalAPI
 
 
 class PayPalCheckoutCreate(BasePaymentProcessor):
-    # FIXME: It works only for non-subscription payments
     def make_purchase(self, transaction):
+        if hasattr(transaction, 'subscriptiontransaction'):
+            self.make_subscription_purchase(transaction)
+        else:
+            self.make_regular_purchase(transaction)
+
+    def make_regular_purchase(self, transaction):
         transactions = []
         for subpurchase in transaction.purchase.as_iter():
             subitem = subpurchase.item
@@ -42,6 +47,9 @@ class PayPalCheckoutCreate(BasePaymentProcessor):
         output = r.json()
         return HttpResponse(json.dumps({'id': output['id']}))
         # return HttpResponse(json.dumps({'paymentID': output['id'], 'payerID': TODO}))  # FIXME: It is for payment execution
+
+    def make_subscription_purchase(self, transaction):
+        pass  # TODO
 
     # FIXME: 1. Correct here? 2. Duplicate with form.py
     def subscription_allowed_date(self, purchase):
