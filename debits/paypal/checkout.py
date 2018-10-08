@@ -29,7 +29,7 @@ class PayPalCheckoutCreate(BasePaymentProcessor):
                                  },
                                  'description': self.product_name(subpurchase)[0:127]})
         input = {
-            'intent': 'sale',  # TODO: Other modes (cannot pass through a form parameter for security reasons)
+            'intent': 'sale',
             'payer': {
                 'payment_method': 'paypal'
             },
