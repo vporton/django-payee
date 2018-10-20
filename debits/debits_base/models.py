@@ -218,8 +218,9 @@ class Item(models.Model):
     
     See https://stackoverflow.com/q/52709119/856090"""
 
-    id = models.AutoField(primary_key=False)
-    """Use :attr:`uid` instead if doubt."""
+    # (fields.E100) AutoFields must set primary_key=True.
+    # id = models.AutoField(primary_key=False)
+    # """Use :attr:`uid` instead if doubt."""
 
     predefined = models.BooleanField(db_index=True, default=False)
 
