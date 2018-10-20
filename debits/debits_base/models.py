@@ -221,6 +221,8 @@ class Item(models.Model):
     id = models.AutoField(primary_key=False)
     """Use :attr:`uid` instead if doubt."""
 
+    predefined = models.BooleanField(db_index=True, default=False)
+
     product = models.ForeignKey('Product', null=True, on_delete=models.CASCADE)
     """The sold product."""
 
@@ -234,6 +236,12 @@ class Item(models.Model):
     """Price of the item.
     
     For recurring payment it is the amount of one payment."""
+
+    def reset(self):
+        """After this :meth:`save` will create a new object."""
+        self.uid = None
+        self.id = None
+        self.predefined = False
 
     def __repr__(self):
         return "<Item pk=%d, %s>" % (self.pk, self.product.name)
