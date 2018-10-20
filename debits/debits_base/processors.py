@@ -65,7 +65,7 @@ class RedirectPaymentProcessor(BasePaymentProcessor, metaclass=abc.ABCMeta):
     passed to the payment processor.
     """
     @abc.abstractmethod
-    def amend_hash_new_purchase(self, transaction, hash):
+    def amend_hash_new_purchase(self, transaction):
         """Internal."""
         pass
 
@@ -75,7 +75,7 @@ class RedirectPaymentProcessor(BasePaymentProcessor, metaclass=abc.ABCMeta):
 
     def make_purchase(self, transaction):
         """Start the process of purchase with given hash and transaction."""
-        hash = self.amend_hash_new_purchase(transaction, self.hash)
+        hash = self.amend_hash_new_purchase(transaction)
         return self.redirect_to_processor(hash)
 
     def change_subscription(self, transaction, hash):
