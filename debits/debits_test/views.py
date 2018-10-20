@@ -178,9 +178,10 @@ def purchase_view(request):
         item.reset()
         item.trial_period_unit = Period.UNIT_DAYS
         item.trial_period_count = (due_date - datetime.date.today()).days
-        item.set_payment_date(due_date)
         item.save()
-        purchase = MyPurchase.objects.create(item=item, for_organization=organization)
+        purchase = MyPurchase(item=item, for_organization=organization)
+        purchase.set_payment_date(due_date)
+        purchase.save()
         return do_subscribe(hash, form, processor, purchase)
     elif op == 'manual':
         return do_prolong(hash, form, processor, purchase)
