@@ -45,7 +45,7 @@ def do_organization_payment_view(request, purchase, organization):
                    'manual_mode': not purchase.subscribed,
                    'processor_name': purchase.processor.name if purchase.processor else None,
                    # only for automatic recurring payment
-                   'plan': purchase.pricingplan.name,
+                   'plan': purchase.item.subscriptionitem.pricingplan.plan_name,
                    'trial': purchase.trial,
                    'trial_period': period_to_string(purchase.item.subscriptionitem.trial_period),
                    'due_date': purchase.due_payment_date,

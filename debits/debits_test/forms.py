@@ -14,4 +14,4 @@ class CreateOrganizationForm(forms.Form):
 class SwitchPricingPlanForm(forms.Form):
     """Django form to switch pricing plan."""
     pricing_plan = forms.ModelChoiceField(
-        PricingPlan.objects.filter(product=PRODUCT_ITEM_1, predefined=True).order_by('id'))
+        PricingPlan.objects.filter(product=PRODUCT_ITEM_1, predefined=True))
