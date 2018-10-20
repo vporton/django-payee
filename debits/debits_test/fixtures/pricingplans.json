@@ -1,40 +1,78 @@
 [
   {
-    "model": "debits_test.pricingplan",
+    "model": "debits_base.item",
     "pk": "ca79ba3b-131e-46ec-ba8c-ae6b52d65ba7",
     "fields": {
       "product": 1,
-      "plan_name": "Plan 1",
       "price": 10.00,
-      "currency": "USD",
+      "currency": "USD"
+    }
+  },
+  {
+    "model": "debits_base.subscriptionitem",
+    "pk": "ca79ba3b-131e-46ec-ba8c-ae6b52d65ba7",
+    "fields": {
       "payment_period_unit": 1,
-      "payment_period_count": 1,
-      "predefined": true
+      "payment_period_count": 1
     }
   },
   {
     "model": "debits_test.pricingplan",
-    "pk": "029cccfe-8567-480a-b5f2-ccce09a6208e",
+    "pk": "ca79ba3b-131e-46ec-ba8c-ae6b52d65ba7",
+    "fields": {
+      "plan_name": "Plan 1",
+      "predefined": true
+    }
+  },
+
+  {
+    "model": "debits_base.item",
+    "pk": "71715929-46ab-44e6-8c2f-061eba68c655",
     "fields": {
       "product": 1,
+      "price": 10.00,
+      "currency": "USD"
+    }
+  },
+  {
+    "model": "debits_base.subscriptionitem",
+    "pk": "71715929-46ab-44e6-8c2f-061eba68c655",
+    "fields": {
+      "payment_period_unit": 1,
+      "payment_period_count": 1
+    }
+  },
+  {
+    "model": "debits_test.pricingplan",
+    "pk": "71715929-46ab-44e6-8c2f-061eba68c655",
+    "fields": {
       "plan_name": "Plan 2",
-      "price": 20.00,
-      "currency": "USD",
-      "payment_period_unit": 1,
-      "payment_period_count": 1,
       "predefined": true
+    }
+  },
+
+  {
+    "model": "debits_base.item",
+    "pk": "457c1c07-305d-44de-a6a8-c0dc5214de9f",
+    "fields": {
+      "product": 1,
+      "price": 10.00,
+      "currency": "USD"
+    }
+  },
+  {
+    "model": "debits_base.subscriptionitem",
+    "pk": "457c1c07-305d-44de-a6a8-c0dc5214de9f",
+    "fields": {
+      "payment_period_unit": 1,
+      "payment_period_count": 1
     }
   },
   {
     "model": "debits_test.pricingplan",
-    "pk": "8864839d-6101-4448-9182-27bc25a3ac5f",
+    "pk": "457c1c07-305d-44de-a6a8-c0dc5214de9f",
     "fields": {
-      "product": 1,
       "plan_name": "Plan 3",
-      "price": 30.00,
-      "currency": "USD",
-      "payment_period_unit": 1,
-      "payment_period_count": 1,
       "predefined": true
     }
   }
