@@ -30,7 +30,7 @@
     "pk": "71715929-46ab-44e6-8c2f-061eba68c655",
     "fields": {
       "product": 1,
-      "price": 10.00,
+      "price": 20.00,
       "currency": "USD",
       "predefined": true
     }
@@ -56,7 +56,7 @@
     "pk": "457c1c07-305d-44de-a6a8-c0dc5214de9f",
     "fields": {
       "product": 1,
-      "price": 10.00,
+      "price": 30.00,
       "currency": "USD",
       "predefined": true
     }
