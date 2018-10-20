@@ -26,7 +26,7 @@ class BasePaymentProcessor(abc.ABC):
         `hash` is ignored in this class (but not all its subclasses)."""
         pass
 
-    def change_subscription(self, transaction):
+    def change_subscription(self, hash, transaction):
         """Start the process of changing a subscription with hash transaction.
 
         `hash` is ignored in this class (but not all its subclasses)."""
@@ -73,9 +73,9 @@ class RedirectPaymentProcessor(BasePaymentProcessor, metaclass=abc.ABCMeta):
         """Internal."""
         raise NotImplementedError()
 
-    def make_purchase(self, hash, transaction):
+    def make_purchase(self, transaction):
         """Start the process of purchase with given hash and transaction."""
-        hash = self.amend_hash_new_purchase(transaction, hash)
+        hash = self.amend_hash_new_purchase(transaction, self.hash)
         return self.redirect_to_processor(hash)
 
     def change_subscription(self, transaction, hash):
