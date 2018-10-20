@@ -32,7 +32,7 @@ def organization_payment_view(request, organization_id):
 
 def do_organization_payment_view(request, purchase, organization):
     """The common pars of views for :func:`transaction_payment_view` and :func:`organization_payment_view`."""
-    plan_form = SwitchPricingPlanForm({'pricing_plan': purchase.plan.pk})
+    plan_form = SwitchPricingPlanForm({'pricing_plan': purchase.item.subscriptionitem.pricingplan.pk})
     pp = MyPayPalForm({})  # TODO: hack
     return render(request, 'debits_test/organization-payment-view.html',
                   {'organization_id': organization.pk,
