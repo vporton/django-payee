@@ -1,10 +1,10 @@
 [
   {
     "model": "debits_test.pricingplan",
-    "pk": 1,
+    "pk": "ca79ba3b-131e-46ec-ba8c-ae6b52d65ba7",
     "fields": {
       "product": 1,
-      "name": "Plan 1",
+      "plan_name": "Plan 1",
       "price": 10.00,
       "currency": "USD",
       "period_unit": 1,
@@ -13,10 +13,10 @@
   },
   {
     "model": "debits_test.pricingplan",
-    "pk": 2,
+    "pk": "029cccfe-8567-480a-b5f2-ccce09a6208e",
     "fields": {
       "product": 1,
-      "name": "Plan 2",
+      "plan_name": "Plan 2",
       "price": 20.00,
       "currency": "USD",
       "period_unit": 1,
@@ -25,10 +25,10 @@
   },
   {
     "model": "debits_test.pricingplan",
-    "pk": 3,
+    "pk": "8864839d-6101-4448-9182-27bc25a3ac5f",
     "fields": {
       "product": 1,
-      "name": "Plan 3",
+      "plan_name": "Plan 3",
       "price": 30.00,
       "currency": "USD",
       "period_unit": 1,
