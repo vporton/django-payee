@@ -131,9 +131,7 @@ def upgrade_create_new_item(old_purchase, plan, new_period, organization):
     item.reset()
     item.trial_period_unit = Period.UNIT_DAYS
     item.trial_period_count = new_period
-    purchase = MyPurchase(item=item,
-                          for_organization=organization,
-                          plan=plan)
+    purchase = MyPurchase(item=item, for_organization=organization)
     purchase.set_payment_date(datetime.date.today() + datetime.timedelta(days=new_period))
     if old_purchase.subscribed:
         purchase.old_subscription = old_purchase
@@ -176,12 +174,13 @@ def purchase_view(request):
         due_date = purchase.due_payment_date
         if due_date < datetime.date.today():
             due_date = datetime.date.today()
-        purchase.reset()
-        purchase.trial_period_unit = Period.UNIT_DAYS
-        purchase.trial_period_count = (due_date - datetime.date.today()).days
-        purchase.for_organization = organization
-        purchase.set_payment_date(due_date)
-        purchase.save()
+        item = purchase.item.subscriptionitem
+        item.reset()
+        item.trial_period_unit = Period.UNIT_DAYS
+        item.trial_period_count = (due_date - datetime.date.today()).days
+        item.set_payment_date(due_date)
+        item.save()
+        purchase = MyPurchase.objects.create(item=item, for_organization=organization)
         return do_subscribe(hash, form, processor, purchase)
     elif op == 'manual':
         return do_prolong(hash, form, processor, purchase)
