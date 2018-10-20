@@ -67,7 +67,7 @@ def create_organization_view(request):
         form = CreateOrganizationForm(request.POST)
         if form.is_valid():
             trial_months = 1 if 'use_trial' in request.POST else 0
-            organization = create_organization(request.POST['name'], int(request.POST['pricing_plan']), trial_months)
+            organization = create_organization(request.POST['name'], request.POST['pricing_plan'], trial_months)
             return HttpResponseRedirect(reverse('organization-prolong-payment', args=[organization.pk]))
     else:
         form = CreateOrganizationForm()
