@@ -128,14 +128,10 @@ def upgrade_calculate_new_period(k, purchase):
 
 def upgrade_create_new_item(old_purchase, plan, new_period, organization):
     """Create new purchase used to upgrade another purchase (:obj:`old_purchase`)."""
-    item = debits.debits_base.models.SubscriptionItem.objects.create(
-        product=plan.product,
-        currency=plan.currency,
-        price=plan.price,
-        payment_period_unit=Period.UNIT_MONTHS,
-        payment_period_count=1,
-        trial_period_unit=Period.UNIT_DAYS,
-        trial_period_count=new_period)
+    item = plan
+    item.reset()
+    item.trial_period_unit = Period.UNIT_DAYS
+    item.trial_period_count = new_period
     purchase = MyPurchase(item=item,
                           for_organization=organization,
                           plan=plan)
@@ -181,20 +177,13 @@ def purchase_view(request):
         due_date = purchase.due_payment_date
         if due_date < datetime.date.today():
             due_date = datetime.date.today()
-        new_item = debits.debits_base.models.SubscriptionItem.objects.create(
-            product=purchase.plan.product,
-            currency=purchase.plan.currency,
-            price=purchase.plan.price,
-            payment_period_unit=Period.UNIT_MONTHS,
-            payment_period_count=1,
-            trial_period_unit=Period.UNIT_DAYS,
-            trial_period_count=(due_date - datetime.date.today()).days)
-        new_purchase = MyPurchase(item=new_item,
-                                  for_organization=organization,
-                                  plan=purchase.plan)
-        new_purchase.set_payment_date(due_date)
-        new_purchase.save()
-        return do_subscribe(hash, form, processor, new_purchase)
+        purchase.reset()
+        purchase.trial_period_unit = Period.UNIT_DAYS
+        purchase.trial_period_count = (due_date - datetime.date.today()).days
+        purchase.for_organization = organization
+        purchase.set_payment_date(due_date)
+        purchase.save()
+        return do_subscribe(hash, form, processor, purchase)
     elif op == 'manual':
         return do_prolong(hash, form, processor, purchase)
     elif op == 'upgrade':
