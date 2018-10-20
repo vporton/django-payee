@@ -241,7 +241,6 @@ class Item(models.Model):
     def reset(self):
         """After this :meth:`save` will create a new object."""
         self.uid = None
-        self.id = None
         self.predefined = False
 
     def __repr__(self):
