@@ -19,7 +19,7 @@ def create_organization(name, pricing_plan_id, trial_months):
                                                                      payment_period_count=1,
                                                                      trial_period_unit=Period.UNIT_MONTHS,
                                                                      trial_period_count=trial_months)
-    purchase = MyPurchase(item=item, plan=plan)
+    purchase = MyPurchase(item=item)
     if trial_months:
         purchase.start_trial()
     purchase.save()

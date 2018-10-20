@@ -94,9 +94,9 @@ class PayPalAPI(object):
 
 class PayPalBillingPlan(models.Model):
     """Internal."""
-    item = models.OneToOneField('debits_base.Item')
+    item = models.OneToOneField('debits_base.Item', on_delete=models.CASCADE)
 
-    code = models.CharField(max_length=256, null=False, blank=False, unique=True, on_delete=models.CASCADE)
+    code = models.CharField(max_length=256, null=False, blank=False, unique=True)
 
     def create(self, item):
         try:

@@ -1,6 +1,7 @@
 import abc
 import hmac
 import datetime
+import uuid
 
 import html2text
 from django.apps import apps
@@ -211,6 +212,14 @@ class Item(models.Model):
 
     In a future we may provide an interface for registering new products.
     """
+
+    uid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    """We use UUID instead of `AutoField`, not to be overwritten by fixtures.
+    
+    See https://stackoverflow.com/q/52709119/856090"""
+
+    id = models.AutoField(primary_key=False)
+    """Use :attr:`uid` instead if doubt."""
 
     product = models.ForeignKey('Product', null=True, on_delete=models.CASCADE)
     """The sold product."""

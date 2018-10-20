@@ -11,7 +11,7 @@ class MyBaseFormMixin(BasePaymentProcessor):
         """What "product" PayPal shows for the purchase."""
         if isinstance(purchase, ProlongPurchase):
             purchase = purchase.prolonged
-        return purchase.item.product.name + ': ' + purchase.mypurchase.plan.name
+        return str(purchase.item.subscriptionitem.pricingplan)
 
 
 class MyPayPalForm(PayPalForm, MyBaseFormMixin):
