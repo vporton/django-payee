@@ -46,7 +46,8 @@ class BasePaymentProcessor(abc.ABC):
     def make_purchase_from_form(self, hash, transaction):
         """Start the process of purchase with hash received from a HTML form and transaction."""
         hash = dict(hash)
-        del hash['csrfmiddlewaretoken']
+        if 'csrfmiddlewaretoken' in hash:
+            del hash['csrfmiddlewaretoken']
         # immediately before redirect to the processor
         return self.make_purchase(hash, transaction)
 
