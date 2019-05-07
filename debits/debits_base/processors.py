@@ -70,11 +70,14 @@ class BasePaymentProcessor(abc.ABC):
         """Internal."""
         action = escape(hash['arcamens_action'])
         del hash['arcamens_action']
+        # The following code works even if this Redirect is loaded inside a HTML tag
         return "<html><head><meta charset='utf-8'' /></head>\n" +\
-            "<body onload='document.forms[0].submit()'>\n<p>Redirecting...</p>\n" + \
+            "<body>\n<p>Redirecting...</p>\n" + \
             "<form method='post' action='"+action+"'>\n" + \
             '\n'.join([hidden_field(i[0], str(i[1])) for i in hash.items()]) + \
-            "\n</form></body></html>"
+            "\n</form>\n" + \
+            "<script>document.forms[0].submit();</script>\n" + \
+            "</body></html>"
 
     def ready_for_subscription(self, transaction):
         """Check if ready for subscription.

@@ -12,12 +12,17 @@ INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
+    'django.contrib.messages',
+    # 'django.contrib.staticfiles',
     'debits.debits_base',
     'debits.paypal',
     'debits.debits_test',
 ]
 
 MIDDLEWARE = [
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
 ]
 
 TEMPLATES = [
@@ -79,6 +84,7 @@ PAYPAL_DEBUG = True
 PAYMENTS_REALM = 'testapp1'
 
 try:
-    from local_settings import *
+    from .local_settings import *
 except ImportError as e:
+    print("XXX", e)
     pass
