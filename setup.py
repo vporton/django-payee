@@ -14,7 +14,7 @@ here = path.abspath(path.dirname(__file__))
 #     long_description = f.read()
 
 name = 'django-debits'
-version = '0.1.10'
+version = '0.1.12'
 release = version
 
 setup(
@@ -62,6 +62,7 @@ setup(
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
     packages=find_packages(exclude=['test*']),
+    data_files=[("debits/debits_base", ["fixtures/*.json"])],
 
     command_options={
         'build_sphinx': {
