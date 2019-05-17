@@ -7,3 +7,5 @@ For PayPal Checkout, we should split BaseTransaction into billing plan and billi
 agreement models.
 
 Don't wait for IPN to terminate subscription.
+
+Missing PROLONG_PAYMENT_VIEW causes exception in unsubscription.
