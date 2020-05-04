@@ -18,9 +18,9 @@ Type `pip install django-payee` (in your Python environment).
 
 ## Manually
 
-Copy `payee/debits_base` and `payee/paypal` into your Django application.
+Copy `debits/debits_base` and `debits/paypal` into your Django application.
 
-Add `'payee.debits_base'` and `'payee.paypal'` to your `INSTALLED_APPS`.
+Add `'debits.debits_base'` and `'debits.paypal'` to your `INSTALLED_APPS`.
 
 ## Last steps
 
@@ -28,14 +28,14 @@ After manual or automatic install chdir to the project directory and run:
 
 ```
 python manage.py migrate
-python manage.py loaddata payee/debits_base/fixtures/*.json
+python manage.py loaddata debits/debits_base/fixtures/*.json
 ```
 
 # Usage
 
 See
 [the wiki at GitHub.com](https://github.com/vporton/django-payee/wiki)
-and example code in `payee/debits_test`.
+and example code in `debits/debits_test`.
 
 # Documentation & Features
 
