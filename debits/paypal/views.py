@@ -317,7 +317,7 @@ class PayPalIPN(PaymentCallback, View):
         # transaction.purchase.subscriptionpurchase.cancel_subscription()
         # self.on_subscription_canceled(POST, transaction.purchase)
         subscription_reference = getattr(POST, 'recurring_payment_id', POST['subscr_id'])
-        subscriptionpurchase = SubscriptionPurchase(subscription_reference=subscription_reference)
+        subscriptionpurchase = SubscriptionPurchase.objects.get(subscription_reference=subscription_reference)
         subscriptionpurchase.cancel_subscription()
         self.on_subscription_canceled(POST, subscriptionpurchase.purchase)
 
