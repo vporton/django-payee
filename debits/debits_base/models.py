@@ -416,6 +416,11 @@ class SubscriptionPurchase(Purchase):
 
     DalPay requires to notify the customer 10 days before every payment."""
 
+    def __init__(self, *args, **kwargs):
+        if 'PROLONG_PAYMENT_VIEW' not in settings:
+            raise Exception("Missing PROLONG_PAYMENT_VIEW in settings.")
+        super().__init__(*args, **kwargs)
+
     @property
     def subscribed(self):
         """Is in automatic (not manual) recurring mode."""
