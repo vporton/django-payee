@@ -6,7 +6,7 @@ Accepting payments (currently we support only PayPal).
 
 The engine is very advanced and supports regular and subscription payments.
 For more details, see
-[the wiki at GitHub.com](https://github.com/vporton/django-debits/wiki).
+[the wiki at GitHub.com](https://github.com/vporton/django-payee/wiki).
 
 The program is in beta testing stage.
 
@@ -14,13 +14,13 @@ The program is in beta testing stage.
 
 ## Automatically
 
-Type `pip install django-debits` (in your Python environment).
+Type `pip install django-payee` (in your Python environment).
 
 ## Manually
 
-Copy `debits/debits_base` and `debits/paypal` into your Django application.
+Copy `payee/debits_base` and `payee/paypal` into your Django application.
 
-Add `'debits.debits_base'` and `'debits.paypal'` to your `INSTALLED_APPS`.
+Add `'payee.debits_base'` and `'payee.paypal'` to your `INSTALLED_APPS`.
 
 ## Last steps
 
@@ -29,19 +29,19 @@ After manual or automatic install chdir to the project directory and run:
 ```
 python manage.py makemigrations
 python manage.py migrate
-python manage.py loaddata debits/debits_base/fixtures/*.json
+python manage.py loaddata payee/debits_base/fixtures/*.json
 ```
 
 # Usage
 
 See
-[the wiki at GitHub.com](https://github.com/vporton/django-debits/wiki)
-and example code in `debits/debits_test`.
+[the wiki at GitHub.com](https://github.com/vporton/django-payee/wiki)
+and example code in `payee/debits_test`.
 
 # Documentation & Features
 
-* [The wiki](https://github.com/vporton/django-debits/wiki)
-* [API docs](https://django-debits.readthedocs.io/en/latest/)
+* [The wiki](https://github.com/vporton/django-payee/wiki)
+* [API docs](https://django-payee.readthedocs.io/en/latest/)
 
 # Commercial version
 

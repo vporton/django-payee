@@ -13,7 +13,7 @@ here = path.abspath(path.dirname(__file__))
 # with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 #     long_description = f.read()
 
-name = 'django-debits'
+name = 'django-payee'
 version = '0.1.15'
 release = version
 
@@ -26,7 +26,7 @@ setup(
     long_description='Accepting payments (currently supports PayPal)',
 
     # The project's main homepage.
-    url='http://freesoft.portonvictor.org/django-debits.xml',
+    url='https://github.com/vporton/django-payee/wiki',
 
     # Author details
     author='Victor Porton',
