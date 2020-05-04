@@ -126,11 +126,12 @@ class PayPalIPN(PaymentCallback, View):
 
     def verified_post(self, POST, request):
         # print('custom', POST['custom'])  # Don't print sensitive data
-        transaction_id = BaseTransaction.pk_from_custom(POST['custom'])
+        # As of 4 May 2020 in PayPal there is not `custom` in unsubscription notification
+        transaction_id = BaseTransaction.pk_from_custom(POST['custom']) if 'custom' in POST else None
         self.on_transaction_complete(POST, transaction_id)
 
     def on_transaction_complete(self, POST, transaction_id):
-        # Crazy: Recurring payment and subscription debits are not the same.
+        # Crazy: Recurring payment and subscription payments are not the same.
         # 'recurring_payment_id' and 'subscr_id' are equivalent: https://thereforei.am/2012/07/03/cancelling-subscriptions-created-with-paypal-standard-via-the-express-checkout-api/
         type_dispatch = {
             'web_accept': self.accept_regular_payment,
@@ -303,18 +304,22 @@ class PayPalIPN(PaymentCallback, View):
         else:
             logger.warning("Wrong recurring signup data")
 
-    def accept_recurring_canceled(self, POST, transaction_id):
-        self.do_accept_recurring_canceled(POST, transaction_id)
+    def accept_recurring_canceled(self, POST, subscription_reference):
+        self.do_accept_recurring_canceled(POST, subscription_reference)
 
-    def do_accept_recurring_canceled(self, POST, transaction_id):
-        try:
-            transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
-        except BaseTransaction.DoesNotExist:
-            traceback.print_exc()
-
-            return
-        transaction.purchase.subscriptionpurchase.cancel_subscription()
-        self.on_subscription_canceled(POST, transaction.purchase)
+    def do_accept_recurring_canceled(self, POST, subscription_reference):
+        # try:
+        #     transaction = SubscriptionTransaction.objects.get(pk=transaction_id)
+        # except BaseTransaction.DoesNotExist:
+        #     traceback.print_exc()
+        #
+        #     return
+        # transaction.purchase.subscriptionpurchase.cancel_subscription()
+        # self.on_subscription_canceled(POST, transaction.purchase)
+        subscription_reference = getattr(POST, 'recurring_payment_id', POST['subscr_id'])
+        subscriptionpurchase = SubscriptionPurchase(subscription_reference=subscription_reference)
+        subscriptionpurchase.cancel_subscription()
+        self.on_subscription_canceled(POST, subscriptionpurchase.purchase)
 
     def auto_refund(self, transaction, purchase, POST):
         # "purchase" is SubscriptionItem

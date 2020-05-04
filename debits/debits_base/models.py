@@ -403,7 +403,7 @@ class SubscriptionPurchase(Purchase):
     subinvoice = models.PositiveIntegerField(default=1)  # no need for index, as it is used only at PayPal side
     """Internal."""
 
-    subscription_reference = models.CharField(max_length=255, null=True)
+    subscription_reference = models.CharField(max_length=255, null=True, db_index=True)
     """As `recurring_payment_id` in PayPal.
 
     TODO: Avangate has it for every product, but PayPal for transaction as a whole."""
