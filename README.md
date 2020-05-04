@@ -27,7 +27,6 @@ Add `'payee.debits_base'` and `'payee.paypal'` to your `INSTALLED_APPS`.
 After manual or automatic install chdir to the project directory and run:
 
 ```
-python manage.py makemigrations
 python manage.py migrate
 python manage.py loaddata payee/debits_base/fixtures/*.json
 ```
